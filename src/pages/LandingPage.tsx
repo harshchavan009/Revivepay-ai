@@ -619,7 +619,7 @@ export const LandingPage: React.FC = () => {
 
       {/* FOOTER */}
       <footer className="border-t border-[#133248]/60 bg-[#030C13] py-12 px-4 sm:px-8 text-slate-500 text-xs">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-[#FF5E3A] to-[#FFA07A] flex items-center justify-center text-white font-bold text-xs">
               <Zap className="w-3.5 h-3.5" />
@@ -629,7 +629,7 @@ export const LandingPage: React.FC = () => {
             <span>Autonomous Revenue Recovery for Fintech & SaaS</span>
           </div>
 
-          <div className="flex items-center gap-6 text-slate-400">
+          <div className="flex flex-wrap items-center gap-5 text-slate-400 text-xs">
             <Link to="/cases" className="hover:text-white transition-colors">
               Recovery Cases
             </Link>
@@ -639,14 +639,26 @@ export const LandingPage: React.FC = () => {
             <Link to="/policy" className="hover:text-white transition-colors">
               Policy Guardrails
             </Link>
-            <Link to="/login" className="hover:text-white transition-colors">
+            <Link to="/audit" className="hover:text-white transition-colors">
+              Audit Trail
+            </Link>
+            <Link to="/terms" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/security" className="hover:text-white transition-colors">
+              Security
+            </Link>
+            <Link to="/login" className="hover:text-white transition-colors font-semibold text-cyan-400">
               Sign In
             </Link>
           </div>
 
           <div className="flex items-center gap-2 text-slate-400">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Razorpay Test Sandbox & HMAC Signature Ingress</span>
+            <span>Razorpay Test Sandbox & HMAC Ingress</span>
           </div>
         </div>
       </footer>

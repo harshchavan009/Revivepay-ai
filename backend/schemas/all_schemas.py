@@ -319,6 +319,7 @@ class UserResponse(BaseModel):
     name: str
     role: str
     is_active: bool
+    theme_preference: Optional[str] = "dark"
     created_at: datetime.datetime
 
     class Config:

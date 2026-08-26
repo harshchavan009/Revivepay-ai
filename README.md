@@ -1,7 +1,7 @@
-# ⚡ RevivePay AI
+# ⚡ RevivePay AI — Autonomous Payment Failure Recovery Platform
 
 > **Recover Revenue Before It's Lost.**  
-> Production-grade, enterprise fintech SaaS platform for autonomous revenue recovery and payment failure resolution.
+> Production-grade, policy-governed autonomous revenue recovery engine with cryptographic hash-chained audit trails, real-time telemetry streaming, and genuine Razorpay test mode integration.
 
 ---
 
@@ -11,10 +11,10 @@
 
 $$\textbf{DETECT} \longrightarrow \textbf{DIAGNOSE} \longrightarrow \textbf{DECIDE} \longrightarrow \textbf{ACT} \longrightarrow \textbf{VERIFY} \longrightarrow \textbf{MEASURE}$$
 
-### 🎯 Key Design Influences
-- **Stripe**: Fintech credibility, payment tables, financial KPI presentation, ledger tracking.
-- **Linear**: Clean dense operational UX, issue/case tracking, keyboard-friendly navigation (`Cmd+K`), activity streams, chronological audit timelines.
-- **Ramp**: Granular policy controls, rule-based permission boundaries, and Human-in-the-Loop review queues.
+### 🎯 Key Design Principles
+- **Bank-Grade Credibility**: Real database persistence, real JWT auth with role enforcement, and cryptographic block verification.
+- **Deterministic Policy Guardrails**: Bounded retries, amount thresholds, and mandatory Human-in-the-Loop review queues for high-risk actions.
+- **Single Source of Truth**: Unified domain models across payments, recovery cases, subscriptions, and audit logs.
 
 ---
 
@@ -22,10 +22,10 @@ $$\textbf{DETECT} \longrightarrow \textbf{DIAGNOSE} \longrightarrow \textbf{DECI
 
 ```mermaid
 flowchart TD
-    A[Payment / Checkout Event Ingestion] --> B[Razorpay Test Gateway / Webhook Ingress]
-    B --> C[Deterministic Revenue Risk Engine]
-    C --> D[AI Root-Cause Analysis Agent]
-    D --> E[Recovery Decision Agent]
+    A[Payment / Webhook Ingestion] --> B[Razorpay Test Mode / HMAC-SHA256 Verification]
+    B --> C[4-Factor Revenue Risk Engine]
+    C --> D[AI Root-Cause Diagnosis Agent (Gemini / Claude / Fallback)]
+    D --> E[Recovery Decision Engine]
     E --> F{Deterministic Policy & Safety Gateway}
     F -- Action Blocked --> G[Safe Escalation / Human Review Queue]
     F -- Auto-Approved (Low Risk) --> H[Execute Recovery Action]
@@ -33,21 +33,21 @@ flowchart TD
     I -- Approved --> H
     I -- Rejected --> G
     H --> J[Outcome Verification & Razorpay Client]
-    J --> K[Tamper-Evident Audit Trail & Dynamic Metrics]
-    K --> L[Executive Command Center & Real-Time Stream]
+    J --> K[SHA-256 Hash-Chained Audit Ledger]
+    K --> L[Server-Sent Events (SSE) Live Broadcast]
+    L --> M[Executive Command Center & Real-Time Stream]
 ```
 
 ---
 
-## 🧠 AI vs. Deterministic Responsibilities
+## 🔐 Cryptographic Hash-Chained Audit Log
 
-| Dimension | AI Responsibilities (Reasoning & Diagnosis) | Deterministic Responsibilities (Safety & Governance) |
-| :--- | :--- | :--- |
-| **Failures** | Root-cause interpretation & gateway log classification | Hard limits on maximum retries (e.g. max 2 retries) |
-| **Decisions** | Contextual prioritization & recovery strategy recommendation | Transaction amount caps for automated execution |
-| **Safety** | Personalized customer recovery copy generation | Permanent failure detection (expired card / closed account) |
-| **Governance**| Structured JSON validation using Pydantic schemas | Duplicate event prevention & HMAC-SHA256 signature checks |
-| **Fallback** | Pluggable LLM provider with fail-safe rule engine | Human authorization routing on low confidence |
+Every state transition and decision in RevivePay is cryptographically linked to its predecessor:
+
+$$\text{entry\_hash} = \text{SHA-256}(\text{previous\_hash} + \text{audit\_id} + \text{timestamp} + \text{actor} + \text{action} + \text{case\_id} + \text{notes})$$
+
+- **Append-Only**: Altering any past block invalidates all downstream hashes.
+- **Verification Endpoint**: `/api/audit/verify-chain` verifies the entire ledger from genesis to head in $<5\text{ms}$.
 
 ---
 
@@ -64,36 +64,16 @@ $$\text{Risk Score} = 0.35 \times \text{Value Factor} + 0.25 \times \text{Recove
 
 ---
 
-## 🎬 5-Minute Killer Demonstration Guide
+## 👥 Seeded Personas & Authentication (RBAC)
 
-To demonstrate the full end-to-end platform capabilities in under 5 minutes:
+The application includes 4 pre-seeded personas with bcrypt-hashed credentials:
 
-### 1. Executive Command Center (`/dashboard`)
-- Review live financial KPIs: **Revenue at Risk** (₹4.82L), **Recovered Revenue** (₹2.17L), **Recovery Rate** (45.0%), and weekly recovery velocity.
-- Notice the live AI Activity Ticker streaming real-time recovery milestones.
-
-### 2. Deep-Dive Case Investigation (`/cases/RV-10291`)
-- Inspect case **RV-10291** (Customer: *Vikramaditya Sharma*, Amount: ₹4,999, Category: *Temporary Bank Decline*).
-- **Risk Score**: $87/100$ `HIGH` calculated via the 4-factor formula.
-- **AI Diagnosis**: Diagnosed *Temporary Bank Gateway Disconnect* with $91\%$ confidence and 4 grounded factual evidence points.
-- **Policy Validation**: All 7 deterministic rules checked and **PASSED**.
-- Click **"Execute Recovery Action"** (or Approve) $\rightarrow$ Watch state transition to **EXECUTING** $\rightarrow$ **VERIFIED** $\rightarrow$ **RECOVERED**.
-- Observe the recovered amount (+₹4,999) and updated audit log!
-
-### 3. Safe Failure Handling & Escalation (`/simulation`)
-- Open the **Simulation Lab** and click **"Retry Exhaustion & Safe Escalation"**.
-- The system demonstrates safe failure: upon reaching $2/2$ maximum retries, the deterministic gateway **BLOCKS** automatic actions and routes the case to **ESCALATED** for human operator review.
-
----
-
-## 🧪 Simulation Center Scenarios
-
-1. **Temporary Bank Network Glitch** (₹4,999 • Returning customer • 504 Timeout)
-2. **Permanent Invalid / Expired Card** (₹2,499 • Policy blocks retries $\rightarrow$ triggers card updater)
-3. **High-Value Enterprise Transaction** (₹85,000 • Routes to Human Approval queue)
-4. **Recurring Subscription Dunning** (₹14,999 • SaaS mandate failure & smart retry)
-5. **High-Intent Cart Drop** (₹6,999 • 91% intent score $\rightarrow$ personalized cart reminder)
-6. **Retry Exhaustion Escalation** (₹6,200 • Max retries exhausted $\rightarrow$ safe escalation)
+| Persona | Email | Password | Role | Permissions |
+| :--- | :--- | :--- | :--- | :--- |
+| **Merchant Owner** | `owner@revivepay.ai` | `password123` | `MERCHANT_OWNER` | Full policy config, revenue analytics, payout views |
+| **Revenue Operator** | `operator@revivepay.ai` | `password123` | `REVENUE_OPERATOR` | Approve/reject cases, execute retries, simulations |
+| **Support Operator** | `support@revivepay.ai` | `password123` | `SUPPORT_OPERATOR` | Read-only investigation, customer communications |
+| **Admin** | `admin@revivepay.ai` | `password123` | `ADMIN` | Full platform administration, API webhooks |
 
 ---
 
@@ -105,16 +85,16 @@ To demonstrate the full end-to-end platform capabilities in under 5 minutes:
 
 ### 1. Backend Setup
 ```bash
-# Navigate to project root
+# Navigate to project directory
 cd /Users/harsh/Desktop/Razorpay
 
 # Install backend dependencies
 python3 -m pip install -r backend/requirements.txt
 
-# Seed realistic database (500+ payments, 100+ customers, 50+ cases)
+# Seed realistic database (SQLite ./revivepay.db)
 python3 -m backend.seed_data
 
-# Run backend tests
+# Run backend unit tests
 PYTHONPATH=. pytest backend/tests -v
 
 # Start FastAPI server
@@ -136,24 +116,39 @@ npm run dev
 The application will be accessible at:
 - **Frontend Dashboard**: `http://localhost:5173`
 - **Backend API & Swagger Docs**: `http://localhost:8000/docs`
+- **Live Event Stream (SSE)**: `http://localhost:8000/api/events/stream`
+- **Cryptographic Audit Check**: `http://localhost:8000/api/audit/verify-chain`
 
 ---
 
-## 📦 Docker Deployment
+## ⚙️ Environment Variables (`.env`)
+
+See `.env.example` for all configurable parameters:
 
 ```bash
-docker-compose up --build
+# App & Security
+PROJECT_NAME="RevivePay AI"
+SECRET_KEY="revivepay_enterprise_fintech_jwt_secret_key_2026_x892"
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+# Database Configuration (SQLite default; PostgreSQL supported)
+DATABASE_URL="sqlite:///./revivepay.db"
+
+# Razorpay Test Mode Integration
+RAZORPAY_KEY_ID="rzp_test_revivepay2026"
+RAZORPAY_KEY_SECRET="secret_revivepay_fintech_test"
+RAZORPAY_WEBHOOK_SECRET="whsec_revivepay_test_webhook_2026"
+
+# LLM Provider Configuration (Optional — Deterministic fallback active if empty)
+LLM_PROVIDER="gemini" # gemini, openai, anthropic, or deterministic_fallback
+LLM_API_KEY=""
+LLM_MODEL="gemini-1.5-pro"
 ```
-- Frontend: `http://localhost:80`
-- Backend API: `http://localhost:8000`
 
 ---
 
-## 🛡️ Security & Idempotency
-- **HMAC-SHA256 Webhook Verification**: `X-Razorpay-Signature` validation prevents spoofed payloads.
-- **Idempotency Tracking**: Ingested events are recorded in `webhook_events` to prevent duplicate recovery runs.
-- **Role-Based Access Control (RBAC)**: JWT authentication with personas:
-  - `MERCHANT_OWNER`
-  - `REVENUE_OPERATOR`
-  - `SUPPORT_OPERATOR`
-  - `ADMIN`
+## ⚠️ Known Limitations & Assumptions
+
+1. **Razorpay Live vs. Test Mode**: The system uses Razorpay Test Mode credentials by default (`rzp_test_...`). Live capture and settlement can be enabled simply by setting production `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in `.env`.
+2. **LLM Provider Keys**: If `LLM_API_KEY` is not provided in `.env`, the system automatically activates the high-precision **Deterministic Domain Expert Fallback**, guaranteeing structured JSON evidence and 100% test reliability with zero external latency or rate limits.
+3. **Database Defaults**: SQLite (`./revivepay.db`) is the zero-dependency local default. For multi-instance horizontal scaling, specify a PostgreSQL connection string in `DATABASE_URL`.

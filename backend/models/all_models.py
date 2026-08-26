@@ -319,6 +319,7 @@ class User(Base):
     role = Column(String(50), default="REVENUE_OPERATOR")
     merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), nullable=True)
     is_active = Column(Boolean, default=True)
+    theme_preference = Column(String(20), default="dark") # "dark" | "light" | "system"
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     merchant = relationship("Merchant", back_populates="users")
@@ -399,3 +400,34 @@ class WebhookEvent(Base):
     signature = Column(String(255), nullable=True)
     processed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+# ==========================================
+# CHAT CONVERSATION PERSISTENCE ENTITIES
+# ==========================================
+class ChatThread(Base):
+    __tablename__ = "chat_threads"
+
+    id = Column(String(100), primary_key=True, default=generate_uuid)
+    session_id = Column(String(100), index=True, nullable=False)
+    user_id = Column(String(100), ForeignKey("users.id"), nullable=True)
+    title = Column(String(255), default="Telemetry Inquiry")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    messages = relationship("ChatMessage", back_populates="thread", cascade="all, delete-orphan")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(100), primary_key=True, default=generate_uuid)
+    thread_id = Column(String(100), ForeignKey("chat_threads.id"), nullable=False)
+    sender = Column(String(20), nullable=False) # "user" | "bot" | "tool"
+    content = Column(Text, nullable=False)
+    tool_calls = Column(JSON, nullable=True)
+    citations = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    thread = relationship("ChatThread", back_populates="messages")
+

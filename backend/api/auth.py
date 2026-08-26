@@ -85,6 +85,21 @@ def switch_persona(persona_data: dict, db: Session = Depends(get_db)):
             "id": user.id,
             "email": user.email,
             "name": user.name,
-            "role": user.role
+            "role": user.role,
+            "theme_preference": getattr(user, "theme_preference", "dark")
         }
     }
+
+@router.patch("/theme", response_model=UserResponse)
+def update_theme(
+    body: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    theme = body.get("theme", "dark")
+    if theme not in ["dark", "light", "system"]:
+        theme = "dark"
+    current_user.theme_preference = theme
+    db.commit()
+    db.refresh(current_user)
+    return current_user

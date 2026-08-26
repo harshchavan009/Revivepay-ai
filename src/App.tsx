@@ -21,10 +21,21 @@ import { PolicyConfigPage } from "./pages/PolicyConfigPage";
 import { SimulationCenterPage } from "./pages/SimulationCenterPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { TermsPage } from "./pages/TermsPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
+import { SecurityPage } from "./pages/SecurityPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const isLandingOrAuth = location.pathname === "/" || location.pathname === "/login" || location.pathname === "/register";
+  const isLandingOrAuth = (
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname === "/terms" ||
+    location.pathname === "/privacy" ||
+    location.pathname === "/security"
+  );
 
   if (isLandingOrAuth) {
     return <>{children}</>;
@@ -52,6 +63,9 @@ export const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/security" element={<SecurityPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/cases" element={<RecoveryCasesPage />} />
             <Route path="/recovery-cases" element={<RecoveryCasesPage />} />
@@ -69,7 +83,7 @@ export const App: React.FC = () => {
             <Route path="/simulation" element={<SimulationCenterPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AppLayout>
       </Router>
