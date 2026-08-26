@@ -16,6 +16,7 @@ from backend.services.ai_agent import ai_service
 from backend.services.policy_gateway import PolicyGateway
 from backend.services.razorpay_service import RazorpayService
 from backend.services.audit_service import AuditService
+from backend.services.broadcaster import notify_live_event
 
 logger = logging.getLogger(__name__)
 
@@ -321,6 +322,20 @@ class RecoveryEngine:
         case.updated_at = datetime.datetime.utcnow()
         db.commit()
         db.refresh(case)
+
+        # Broadcast live telemetry event
+        notify_live_event("case_created", {
+            "case_id": case.case_id,
+            "amount": case.amount_at_risk,
+            "customer_name": customer.name,
+            "failure_type": case.failure_type,
+            "risk_score": case.risk_score,
+            "risk_level": case.risk_level,
+            "recommended_action": case.recommended_action,
+            "recovery_status": case.recovery_status,
+            "source": case.source
+        })
+
         return case
 
     @classmethod
@@ -455,27 +470,30 @@ class RecoveryEngine:
                 AuditService.log_event(
                     db=db,
                     case_id=case.case_id,
-                    actor="Razorpay Gateway Client",
+                    actor="Razorpay Test Gateway",
                     action=RecoveryEventType.VERIFIED.value,
                     actor_type="GATEWAY",
                     execution_result="SUCCESS",
-                    policy_result="PASSED",
-                    decision={
-                        "action_id": action_id,
-                        "recovered_amount": payment.amount,
-                        "outcome_verified": True,
-                        "provider_payment_id": rzp_pay_id
-                    },
-                    notes=f"Revenue recovered & verified: ₹{payment.amount:,.2f}"
+                    notes=f"Payment of ₹{payment.amount:,.2f} successfully captured and settled (Ref: {rzp_pay_id})."
                 )
                 db.commit()
+
+                # Broadcast live telemetry event
+                notify_live_event("payment_recovered", {
+                    "case_id": case.case_id,
+                    "amount": payment.amount,
+                    "customer_name": customer.name,
+                    "payment_id": rzp_pay_id,
+                    "status": "RECOVERED"
+                })
+
                 return {
                     "success": True,
                     "status": "RECOVERED",
                     "action_id": action_id,
                     "recovered_amount": payment.amount,
                     "outcome_verified": True,
-                    "message": f"Successfully recovered ₹{payment.amount:,.2f} via verified gateway retry."
+                    "message": f"Payment successfully recovered: ₹{payment.amount:,.2f}"
                 }
             else:
                 rec_action.execution_status = "FAILED"
@@ -692,6 +710,15 @@ class RecoveryEngine:
         # Execute approved action
         cls.execute_recovery_action(db=db, case=case, actor=f"Operator ({user_name})")
         db.refresh(case)
+
+        notify_live_event("approval_actioned", {
+            "case_id": case.case_id,
+            "decision": "APPROVED",
+            "actor": user_name,
+            "customer_name": case.customer.name if case.customer else "Customer",
+            "amount": case.amount_at_risk
+        })
+
         return case
 
     @classmethod
@@ -725,4 +752,13 @@ class RecoveryEngine:
         )
         db.commit()
         db.refresh(case)
+
+        notify_live_event("approval_actioned", {
+            "case_id": case.case_id,
+            "decision": "REJECTED",
+            "actor": user_name,
+            "customer_name": case.customer.name if case.customer else "Customer",
+            "rejection_reason": rejection_reason
+        })
+
         return case

@@ -10,6 +10,7 @@ from backend.api.checkout import router as checkout_router
 from backend.api.webhooks import router as webhooks_router
 from backend.api.audit import router as audit_router
 from backend.api.simulation import router as simulation_router
+from backend.api.events_stream import router as events_stream_router
 
 api_router = APIRouter()
 
@@ -24,3 +25,4 @@ api_router.include_router(checkout_router)
 api_router.include_router(webhooks_router)
 api_router.include_router(audit_router)
 api_router.include_router(simulation_router)
+api_router.include_router(events_stream_router)

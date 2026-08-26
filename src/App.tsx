@@ -31,12 +31,12 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] text-slate-900 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#041018] text-slate-100 overflow-hidden font-sans">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#041018]">
         <Header />
         <LiveActivityTicker />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#F8FAFC]">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#041018]">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

@@ -8,6 +8,7 @@ import { ActionBadge } from "../components/ActionBadge";
 import { ConfidenceGauge } from "../components/ConfidenceGauge";
 import { ApprovalActionModal } from "../components/investigation/ApprovalActionModal";
 import { EventSourceBadge } from "../components/EventSourceBadge";
+import { formatINR } from "../data/mockData";
 
 export const ApprovalCenterPage: React.FC = () => {
   const [pendingCases, setPendingCases] = useState<RecoveryCase[]>([]);
@@ -54,41 +55,51 @@ export const ApprovalCenterPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#13354E] pb-5">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-amber-400" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">
+              HUMAN-IN-THE-LOOP SAFEGUARDS
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400">
+              POLICY GATE ACTIVE
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-1 flex items-center gap-2">
+            <UserCheck className="w-6 h-6 text-cyan-400" />
             <span>Human-in-the-Loop Approval Center</span>
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 mt-0.5">
             Ramp-style review queue for high-value transactions, low model confidence, and policy-gated recovery actions.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
+          <span className="text-xs font-mono px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
             {pendingCases.length} Approvals Pending
           </span>
         </div>
       </div>
 
       {successBanner && (
-        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between shadow-lg">
+        <div className="p-3.5 rounded-xl bg-[#082338] border border-cyan-500/40 text-cyan-300 text-xs flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{successBanner}</span>
           </div>
-          <button onClick={() => setSuccessBanner(null)} className="text-emerald-400 text-xs">Dismiss</button>
+          <button onClick={() => setSuccessBanner(null)} className="text-slate-400 hover:text-white text-xs">
+            Dismiss
+          </button>
         </div>
       )}
 
       {/* Pending Approval Cards Grid */}
       {pendingCases.length === 0 ? (
-        <div className="p-12 text-center bg-[#0B0F19] border border-slate-800 rounded-xl space-y-3">
+        <div className="p-12 text-center bg-[#081826]/90 border border-[#163E5C] rounded-2xl space-y-3 shadow-xl">
           <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-          <h3 className="font-bold text-slate-100 text-base">Approval Queue Clean</h3>
+          <h3 className="font-bold text-white text-base">Approval Queue Clean</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             All high-risk and policy-gated recovery cases have been reviewed. New items will automatically appear when policy conditions require human authorization.
           </p>
@@ -97,29 +108,29 @@ export const ApprovalCenterPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {pendingCases.map((c) => (
             <div
-              key={c.id}
-              className="p-5 rounded-xl bg-[#0B0F19] border border-slate-800 hover:border-slate-700 transition-all space-y-4 shadow-xl relative overflow-hidden"
+              key={c.id || c.case_id}
+              className="p-5 rounded-2xl bg-[#081826]/90 border border-[#163E5C] hover:border-cyan-500/50 transition-all space-y-4 shadow-xl relative overflow-hidden"
             >
               {/* Card Header */}
-              <div className="flex items-start justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-start justify-between border-b border-[#163E5C]/80 pb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-slate-100 text-base">{c.case_id}</span>
+                    <span className="font-mono font-bold text-white text-base">{c.case_id}</span>
                     <EventSourceBadge source={c.source} size="sm" />
                     <RiskBadge level={c.risk_level} score={c.risk_score} showScore />
                   </div>
                   <p className="text-xs text-slate-300 font-medium pt-1">{c.customer_name}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-500 uppercase font-mono block">Amount at Risk</span>
-                  <span className="font-mono font-extrabold text-lg text-amber-400">
-                    ₹{(c.amount ?? c.amount_at_risk ?? 0).toLocaleString()}
+                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Amount at Risk</span>
+                  <span className="font-bold text-lg text-amber-400">
+                    {formatINR(c.amount ?? c.amount_at_risk ?? 0)}
                   </span>
                 </div>
               </div>
 
               {/* AI Diagnosis Summary */}
-              <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2 text-xs">
+              <div className="p-3.5 rounded-xl bg-[#051420] border border-[#143952] space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">AI Proposed Action:</span>
                   <ActionBadge action={c.recommended_action} />
@@ -140,7 +151,7 @@ export const ApprovalCenterPage: React.FC = () => {
                 <div className="space-y-1">
                   {c.evidence?.slice(0, 2).map((ev, i) => (
                     <div key={i} className="text-[11px] text-slate-300 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
                       <span className="truncate">{ev}</span>
                     </div>
                   ))}
@@ -148,19 +159,19 @@ export const ApprovalCenterPage: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-between pt-2 border-t border-[#163E5C]/80">
                 <Link
                   to={`/cases/${c.case_id}`}
-                  className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+                  className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 font-semibold"
                 >
                   <span>Full Investigation</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setSelectedCase(c)}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-950/40 transition-all flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-xs shadow-md shadow-cyan-950/40 transition-all flex items-center gap-1.5"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Review & Act</span>

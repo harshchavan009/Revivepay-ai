@@ -117,10 +117,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  const switchPersona = (role: UserRole) => {
+  const switchPersona = async (role: UserRole) => {
     const persona = DEMO_PERSONAS[role];
-    setUser(persona);
-    localStorage.setItem("revivepay_user", JSON.stringify(persona));
+    try {
+      const res = await authService.switchPersona(role, persona?.email);
+      setUser(res.user);
+      localStorage.setItem("revivepay_user", JSON.stringify(res.user));
+    } catch {
+      setUser(persona);
+      localStorage.setItem("revivepay_user", JSON.stringify(persona));
+    }
   };
 
   return (

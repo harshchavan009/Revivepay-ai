@@ -18,12 +18,9 @@ def get_audit_logs(
 ):
     query = db.query(AuditLog)
     if case_id:
-        # Check if case_id is UUID or human-readable "RV-xxxxx"
-        c = db.query(RecoveryCase).filter(
-            (RecoveryCase.id == case_id) | (RecoveryCase.case_id == case_id)
-        ).first()
+        c = db.query(RecoveryCase).filter(RecoveryCase.case_id == case_id).first()
         if c:
-            query = query.filter(AuditLog.case_id == c.id)
+            query = query.filter(AuditLog.case_id == c.case_id)
         else:
             query = query.filter(AuditLog.case_id == case_id)
             
@@ -34,10 +31,13 @@ def get_audit_logs(
 
     return query.order_by(AuditLog.timestamp.desc()).offset(offset).limit(limit).all()
 
+@router.get("/verify-chain")
+def verify_audit_chain(db: Session = Depends(get_db)):
+    from backend.services.audit_service import AuditService
+    return AuditService.verify_chain(db)
+
 @router.get("/{case_id}", response_model=List[AuditLogResponse])
 def get_case_audit_logs(case_id: str, db: Session = Depends(get_db)):
-    c = db.query(RecoveryCase).filter(
-        (RecoveryCase.id == case_id) | (RecoveryCase.case_id == case_id)
-    ).first()
-    target_id = c.id if c else case_id
+    c = db.query(RecoveryCase).filter(RecoveryCase.case_id == case_id).first()
+    target_id = c.case_id if c else case_id
     return db.query(AuditLog).filter(AuditLog.case_id == target_id).order_by(AuditLog.timestamp.asc()).all()

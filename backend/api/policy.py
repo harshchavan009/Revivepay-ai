@@ -15,9 +15,9 @@ def get_policy_config(db: Session = Depends(get_db)):
         db.commit()
         db.refresh(merchant)
         
-    policy = db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.id).first()
+    policy = db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.merchant_id).first()
     if not policy:
-        policy = PolicyConfig(merchant_id=merchant.id)
+        policy = PolicyConfig(merchant_id=merchant.merchant_id)
         db.add(policy)
         db.commit()
         db.refresh(policy)
@@ -26,9 +26,9 @@ def get_policy_config(db: Session = Depends(get_db)):
 @router.put("/config", response_model=PolicyConfigResponse)
 def update_policy_config(config_in: PolicyConfigUpdate, db: Session = Depends(get_db)):
     merchant = db.query(Merchant).first()
-    policy = db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.id).first()
+    policy = db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.merchant_id).first()
     if not policy:
-        policy = PolicyConfig(merchant_id=merchant.id)
+        policy = PolicyConfig(merchant_id=merchant.merchant_id)
         db.add(policy)
         db.commit()
         db.refresh(policy)

@@ -259,7 +259,8 @@ class AuditLogResponse(BaseModel):
     metadata_json: Optional[Dict[str, Any]] = None
     timestamp: datetime.datetime
 
-    # Backward compatibility aliases
+    entry_hash: Optional[str] = None
+    previous_hash: Optional[str] = None
     actor: Optional[str] = None
     action: Optional[str] = None
     policy_result: Optional[str] = None

@@ -669,8 +669,27 @@ def seed_database(force_reseed: bool = False):
         ))
 
     db.commit()
+
+    # Compute Cryptographic Hash Chain for all Seeded Audit Logs
+    all_logs = db.query(AuditLog).order_by(AuditLog.timestamp.asc()).all()
+    from backend.services.audit_service import AuditService, GENESIS_HASH
+    prev_h = GENESIS_HASH
+    for log_item in all_logs:
+        log_item.previous_hash = prev_h
+        log_item.entry_hash = AuditService._compute_hash(
+            prev_hash=prev_h,
+            audit_id=log_item.audit_id,
+            timestamp_str=log_item.timestamp.isoformat() if log_item.timestamp else "",
+            actor=log_item.actor or "",
+            action=log_item.action or log_item.event_type or "",
+            case_id=log_item.case_id,
+            notes=log_item.notes
+        )
+        prev_h = log_item.entry_hash
+
+    db.commit()
     db.close()
-    print("✅ Canonical Event Taxonomy Database successfully seeded.")
+    print("✅ Canonical Event Taxonomy & Cryptographic Audit Ledger successfully seeded.")
 
 if __name__ == "__main__":
     seed_database(force_reseed=True)

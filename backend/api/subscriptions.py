@@ -12,7 +12,7 @@ def get_subscriptions(db: Session = Depends(get_db)):
     subs = db.query(Subscription).order_by(Subscription.created_at.desc()).all()
     results = []
     for s in subs:
-        cust = db.query(Customer).filter(Customer.id == s.customer_id).first()
+        cust = db.query(Customer).filter(Customer.customer_id == s.customer_id).first()
         results.append({
             "id": s.id,
             "subscription_id": s.subscription_id,

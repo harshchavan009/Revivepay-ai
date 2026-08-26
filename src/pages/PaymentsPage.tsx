@@ -3,6 +3,7 @@ import { CreditCard, Search, Filter, RefreshCw, X, ArrowRight, ExternalLink } fr
 import { paymentService } from "../services";
 import { Payment } from "../types";
 import { StatusBadge } from "../components/StatusBadge";
+import { formatINR } from "../data/mockData";
 
 export const PaymentsPage: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -36,22 +37,30 @@ export const PaymentsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#13354E] pb-5">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-blue-400" />
-            <span>Payment Ledger</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">
+              TRANSACTION LEDGER
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+              AUDIT VERIFIED
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-1 flex items-center gap-2">
+            <CreditCard className="w-6 h-6 text-cyan-400" />
+            <span>Payment Telemetry Ledger</span>
           </h1>
-          <p className="text-xs text-slate-400">
-            Stripe-grade transaction records with Razorpay test mode telemetry and error categorization.
+          <p className="text-xs text-slate-400 mt-0.5">
+            Transaction records with Razorpay test mode telemetry, status codes, and error categorization.
           </p>
         </div>
 
         <button
           onClick={loadPayments}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-200 text-xs font-semibold self-start sm:self-auto"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#081B2A] border border-[#163E5C] hover:bg-[#0D283E] text-slate-200 text-xs font-semibold self-start sm:self-auto transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh Ledger</span>
@@ -59,16 +68,16 @@ export const PaymentsPage: React.FC = () => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="p-4 rounded-xl bg-[#0B0F19] border border-slate-800 space-y-3">
+      <div className="p-4 rounded-2xl bg-[#081826]/90 border border-[#163E5C] space-y-3 shadow-xl">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Search by Payment ID (pay_89231), failure reason, error code..."
+              placeholder="Search by Payment ID (pay_89231), failure reason, customer..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg pl-9 pr-3 py-2 outline-none font-sans"
+              className="w-full bg-[#051420] border border-[#163E5C] text-slate-200 text-xs rounded-xl pl-10 pr-3.5 py-2.5 outline-none focus:border-cyan-400 font-sans"
             />
           </div>
 
@@ -76,80 +85,76 @@ export const PaymentsPage: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-lg px-2.5 py-2 outline-none font-mono"
+              className="bg-[#051420] border border-[#163E5C] text-slate-300 text-xs rounded-xl px-3 py-2.5 outline-none font-sans"
             >
               <option value="ALL">All Statuses</option>
               <option value="FAILED">Failed</option>
-              <option value="SUCCESS">Success</option>
+              <option value="CAPTURED">Captured</option>
               <option value="PENDING">Pending</option>
             </select>
 
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-lg px-2.5 py-2 outline-none font-mono"
+              className="bg-[#051420] border border-[#163E5C] text-slate-300 text-xs rounded-xl px-3 py-2.5 outline-none font-sans"
             >
               <option value="ALL">All Categories</option>
-              <option value="temporary_bank_failure">Bank Timeout</option>
-              <option value="insufficient_funds">Insufficient Funds</option>
-              <option value="card_expired">Card Expired</option>
-              <option value="checkout_drop">Cart Drop</option>
+              <option value="BANK_DECLINE">Bank Decline</option>
+              <option value="CARD_EXPIRED">Card Expired</option>
+              <option value="INSUFFICIENT_FUNDS">Insufficient Funds</option>
+              <option value="GATEWAY_TIMEOUT">Gateway Timeout</option>
             </select>
           </div>
         </form>
       </div>
 
       {/* Payment Records Table */}
-      <div className="bg-[#0B0F19] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      <div className="bg-[#081826]/90 border border-[#163E5C] rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/80 border-b border-slate-800 text-slate-400 uppercase font-mono text-[10px]">
+            <thead className="bg-[#051420] border-b border-[#163E5C] text-slate-400 uppercase font-mono text-[10px]">
               <tr>
-                <th className="p-3.5">Payment ID</th>
-                <th className="p-3.5">Customer</th>
-                <th className="p-3.5">Amount (INR)</th>
-                <th className="p-3.5">Method</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5">Failure Category</th>
-                <th className="p-3.5">Retry Count</th>
-                <th className="p-3.5">Timestamp</th>
-                <th className="p-3.5 text-right">Details</th>
+                <th className="p-4">Payment ID</th>
+                <th className="p-4">Customer</th>
+                <th className="p-4">Amount (INR)</th>
+                <th className="p-4">Method</th>
+                <th className="p-4">Status</th>
+                <th className="p-4">Failure Category</th>
+                <th className="p-4">Card Last 4</th>
+                <th className="p-4 text-right">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-sans">
+            <tbody className="divide-y divide-[#13354E]/60 font-sans">
               {payments.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-900/60 transition-colors">
-                  <td className="p-3.5 font-mono font-bold text-slate-200">
+                <tr key={p.id || p.payment_id} className="hover:bg-[#0A2234]/60 transition-colors">
+                  <td className="p-4 font-mono font-bold text-slate-100">
                     {p.payment_id}
                   </td>
-                  <td className="p-3.5">
-                    <p className="font-semibold text-slate-200">{p.customer_name || "Enterprise Customer"}</p>
+                  <td className="p-4">
+                    <p className="font-semibold text-white">{p.customer_name || "Enterprise Customer"}</p>
                     <p className="text-[10px] text-slate-400 font-mono truncate max-w-[140px]">{p.customer_email}</p>
                   </td>
-                  <td className="p-3.5 font-mono font-bold text-slate-100">
-                    ₹{p.amount.toLocaleString()}
+                  <td className="p-4 font-bold text-white">
+                    {formatINR(p.amount)}
                   </td>
-                  <td className="p-3.5 font-mono text-slate-400 uppercase">
+                  <td className="p-4 font-mono text-slate-400 uppercase">
                     {p.payment_method}
                   </td>
-                  <td className="p-3.5">
+                  <td className="p-4">
                     <StatusBadge status={p.status} type="payment" />
                   </td>
-                  <td className="p-3.5">
-                    <span className="text-[11px] text-slate-300 font-medium capitalize">
-                      {p.failure_category.replace(/_/g, " ")}
+                  <td className="p-4">
+                    <span className="text-[11px] text-slate-300 font-medium">
+                      {(p.failure_category || "Standard").replace(/_/g, " ")}
                     </span>
                   </td>
-                  <td className="p-3.5 font-mono text-slate-300">
-                    {p.retry_count} / 2
+                  <td className="p-4 font-mono text-slate-300">
+                    {p.retry_count} / {p.max_retry_count || 3}
                   </td>
-                  <td className="p-3.5 font-mono text-slate-500 text-[11px]">
-                    {new Date(p.created_at).toLocaleDateString()} {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </td>
-                  <td className="p-3.5 text-right">
+                  <td className="p-4 text-right">
                     <button
                       onClick={() => setSelectedPayment(p)}
-                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
+                      className="px-3 py-1.5 rounded-lg bg-[#0A2234] hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 font-semibold text-xs transition-colors"
                     >
                       View
                     </button>
@@ -164,52 +169,48 @@ export const PaymentsPage: React.FC = () => {
       {/* Payment Details Drawer Modal */}
       {selectedPayment && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-[#0B0F19] border border-slate-700 rounded-xl shadow-2xl overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="w-full max-w-lg bg-[#081826] border border-[#163E5C] rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#163E5C] pb-3">
               <div>
-                <h3 className="font-bold text-slate-100 text-base font-mono">{selectedPayment.payment_id}</h3>
+                <h3 className="font-bold text-white text-base font-mono">{selectedPayment.payment_id}</h3>
                 <p className="text-xs text-slate-400">Transaction Gateway Payload</p>
               </div>
-              <button onClick={() => setSelectedPayment(null)} className="text-slate-400 hover:text-slate-200">
+              <button onClick={() => setSelectedPayment(null)} className="text-slate-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
+              <div className="flex justify-between py-1 border-b border-[#143952]">
                 <span className="text-slate-400">Customer:</span>
-                <span className="font-semibold text-slate-200">{selectedPayment.customer_name}</span>
+                <span className="font-semibold text-white">{selectedPayment.customer_name}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
+              <div className="flex justify-between py-1 border-b border-[#143952]">
                 <span className="text-slate-400">Amount:</span>
-                <span className="font-mono font-bold text-amber-400">₹{selectedPayment.amount.toLocaleString()}</span>
+                <span className="font-bold text-amber-400">{formatINR(selectedPayment.amount)}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
+              <div className="flex justify-between py-1 border-b border-[#143952]">
                 <span className="text-slate-400">Payment Status:</span>
                 <StatusBadge status={selectedPayment.status} type="payment" />
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
+              <div className="flex justify-between py-1 border-b border-[#143952]">
                 <span className="text-slate-400">Failure Code:</span>
-                <span className="font-mono text-rose-400 font-bold">{selectedPayment.failure_code || "NONE"}</span>
+                <span className="font-mono text-rose-400 font-bold">{selectedPayment.failure_code || "BANK_DECLINE"}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Failure Reason:</span>
+              <div className="flex justify-between py-1 border-b border-[#143952]">
+                <span className="text-slate-400">Failure Description:</span>
                 <span className="text-slate-300 text-right">{selectedPayment.failure_reason || "Normal processing"}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
+              <div className="flex justify-between py-1 border-b border-[#143952]">
                 <span className="text-slate-400">Payment Method:</span>
                 <span className="font-mono text-slate-300 uppercase">{selectedPayment.payment_method}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-800/60">
-                <span className="text-slate-400">Retry Attempts:</span>
-                <span className="font-mono text-slate-300">{selectedPayment.retry_count}</span>
               </div>
             </div>
 
             <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setSelectedPayment(null)}
-                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-[#0B253A] hover:bg-[#113450] text-slate-200 text-xs font-semibold"
               >
                 Close Drawer
               </button>

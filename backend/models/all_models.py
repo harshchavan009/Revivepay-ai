@@ -270,6 +270,9 @@ class AuditLog(Base):
     after_state = Column(JSON, nullable=True)
     metadata_json = Column(JSON, nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    # Cryptographic Hash-Chaining for Immutable Audit Integrity
+    entry_hash = Column(String(64), nullable=True, index=True)
+    previous_hash = Column(String(64), nullable=True)
 
     # Backward compatibility aliases for API/Services
     action = Column(String(100), nullable=True)

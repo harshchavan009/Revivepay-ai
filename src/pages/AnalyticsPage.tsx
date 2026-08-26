@@ -1,280 +1,163 @@
 import React, { useState, useEffect } from "react";
-import { BarChart3, Download, CheckSquare, Square } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { dashboardService } from "../services";
-import { DashboardMetrics } from "../types";
+import { BarChart3, TrendingUp, TrendingDown, ArrowUpRight, DollarSign, Users, ShieldCheck, RefreshCw, Zap } from "lucide-react";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { KeyMetricsAcceptanceView } from "../components/KeyMetricsAcceptanceView";
+import { formatINR, SHARED_METRICS, SHARED_CASES } from "../data/mockData";
 
-const mockNewCustomerData = [
-  { day: "Aug 1", current: 4200, previous: 2100 },
-  { day: "Aug 2", current: 2800, previous: 2500 },
-  { day: "Aug 3", current: 3100, previous: 3800 },
-  { day: "Aug 4", current: 2400, previous: 4400 },
-  { day: "Aug 5", current: 3900, previous: 3600 },
-  { day: "Aug 6", current: 4900, previous: 3100 },
-  { day: "Aug 7", current: 2900, previous: 4100 },
-  { day: "Aug 8", current: 3900, previous: 3900 },
-  { day: "Aug 9", current: 3800, previous: 3700 },
-  { day: "Aug 10", current: 2100, previous: 4300 },
-  { day: "Aug 11", current: 3100, previous: 3800 },
-  { day: "Aug 12", current: 2800, previous: 3900 },
-  { day: "Aug 13", current: 4100, previous: 3100 },
-  { day: "Aug 14", current: 3600, previous: 3500 },
-];
-
-const mockGrossVolumeData = [
-  { day: "Aug 1", current: 4500, previous: 8100 },
-  { day: "Aug 3", current: 6800, previous: 5200 },
-  { day: "Aug 5", current: 5100, previous: 9200 },
-  { day: "Aug 7", current: 7800, previous: 6100 },
-  { day: "Aug 9", current: 6200, previous: 9800 },
-  { day: "Aug 11", current: 6700, previous: 5900 },
-  { day: "Aug 13", current: 9800, previous: 7200 },
+const mockVolumeData = [
+  { day: "Aug 1", current: 45000, previous: 28000 },
+  { day: "Aug 3", current: 68000, previous: 52000 },
+  { day: "Aug 5", current: 51000, previous: 42000 },
+  { day: "Aug 7", current: 78000, previous: 61000 },
+  { day: "Aug 9", current: 62000, previous: 54000 },
+  { day: "Aug 11", current: 67000, previous: 59000 },
+  { day: "Aug 13", current: 98000, previous: 72000 },
 ];
 
 export const AnalyticsPage: React.FC = () => {
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [showCurrent, setShowCurrent] = useState(true);
-  const [showPrevious, setShowPrevious] = useState(true);
-
-  useEffect(() => {
-    dashboardService.getSummary().then(setMetrics);
-  }, []);
-
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 pb-12 font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#13354E] pb-5">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-indigo-600" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">
+              FINANCIAL TELEMETRY
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+              REAL-TIME AGGREGATES
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-1 flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-cyan-400" />
             <span>Financial & SaaS Revenue Analytics</span>
           </h1>
-          <p className="text-xs text-slate-500 font-medium">
-            MRR breakdowns, cohort metrics, retry efficiency benchmarks, and financial volume intelligence.
+          <p className="text-xs text-slate-400 mt-0.5">
+            MRR protection cohorts, retry efficiency benchmarks, and gateway volume intelligence.
           </p>
         </div>
       </div>
 
-      {/* SECTION 1: SAAS MRR & ACCOUNT ANALYTICS DASHBOARD (IMAGE 3) */}
-      <div className="space-y-6">
-        {/* Top Grid: MRR & Customers Summary + New Customers Dual Area Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Block: MRR & Active Subscriptions */}
-          <div className="p-6 rounded-2xl border border-slate-200 bg-white flex flex-col justify-center space-y-6 shadow-sm">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              MRR & Customers
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-xs font-bold text-slate-400">MRR</span>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
-                  $ 271.00
-                </h3>
-              </div>
-
-              <div>
-                <span className="text-xs font-bold text-slate-400">Active Subscriptions</span>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
-                  283
-                </h3>
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded mt-1">
-                  ▲ 65% <span className="font-normal text-slate-400 text-[10px]">vs prev (172)</span>
-                </span>
-              </div>
+      {/* TOP KPI ROW (INR figures derived from SHARED_METRICS) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Metric 1 */}
+        <div className="p-6 rounded-2xl bg-[#081826]/90 border border-[#163E5C] space-y-3 shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Total Recovered Revenue</span>
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <Zap className="w-4 h-4" />
             </div>
           </div>
-
-          {/* Right Block: New Customers Dual Area Chart (Image 3) */}
-          <div className="lg:col-span-2 p-6 rounded-2xl border border-slate-200 bg-white space-y-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <span className="text-xs font-bold text-slate-400">Month to Date (Aug 1 - 14)</span>
-                <div className="flex items-baseline gap-3 mt-1">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                    New Customers 1,851
-                  </h3>
-                  <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                    ▼ 31% <span className="font-normal text-slate-400 text-[10px]">vs previous period (2,697)</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Area Chart */}
-            <div className="h-44 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockNewCustomerData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.6}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.0}/>
-                    </linearGradient>
-                    <linearGradient id="grayGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#94A3B8" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="day" tick={{ fill: "#94A3B8", fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fill: "#94A3B8", fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  {showPrevious && (
-                    <Area type="monotone" dataKey="previous" stroke="#94A3B8" strokeDasharray="3 3" fill="url(#grayGradient)" strokeWidth={2} />
-                  )}
-                  {showCurrent && (
-                    <Area type="monotone" dataKey="current" stroke="#8B5CF6" fill="url(#purpleGradient)" strokeWidth={2.5} />
-                  )}
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Checkbox Controls (Image 3) */}
-            <div className="flex items-center justify-center gap-6 pt-2 text-xs">
-              <label
-                onClick={() => setShowCurrent(!showCurrent)}
-                className="flex items-center gap-1.5 cursor-pointer text-slate-800 font-bold"
-              >
-                {showCurrent ? <CheckSquare className="w-4 h-4 text-purple-600" /> : <Square className="w-4 h-4 text-slate-400" />}
-                <span>New Customers</span>
-              </label>
-              <label
-                onClick={() => setShowPrevious(!showPrevious)}
-                className="flex items-center gap-1.5 cursor-pointer text-slate-500 font-medium"
-              >
-                {showPrevious ? <CheckSquare className="w-4 h-4 text-slate-500" /> : <Square className="w-4 h-4 text-slate-400" />}
-                <span>Previous period</span>
-              </label>
-            </div>
+          <h3 className="text-3xl font-extrabold text-white tracking-tight">
+            {formatINR(142605)}
+          </h3>
+          <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>+4.8% Topline Boost</span>
           </div>
         </div>
 
-        {/* Bottom Grid: 3 Tables & Charts (Image 3) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Table 1: MRR Overview */}
-          <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-4">
-            <h4 className="text-xs font-bold text-slate-900">MRR Overview</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 text-slate-400 font-bold text-[11px]">
-                  <tr>
-                    <th className="pb-2">Metric</th>
-                    <th className="pb-2 text-right">Value</th>
-                    <th className="pb-2 text-right">vs prev</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-semibold">
-                  <tr>
-                    <td className="py-2 text-slate-700">New MRR</td>
-                    <td className="py-2 text-right font-bold text-slate-900">$ 334.4k</td>
-                    <td className="py-2 text-right text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[10px]">▲ 23%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 text-slate-700">Upgrades</td>
-                    <td className="py-2 text-right font-bold text-slate-900">$ 22.7k</td>
-                    <td className="py-2 text-right text-rose-600 bg-rose-50 px-1 py-0.5 rounded text-[10px]">▼ 26%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 text-slate-700">Churned MRR</td>
-                    <td className="py-2 text-right font-bold text-slate-900">$ 4,788.00</td>
-                    <td className="py-2 text-right text-rose-600 bg-rose-50 px-1 py-0.5 rounded text-[10px]">▲ 46%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 text-slate-700">Refunds</td>
-                    <td className="py-2 text-right font-bold text-slate-900">$ 2,004.00</td>
-                    <td className="py-2 text-right text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[10px]">▼ 57%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 text-slate-700">Discounts in MRR</td>
-                    <td className="py-2 text-right font-bold text-slate-900">$ 4,184.00</td>
-                    <td className="py-2 text-right text-rose-600 bg-rose-50 px-1 py-0.5 rounded text-[10px]">▼ 7%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 text-slate-700">Downgrades</td>
-                    <td className="py-2 text-right font-bold text-slate-900">$ 530.00</td>
-                    <td className="py-2 text-right text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[10px]">▼ 11%</td>
-                  </tr>
-                </tbody>
-              </table>
+        {/* Metric 2 */}
+        <div className="p-6 rounded-2xl bg-[#081826]/90 border border-[#163E5C] space-y-3 shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Protected MRR Mandates</span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/30">
+              <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
+          <h3 className="text-3xl font-extrabold text-white tracking-tight">
+            {formatINR(48200)}<span className="text-sm font-normal text-slate-400">/mo</span>
+          </h3>
+          <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-semibold">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>142 Active Subscribers Protected</span>
+          </div>
+        </div>
 
-          {/* Table 2: Account Analytics */}
-          <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-4">
-            <h4 className="text-xs font-bold text-slate-900">Account Analytics</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 text-slate-400 font-bold text-[11px]">
-                  <tr>
-                    <th className="pb-2">Metric</th>
-                    <th className="pb-2 text-right">Value</th>
-                    <th className="pb-2 text-right">vs prev</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-semibold">
-                  <tr>
-                    <td className="py-2.5 text-slate-700">Gross Volume</td>
-                    <td className="py-2.5 text-right font-bold text-slate-900">$ 9,408.00</td>
-                    <td className="py-2.5 text-right text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[10px]">▲ 18%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 text-slate-700">New Customers</td>
-                    <td className="py-2.5 text-right font-bold text-slate-900">1,044</td>
-                    <td className="py-2.5 text-right text-rose-600 bg-rose-50 px-1 py-0.5 rounded text-[10px]">▼ 77%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 text-slate-700">Payments</td>
-                    <td className="py-2.5 text-right font-bold text-slate-900">96,188</td>
-                    <td className="py-2.5 text-right text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[10px]">▲ 16%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 text-slate-700">ARR</td>
-                    <td className="py-2.5 text-right font-bold text-slate-900">$ 861.00</td>
-                    <td className="py-2.5 text-right text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[10px]">▲ 416%</td>
-                  </tr>
-                </tbody>
-              </table>
+        {/* Metric 3 */}
+        <div className="p-6 rounded-2xl bg-[#081826]/90 border border-[#163E5C] space-y-3 shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Autonomous Recovery Rate</span>
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-
-          {/* Chart 3: Gross Volume Shaded Area Chart */}
-          <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-3">
-            <div>
-              <span className="text-xs font-bold text-slate-400">Month to Date (Aug 7 - 13)</span>
-              <h4 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">Gross Volume</h4>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-2xl font-black text-slate-900 tracking-tight">$ 7,566.00</span>
-                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">▼ 11% <span className="font-normal text-slate-400 text-[10px]">vs prev</span></span>
-              </div>
-            </div>
-
-            <div className="h-36 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockGrossVolumeData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="grossPurple" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.6}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.0}/>
-                    </linearGradient>
-                    <linearGradient id="grossGray" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#94A3B8" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="day" tick={{ fill: "#94A3B8", fontSize: 9 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fill: "#94A3B8", fontSize: 9 }} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="previous" stroke="#94A3B8" strokeDasharray="3 3" fill="url(#grossGray)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="current" stroke="#8B5CF6" fill="url(#grossPurple)" strokeWidth={2.5} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+          <h3 className="text-3xl font-extrabold text-white tracking-tight">
+            65.2%
+          </h3>
+          <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>+14.2% vs. Legacy Fixed Retries</span>
           </div>
         </div>
       </div>
 
-      {/* SECTION 2: KEY METRICS ACCEPTANCE DASHBOARD (IMAGE 1) */}
-      <KeyMetricsAcceptanceView theme="light" />
+      {/* REVENUE CAPTURE TREND CHART */}
+      <div className="p-6 rounded-2xl bg-[#081826]/90 border border-[#163E5C] shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Gross Recovered Volume Trend (INR ₹)
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Comparison: Automated Multi-Signal Retries vs. Prior Fixed Schedule
+            </p>
+          </div>
+          <div className="flex items-center gap-4 text-xs">
+            <span className="flex items-center gap-1.5 text-cyan-400 font-medium">
+              <span className="w-2.5 h-2.5 rounded bg-cyan-400"></span>
+              <span>Current Revive Retries</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+              <span className="w-2.5 h-2.5 rounded bg-slate-600"></span>
+              <span>Previous Fixed Dunning</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="h-64 w-full pt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={mockVolumeData}>
+              <defs>
+                <linearGradient id="currentVolumeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#06B6D4" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="day" stroke="#475569" tick={{ fontSize: 11 }} />
+              <YAxis stroke="#475569" tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${v / 1000}k`} />
+              <Tooltip
+                formatter={(val: any) => formatINR(Number(val))}
+                contentStyle={{
+                  backgroundColor: "#051420",
+                  borderColor: "#163E5C",
+                  borderRadius: "0.75rem",
+                  fontSize: "12px"
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="current"
+                stroke="#06B6D4"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#currentVolumeGrad)"
+              />
+              <Area
+                type="monotone"
+                dataKey="previous"
+                stroke="#475569"
+                strokeWidth={1.5}
+                fillOpacity={0.1}
+                fill="#475569"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* KEY METRICS SUB-SECTION */}
+      <KeyMetricsAcceptanceView theme="dark" />
     </div>
   );
 };

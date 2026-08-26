@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, ArrowUpRight, ArrowDownRight, Check, RefreshCw } from "lucide-react";
+import { Download, ArrowUpRight, ArrowDownRight, Check, RefreshCw, TrendingUp } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -43,7 +43,7 @@ const mockChartData = [
   { label: "Apr 30", current: 94.6, previous: 88.8 },
 ];
 
-export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> = ({ theme = "light" }) => {
+export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> = ({ theme = "dark" }) => {
   const [activeTab, setActiveTab] = useState("Acceptance");
   const [selectedMetric, setSelectedMetric] = useState<"rate" | "count" | "volume">("rate");
   const [isExporting, setIsExporting] = useState(false);
@@ -54,39 +54,27 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
     setIsExporting(true);
     setTimeout(() => {
       setIsExporting(false);
-      alert("Key metrics report exported successfully (CSV/PDF)!");
+      alert("Key metrics report exported successfully!");
     }, 800);
   };
 
-  const isLight = theme === "light";
-
   return (
-    <div className={`w-full rounded-2xl shadow-xl border p-6 transition-colors duration-200 ${
-      isLight 
-        ? "bg-white border-slate-200 text-slate-900" 
-        : "bg-[#0B0F19] border-slate-800 text-slate-100"
-    }`}>
+    <div className="w-full rounded-2xl shadow-xl border border-[#163E5C] bg-[#081826]/90 p-6 font-sans">
       {/* Navigation Sub-Tabs */}
-      <div className={`flex items-center gap-8 border-b mb-6 overflow-x-auto ${
-        isLight ? "border-slate-200" : "border-slate-800"
-      }`}>
+      <div className="flex items-center gap-8 border-b border-[#163E5C] mb-6 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`pb-3 font-semibold text-sm transition-all whitespace-nowrap relative ${
               activeTab === tab
-                ? isLight 
-                  ? "text-indigo-600 font-bold" 
-                  : "text-indigo-400 font-bold"
-                : isLight 
-                  ? "text-slate-500 hover:text-slate-800" 
-                  : "text-slate-400 hover:text-slate-200"
+                ? "text-cyan-400 font-bold"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             {tab}
             {activeTab === tab && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-indigo-600 rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full" />
             )}
           </button>
         ))}
@@ -95,12 +83,10 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
       {/* Header with Title & Download */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className={`text-xl font-extrabold tracking-tight ${
-            isLight ? "text-slate-900" : "text-slate-100"
-          }`}>
-            Key metrics
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            Key Metrics & Gateway Efficiency
           </h2>
-          <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+          <p className="text-xs text-slate-400 mt-0.5">
             Real-time authorization & payment settlement benchmark curves
           </p>
         </div>
@@ -108,16 +94,12 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
         <button
           onClick={handleDownload}
           disabled={isExporting}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-xs font-semibold shadow-sm transition-all active:scale-95 ${
-            isLight
-              ? "border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
-              : "border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200"
-          }`}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#163E5C] bg-[#051420] hover:bg-[#092233] text-slate-200 text-xs font-semibold shadow-sm transition-all active:scale-95"
         >
           {isExporting ? (
             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <Download className="w-3.5 h-3.5 text-slate-400" />
           )}
           <span>{isExporting ? "Exporting..." : "Download"}</span>
         </button>
@@ -130,23 +112,20 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
           onClick={() => setSelectedMetric("rate")}
           className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
             selectedMetric === "rate"
-              ? isLight
-                ? "border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/20"
-                : "border-indigo-500 ring-2 ring-indigo-500/30 bg-indigo-950/20"
-              : isLight
-                ? "border-slate-200 bg-white hover:border-slate-300"
-                : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+              ? "border-cyan-500 ring-2 ring-cyan-500/30 bg-cyan-950/20"
+              : "border-[#143952] bg-[#051420] hover:border-[#1F5275]"
           }`}
         >
-          <div className={`text-xs font-medium mb-1 ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+          <div className="text-xs font-medium text-slate-400 mb-1">
             Payment success rate
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
+            <span className="text-2xl font-extrabold text-white tracking-tight">
               93.50%
             </span>
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-              +2.45%
+            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+              <TrendingUp className="w-3 h-3" />
+              <span>+2.45%</span>
             </span>
           </div>
         </div>
@@ -156,143 +135,104 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
           onClick={() => setSelectedMetric("count")}
           className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
             selectedMetric === "count"
-              ? isLight
-                ? "border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/20"
-                : "border-indigo-500 ring-2 ring-indigo-500/30 bg-indigo-950/20"
-              : isLight
-                ? "border-slate-200 bg-white hover:border-slate-300"
-                : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+              ? "border-cyan-500 ring-2 ring-cyan-500/30 bg-cyan-950/20"
+              : "border-[#143952] bg-[#051420] hover:border-[#1F5275]"
           }`}
         >
-          <div className={`text-xs font-medium mb-1 ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-            Accepted payments
+          <div className="text-xs font-medium text-slate-400 mb-1">
+            Accepted transactions
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
+            <span className="text-2xl font-extrabold text-white tracking-tight">
               140.5K
             </span>
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-rose-600 bg-rose-500/10 px-1.5 py-0.5 rounded">
-              -0.34%
+            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+              <TrendingUp className="w-3 h-3" />
+              <span>+4.12%</span>
             </span>
           </div>
         </div>
 
-        {/* Card 3: Accepted Volume */}
+        {/* Card 3: Accepted Volume (INR) */}
         <div
           onClick={() => setSelectedMetric("volume")}
           className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
             selectedMetric === "volume"
-              ? isLight
-                ? "border-indigo-600 ring-2 ring-indigo-500/20 bg-indigo-50/20"
-                : "border-indigo-500 ring-2 ring-indigo-500/30 bg-indigo-950/20"
-              : isLight
-                ? "border-slate-200 bg-white hover:border-slate-300"
-                : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+              ? "border-cyan-500 ring-2 ring-cyan-500/30 bg-cyan-950/20"
+              : "border-[#143952] bg-[#051420] hover:border-[#1F5275]"
           }`}
         >
-          <div className={`text-xs font-medium mb-1 ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-            Accepted volume
+          <div className="text-xs font-medium text-slate-400 mb-1">
+            Accepted volume (INR)
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
-              $11.6M
+            <span className="text-2xl font-extrabold text-white tracking-tight">
+              ₹1.16 Cr
             </span>
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-              +1.56%
+            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+              <TrendingUp className="w-3 h-3" />
+              <span>+1.56%</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Main Dual Series Chart (Matching Image 1) */}
+      {/* Main Dual Series Chart */}
       <div className="h-80 w-full relative">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={mockChartData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              stroke={isLight ? "#E2E8F0" : "#1E293B"}
+              stroke="#13354E"
             />
             <XAxis
               dataKey="label"
               tickLine={false}
-              axisLine={{ stroke: isLight ? "#E2E8F0" : "#334155" }}
-              tick={{ fill: isLight ? "#64748B" : "#94A3B8", fontSize: 11 }}
-              interval={5}
+              axisLine={{ stroke: "#163E5C" }}
+              tick={{ fill: "#64748B", fontSize: 11 }}
             />
             <YAxis
-              orientation="right"
-              domain={[80, 95]}
-              ticks={[80, 85, 90, 95]}
-              unit="%"
+              domain={[80, 100]}
               tickLine={false}
-              axisLine={false}
-              tick={{ fill: isLight ? "#94A3B8" : "#64748B", fontSize: 12, fontWeight: 500 }}
+              axisLine={{ stroke: "#163E5C" }}
+              tick={{ fill: "#64748B", fontSize: 11 }}
+              tickFormatter={(v) => `${v}%`}
             />
             <Tooltip
-              content={({ active, payload, label }) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div className={`p-3 rounded-lg border shadow-lg text-xs font-sans ${
-                      isLight ? "bg-white border-slate-200 text-slate-900" : "bg-slate-900 border-slate-700 text-slate-100"
-                    }`}>
-                      <p className="font-bold border-b pb-1 mb-2 border-slate-200 dark:border-slate-800">{label}</p>
-                      <div className="flex items-center justify-between gap-4 text-indigo-500 font-semibold">
-                        <span>Current period:</span>
-                        <span>{payload[0]?.value}%</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-4 text-slate-400">
-                        <span>Previous period:</span>
-                        <span>{payload[1]?.value}%</span>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
+              contentStyle={{
+                backgroundColor: "#051420",
+                borderColor: "#163E5C",
+                borderRadius: "0.75rem",
+                fontSize: "12px",
+                color: "#F8FAFC"
               }}
+            />
+            <Legend
+              verticalAlign="top"
+              align="right"
+              wrapperStyle={{ paddingBottom: "10px", fontSize: "12px" }}
             />
             <Line
               type="monotone"
               dataKey="current"
-              name="Current period"
-              stroke="#8B5CF6"
-              strokeWidth={3.5}
+              name="Current Revive Engine"
+              stroke="#06B6D4"
+              strokeWidth={2.5}
               dot={false}
-              activeDot={{ r: 6, fill: "#8B5CF6", stroke: "#FFFFFF", strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: "#06B6D4" }}
             />
             <Line
               type="monotone"
               dataKey="previous"
-              name="Previous period"
-              stroke="#94A3B8"
-              strokeWidth={2.5}
+              name="Previous Baseline"
+              stroke="#475569"
+              strokeWidth={1.5}
               strokeDasharray="4 4"
               dot={false}
             />
           </LineChart>
         </ResponsiveContainer>
-      </div>
-
-      {/* Custom Bottom Legend Matching Image 1 */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800 mt-2 text-xs">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded bg-[#8B5CF6] inline-block"></span>
-            <span className={`font-semibold ${isLight ? "text-slate-700" : "text-slate-300"}`}>
-              Current period
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded bg-[#94A3B8] inline-block"></span>
-            <span className={`font-medium ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-              Previous period
-            </span>
-          </div>
-        </div>
-
-        <div className={`font-mono text-xs ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-          Jan — Apr Range
-        </div>
       </div>
     </div>
   );

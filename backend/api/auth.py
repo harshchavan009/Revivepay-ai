@@ -51,7 +51,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         name=user_in.name,
         hashed_password=get_password_hash(user_in.password),
         role=user_in.role or "REVENUE_OPERATOR",
-        merchant_id=merchant.id
+        merchant_id=merchant.merchant_id
     )
     db.add(new_user)
     db.commit()
@@ -61,3 +61,30 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.post("/switch-persona", response_model=Token)
+def switch_persona(persona_data: dict, db: Session = Depends(get_db)):
+    role = persona_data.get("role") or persona_data.get("persona") or "REVENUE_OPERATOR"
+    email = persona_data.get("email")
+
+    user = None
+    if email:
+        user = db.query(User).filter(User.email == email).first()
+    if not user and role:
+        user = db.query(User).filter(User.role == role).first()
+    if not user:
+        user = db.query(User).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="No users found in database")
+
+    access_token = create_access_token(data={"sub": user.email, "role": user.role, "name": user.name})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role
+        }
+    }

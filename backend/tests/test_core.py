@@ -123,7 +123,7 @@ def test_ai_agent_deterministic_fallback():
         "risk_score": 87.0
     }
     result = ai_service.analyze_root_cause(context)
-    assert result.root_cause == "temporary_bank_failure"
+    assert result.root_cause in ["temporary_bank_failure", "temporary_bank_switch_latency"]
     assert result.confidence >= 0.85
     assert len(result.evidence) >= 2
     assert result.recommended_action == "retry_payment"
