@@ -187,6 +187,9 @@ class AgentDecision(Base):
     confidence = Column(Float, nullable=False)
     evidence = Column(JSON, default=list)
     recommended_action = Column(String(100), nullable=False)
+    reasoning_narrative = Column(Text, nullable=True)
+    prompt_raw = Column(Text, nullable=True)
+    response_raw = Column(Text, nullable=True)
     decision_timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
     recovery_case = relationship("RecoveryCase", back_populates="agent_decisions")

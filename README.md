@@ -91,26 +91,28 @@ cd /Users/harsh/Desktop/Razorpay
 # Install backend dependencies
 python3 -m pip install -r backend/requirements.txt
 
-# Seed realistic database (SQLite ./revivepay.db)
-python3 -m backend.seed_data
-
-# Run backend unit tests
-PYTHONPATH=. pytest backend/tests -v
-
-# Start FastAPI server
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+### 1. Environment Setup
+```bash
+cp .env.example .env
+# Configure your secrets or run in Sandbox mode
 ```
 
-### 2. Frontend Setup
+### 2. Backend Setup
 ```bash
-# Install dependencies
+# Run backend test suite (41 tests)
+PYTHONPATH=. pytest backend/tests -v
+
+# Run Secrets Hygiene CI check
+python3 scripts/audit_secrets.py
+
+# Start FastAPI server
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+### 3. Frontend Setup
+```bash
 npm install
-
-# Build for production
 npm run build
-
-# Start Vite development server
-npm run dev
 ```
 
 The application will be accessible at:
@@ -118,6 +120,35 @@ The application will be accessible at:
 - **Backend API & Swagger Docs**: `http://localhost:8000/docs`
 - **Live Event Stream (SSE)**: `http://localhost:8000/api/events/stream`
 - **Cryptographic Audit Check**: `http://localhost:8000/api/audit/verify-chain`
+
+---
+
+## 🔒 Phase 3 Security Hardening & Enterprise Governance
+
+### 1. Short-Lived JWTs & Secure Session Lifecycle
+- **Access Tokens**: Short-lived 15-minute JWTs (`ACCESS_TOKEN_EXPIRE_MINUTES = 15`).
+- **Refresh Tokens**: 7-day tokens delivered in secure, `httpOnly`, `SameSite=Lax/Strict` cookies via `/api/auth/refresh`.
+- **Automatic Silent Renewal**: Client-side Axios interceptors renew access tokens seamlessly on `401 Unauthorized` without session dropouts.
+
+### 2. Step-Up Re-Authentication for High-Value Governance
+- **Threshold Rule**: Any transaction $\ge$ ₹50,000 requires Step-Up Re-Authentication (MFA OTP or operator password re-entry) before an operator can approve recovery.
+- **Audit Traceability**: Step-up verification is cryptographically recorded in the immutable audit log as `recovery.approval.stepup_verified`.
+
+### 3. Rate Limiting & Anti-Abuse Controls
+- **/api/auth/\***: 15 requests per minute per IP. Exceeding triggers `429 Too Many Requests` with `Retry-After: 60`.
+- **/api/webhooks/\***: 120 requests per minute per IP to protect ingestion routes against denial-of-service.
+
+### 4. HTTP Security Hardening Headers
+Every API and static response includes:
+- `Content-Security-Policy`: Restricts scripts, styles, and data origins.
+- `X-Frame-Options: DENY`: Prevents clickjacking attacks.
+- `X-Content-Type-Options: nosniff`: Prevents MIME-type sniffing.
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`: Enforces TLS transport.
+- `Referrer-Policy: strict-origin-when-cross-origin`.
+
+### 5. Secrets Hygiene & CI Scanner
+- **Zero Bundle Leaks**: Validated via `python3 scripts/audit_secrets.py` which scans `dist/` and `src/` for secret keys, webhook secrets, and private keys.
+- **Environment Template**: See [`.env.example`](file:///.env.example) for documented environment variables.
 
 ---
 

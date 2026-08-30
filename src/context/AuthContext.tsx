@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole } from "../types";
 import { authService } from "../services";
+import { safeStorage } from "../utils/storage";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<void>;
+  demoLogin: (persona: "merchant_owner" | "revenue_operator" | "support_operator" | "admin") => Promise<void>;
   register: (name: string, email: string, pass: string, role: string) => Promise<void>;
   logout: () => void;
   switchPersona: (role: UserRole) => void;
@@ -47,7 +49,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem("revivepay_user");
+    const saved = safeStorage.getItem("revivepay_user");
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -59,11 +61,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (!user) {
-      setUser(DEMO_PERSONAS.REVENUE_OPERATOR);
+  const demoLogin = async (persona: "merchant_owner" | "revenue_operator" | "support_operator" | "admin") => {
+    setIsLoading(true);
+    try {
+      const res = await authService.demoLogin(persona);
+      setUser(res.user);
+      safeStorage.setItem("revivepay_user", JSON.stringify(res.user));
+    } catch {
+      const roleMap: Record<string, UserRole> = {
+        merchant_owner: "MERCHANT_OWNER",
+        revenue_operator: "REVENUE_OPERATOR",
+        support_operator: "SUPPORT_OPERATOR",
+        admin: "ADMIN"
+      };
+      const fallbackUser = DEMO_PERSONAS[roleMap[persona] || "REVENUE_OPERATOR"];
+      setUser(fallbackUser);
+      safeStorage.setItem("revivepay_user", JSON.stringify(fallbackUser));
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
@@ -75,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const found = Object.values(DEMO_PERSONAS).find(p => p.email === email);
       if (found) {
         setUser(found);
-        localStorage.setItem("revivepay_user", JSON.stringify(found));
+        safeStorage.setItem("revivepay_user", JSON.stringify(found));
       } else {
         const fallback: User = {
           id: "usr_custom",
@@ -85,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           is_active: true
         };
         setUser(fallback);
-        localStorage.setItem("revivepay_user", JSON.stringify(fallback));
+        safeStorage.setItem("revivepay_user", JSON.stringify(fallback));
       }
     } finally {
       setIsLoading(false);
@@ -106,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_active: true
       };
       setUser(fallback);
-      localStorage.setItem("revivepay_user", JSON.stringify(fallback));
+      safeStorage.setItem("revivepay_user", JSON.stringify(fallback));
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +131,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     authService.logout();
+    safeStorage.removeItem("revivepay_user");
+    safeStorage.removeItem("auth_token");
+    safeStorage.removeItem("revivepay_token");
     setUser(null);
   };
 
@@ -122,10 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await authService.switchPersona(role, persona?.email);
       setUser(res.user);
-      localStorage.setItem("revivepay_user", JSON.stringify(res.user));
+      safeStorage.setItem("revivepay_user", JSON.stringify(res.user));
     } catch {
       setUser(persona);
-      localStorage.setItem("revivepay_user", JSON.stringify(persona));
+      safeStorage.setItem("revivepay_user", JSON.stringify(persona));
     }
   };
 
@@ -136,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        demoLogin,
         register,
         logout,
         switchPersona

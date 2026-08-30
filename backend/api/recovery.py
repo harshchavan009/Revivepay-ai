@@ -1,18 +1,23 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models.all_models import RecoveryCase, Payment, Customer, Merchant, User
+from backend.models.all_models import RecoveryCase, Payment, Customer, Merchant, User, AgentDecision
 from backend.schemas.all_schemas import (
     RecoveryCaseResponse, RecoveryApprovalRequest, RecoveryExecutionResponse
 )
 from backend.services.recovery_engine import RecoveryEngine
+from backend.config import settings
+from backend.services.auth_service import require_role, verify_step_up_token
 
 router = APIRouter(prefix="/recovery", tags=["Recovery Cases"])
+
+OPERATOR_ROLES = ["ADMIN", "REVENUE_OPERATOR", "MERCHANT_OWNER"]
 
 def map_case_response(case: RecoveryCase, db: Session) -> dict:
     cust = db.query(Customer).filter(Customer.customer_id == case.customer_id).first()
     pay = db.query(Payment).filter(Payment.payment_id == case.payment_id).first()
+    agent_dec = db.query(AgentDecision).filter(AgentDecision.case_id == case.case_id).order_by(AgentDecision.decision_timestamp.desc()).first()
     return {
         "id": case.case_id,
         "case_id": case.case_id,
@@ -47,6 +52,10 @@ def map_case_response(case: RecoveryCase, db: Session) -> dict:
         "recovery_status": case.recovery_status,
         "outcome_verified": case.outcome_verified,
         "recovered_amount": case.recovered_amount,
+        "model_provider": agent_dec.model_provider if agent_dec else "deterministic_rules_engine",
+        "model_name": agent_dec.model_name if agent_dec else "rules-engine-v2.1",
+        "raw_prompt": agent_dec.prompt_raw if agent_dec else None,
+        "raw_response": agent_dec.response_raw if agent_dec else None,
         "created_at": case.created_at,
         "updated_at": case.updated_at,
         "resolved_at": case.resolved_at
@@ -58,11 +67,12 @@ def get_recovery_cases(
     risk_level: Optional[str] = None,
     approval_status: Optional[str] = None,
     search: Optional[str] = None,
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db)
 ):
     query = db.query(RecoveryCase)
+    
     if status and status != "ALL":
         query = query.filter(RecoveryCase.recovery_status == status)
     if risk_level and risk_level != "ALL":
@@ -70,15 +80,18 @@ def get_recovery_cases(
     if approval_status and approval_status != "ALL":
         query = query.filter(RecoveryCase.approval_status == approval_status)
     if search:
-        query = query.filter(
-            (RecoveryCase.case_id.ilike(f"%{search}%")) |
-            (RecoveryCase.root_cause.ilike(f"%{search}%"))
+        search_fmt = f"%{search}%"
+        query = query.join(Customer, isouter=True).filter(
+            (RecoveryCase.case_id.ilike(search_fmt)) |
+            (RecoveryCase.failure_type.ilike(search_fmt)) |
+            (Customer.name.ilike(search_fmt))
         )
+        
     cases = query.order_by(RecoveryCase.created_at.desc()).offset(offset).limit(limit).all()
     return [map_case_response(c, db) for c in cases]
 
 @router.get("/cases/{case_id}", response_model=RecoveryCaseResponse)
-def get_case_by_id(case_id: str, db: Session = Depends(get_db)):
+def get_recovery_case_detail(case_id: str, db: Session = Depends(get_db)):
     case = db.query(RecoveryCase).filter(
         RecoveryCase.case_id == case_id
     ).first()
@@ -110,6 +123,7 @@ def reanalyze_case(case_id: str, db: Session = Depends(get_db)):
 def approve_case(
     case_id: str,
     req: RecoveryApprovalRequest,
+    current_user: User = Depends(require_role(OPERATOR_ROLES)),
     db: Session = Depends(get_db)
 ):
     case = db.query(RecoveryCase).filter(
@@ -118,10 +132,18 @@ def approve_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
+    # Enforce Step-Up Re-Authentication for High-Value Cases (>= ₹50,000)
+    if case.amount_at_risk >= settings.HIGH_VALUE_THRESHOLD:
+        if not req.step_up_token or not verify_step_up_token(req.step_up_token, current_user, case_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Enterprise Governance Rule: Case amount ₹{case.amount_at_risk:,.2f} exceeds high-value threshold (₹{settings.HIGH_VALUE_THRESHOLD:,.2f}). Step-up re-authentication is required before approval."
+            )
+
     updated_case = RecoveryEngine.approve_case(
         db=db,
         case=case,
-        user_name="Senior Revenue Operator",
+        user_name=current_user.name or "Senior Revenue Operator",
         notes=req.notes
     )
     return map_case_response(updated_case, db)
@@ -130,6 +152,7 @@ def approve_case(
 def reject_case(
     case_id: str,
     req: RecoveryApprovalRequest,
+    current_user: User = Depends(require_role(OPERATOR_ROLES)),
     db: Session = Depends(get_db)
 ):
     case = db.query(RecoveryCase).filter(
@@ -142,7 +165,7 @@ def reject_case(
     updated_case = RecoveryEngine.reject_case(
         db=db,
         case=case,
-        user_name="Senior Revenue Operator",
+        user_name=current_user.name or "Senior Revenue Operator",
         rejection_reason=reason,
         notes=req.notes
     )
@@ -151,6 +174,7 @@ def reject_case(
 @router.post("/{case_id}/execute", response_model=RecoveryExecutionResponse)
 def execute_case(
     case_id: str,
+    current_user: User = Depends(require_role(OPERATOR_ROLES)),
     db: Session = Depends(get_db)
 ):
     case = db.query(RecoveryCase).filter(
@@ -162,7 +186,7 @@ def execute_case(
     result = RecoveryEngine.execute_recovery_action(
         db=db,
         case=case,
-        actor="Manual Operator Trigger"
+        actor=f"{current_user.name} ({current_user.role})"
     )
     return {
         "case_id": case.case_id,
@@ -176,6 +200,7 @@ def execute_case(
 @router.post("/{case_id}/stop", response_model=RecoveryCaseResponse)
 def stop_case(
     case_id: str,
+    current_user: User = Depends(require_role(OPERATOR_ROLES)),
     db: Session = Depends(get_db)
 ):
     case = db.query(RecoveryCase).filter(
@@ -185,5 +210,5 @@ def stop_case(
         raise HTTPException(status_code=404, detail="Case not found")
     
     case.recommended_action = "stop_recovery"
-    RecoveryEngine.execute_recovery_action(db=db, case=case, actor="Manual Operator Trigger")
+    RecoveryEngine.execute_recovery_action(db=db, case=case, actor=f"{current_user.name} ({current_user.role})")
     return map_case_response(case, db)

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, ArrowUpRight, ArrowDownRight, Check, RefreshCw, TrendingUp } from "lucide-react";
+import { Download, Check, RefreshCw, TrendingUp } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -10,10 +10,7 @@ import {
   Tooltip,
   Legend
 } from "recharts";
-
-interface KeyMetricsAcceptanceViewProps {
-  theme?: "light" | "dark";
-}
+import { useTheme } from "../context/ThemeContext";
 
 const mockChartData = [
   { label: "Jan 1", current: 87.2, previous: 89.0 },
@@ -43,7 +40,8 @@ const mockChartData = [
   { label: "Apr 30", current: 94.6, previous: 88.8 },
 ];
 
-export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> = ({ theme = "dark" }) => {
+export const KeyMetricsAcceptanceView: React.FC = () => {
+  const { effectiveTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("Acceptance");
   const [selectedMetric, setSelectedMetric] = useState<"rate" | "count" | "volume">("rate");
   const [isExporting, setIsExporting] = useState(false);
@@ -58,23 +56,25 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
     }, 800);
   };
 
+  const isDark = effectiveTheme === "dark";
+
   return (
-    <div className="w-full rounded-2xl shadow-xl border border-[#163E5C] bg-[#081826]/90 p-6 font-sans">
+    <div className="w-full rounded-2xl shadow-premium-sm border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-6 font-sans transition-colors">
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-8 border-b border-[#163E5C] mb-6 overflow-x-auto">
+      <div className="flex items-center gap-8 border-b border-[var(--color-border-subtle)] mb-6 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-3 font-semibold text-sm transition-all whitespace-nowrap relative ${
+            className={`pb-3 font-semibold text-sm transition-all whitespace-nowrap relative cursor-pointer ${
               activeTab === tab
-                ? "text-cyan-400 font-bold"
-                : "text-slate-400 hover:text-slate-200"
+                ? "text-[var(--color-accent)] font-bold"
+                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             }`}
           >
             {tab}
             {activeTab === tab && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-cyan-400 rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[var(--color-accent)] rounded-full" />
             )}
           </button>
         ))}
@@ -83,10 +83,10 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
       {/* Header with Title & Download */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] tracking-tight">
             Key Metrics & Gateway Efficiency
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
             Real-time authorization & payment settlement benchmark curves
           </p>
         </div>
@@ -94,59 +94,59 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
         <button
           onClick={handleDownload}
           disabled={isExporting}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#163E5C] bg-[#051420] hover:bg-[#092233] text-slate-200 text-xs font-semibold shadow-sm transition-all active:scale-95"
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
         >
           {isExporting ? (
-            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--color-accent)]" />
           ) : (
-            <Download className="w-3.5 h-3.5 text-slate-400" />
+            <Download className="w-3.5 h-3.5" />
           )}
-          <span>{isExporting ? "Exporting..." : "Download"}</span>
+          <span>{isExporting ? "Exporting..." : "Export telemetry"}</span>
         </button>
       </div>
 
-      {/* KPI Cards Row (Selectable) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* Card 1: Success Rate */}
+      {/* Metric Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Card 1: Acceptance Rate */}
         <div
           onClick={() => setSelectedMetric("rate")}
           className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
             selectedMetric === "rate"
-              ? "border-cyan-500 ring-2 ring-cyan-500/30 bg-cyan-950/20"
-              : "border-[#143952] bg-[#051420] hover:border-[#1F5275]"
+              ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/20 bg-[var(--color-accent-subtle)]"
+              : "border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] hover:border-[var(--color-border)]"
           }`}
         >
-          <div className="text-xs font-medium text-slate-400 mb-1">
-            Payment success rate
+          <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
+            Acceptance rate
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-white tracking-tight">
-              93.50%
+            <span className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
+              94.6%
             </span>
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3" />
-              <span>+2.45%</span>
+              <span>+5.8%</span>
             </span>
           </div>
         </div>
 
-        {/* Card 2: Accepted Payments */}
+        {/* Card 2: Successful Transactions */}
         <div
           onClick={() => setSelectedMetric("count")}
           className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
             selectedMetric === "count"
-              ? "border-cyan-500 ring-2 ring-cyan-500/30 bg-cyan-950/20"
-              : "border-[#143952] bg-[#051420] hover:border-[#1F5275]"
+              ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/20 bg-[var(--color-accent-subtle)]"
+              : "border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] hover:border-[var(--color-border)]"
           }`}
         >
-          <div className="text-xs font-medium text-slate-400 mb-1">
-            Accepted transactions
+          <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
+            Successful transactions
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-white tracking-tight">
-              140.5K
+            <span className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
+              1,42,605
             </span>
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3" />
               <span>+4.12%</span>
             </span>
@@ -158,18 +158,18 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
           onClick={() => setSelectedMetric("volume")}
           className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
             selectedMetric === "volume"
-              ? "border-cyan-500 ring-2 ring-cyan-500/30 bg-cyan-950/20"
-              : "border-[#143952] bg-[#051420] hover:border-[#1F5275]"
+              ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/20 bg-[var(--color-accent-subtle)]"
+              : "border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] hover:border-[var(--color-border)]"
           }`}
         >
-          <div className="text-xs font-medium text-slate-400 mb-1">
+          <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
             Accepted volume (INR)
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-white tracking-tight">
+            <span className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
               ₹1.16 Cr
             </span>
-            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3" />
               <span>+1.56%</span>
             </span>
@@ -184,28 +184,29 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              stroke="#13354E"
+              stroke={isDark ? "var(--color-border-subtle)" : "#E2E8F0"}
             />
             <XAxis
               dataKey="label"
               tickLine={false}
-              axisLine={{ stroke: "#163E5C" }}
-              tick={{ fill: "#64748B", fontSize: 11 }}
+              axisLine={{ stroke: isDark ? "var(--color-border)" : "#CBD5E1" }}
+              tick={{ fill: isDark ? "#94A3B8" : "#64748B", fontSize: 11 }}
             />
             <YAxis
               domain={[80, 100]}
               tickLine={false}
-              axisLine={{ stroke: "#163E5C" }}
-              tick={{ fill: "#64748B", fontSize: 11 }}
+              axisLine={{ stroke: isDark ? "var(--color-border)" : "#CBD5E1" }}
+              tick={{ fill: isDark ? "#94A3B8" : "#64748B", fontSize: 11 }}
               tickFormatter={(v) => `${v}%`}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#051420",
-                borderColor: "#163E5C",
+                backgroundColor: isDark ? "var(--color-bg-surface)" : "#FFFFFF",
+                borderColor: isDark ? "var(--color-border)" : "#CBD5E1",
                 borderRadius: "0.75rem",
                 fontSize: "12px",
-                color: "#F8FAFC"
+                color: isDark ? "var(--color-text-primary)" : "#0F172A",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
               }}
             />
             <Legend
@@ -217,16 +218,16 @@ export const KeyMetricsAcceptanceView: React.FC<KeyMetricsAcceptanceViewProps> =
               type="monotone"
               dataKey="current"
               name="Current Revive Engine"
-              stroke="#06B6D4"
+              stroke="var(--color-accent)"
               strokeWidth={2.5}
               dot={false}
-              activeDot={{ r: 5, fill: "#06B6D4" }}
+              activeDot={{ r: 5, fill: "var(--color-accent)" }}
             />
             <Line
               type="monotone"
               dataKey="previous"
               name="Previous Baseline"
-              stroke="#475569"
+              stroke={isDark ? "#64748B" : "#94A3B8"}
               strokeWidth={1.5}
               strokeDasharray="4 4"
               dot={false}

@@ -11,19 +11,19 @@ export const ActionBadge: React.FC<ActionBadgeProps> = ({ action }) => {
   const getIcon = () => {
     switch (norm) {
       case "retry_payment":
-        return <RefreshCw className="w-3 h-3 text-blue-400" />;
+        return <RefreshCw className="w-3 h-3 text-indigo-600 dark:text-indigo-400 shrink-0" />;
       case "create_payment_link":
-        return <LinkIcon className="w-3 h-3 text-purple-400" />;
+        return <LinkIcon className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />;
       case "send_customer_notification":
-        return <Bell className="w-3 h-3 text-cyan-400" />;
+        return <Bell className="w-3 h-3 text-[var(--color-accent)] shrink-0" />;
       case "trigger_checkout_reminder":
-        return <ShoppingCart className="w-3 h-3 text-emerald-400" />;
+        return <ShoppingCart className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />;
       case "request_payment_method_update":
-        return <CreditCard className="w-3 h-3 text-amber-400" />;
+        return <CreditCard className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />;
       case "escalate_to_merchant":
-        return <AlertTriangle className="w-3 h-3 text-orange-400" />;
+        return <AlertTriangle className="w-3 h-3 text-orange-600 dark:text-orange-400 shrink-0" />;
       default:
-        return <XCircle className="w-3 h-3 text-slate-400" />;
+        return <XCircle className="w-3 h-3 text-[var(--color-text-muted)] shrink-0" />;
     }
   };
 
@@ -34,7 +34,7 @@ export const ActionBadge: React.FC<ActionBadgeProps> = ({ action }) => {
   };
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900 border border-slate-700/80 text-slate-200 text-xs font-medium">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-xs font-medium shadow-sm">
       {getIcon()}
       <span className="font-mono text-[11px]">{formatLabel(norm)}</span>
     </span>

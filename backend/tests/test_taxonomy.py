@@ -38,6 +38,7 @@ def test_recovery_event_taxonomy():
         "recovery.action.executed",
         "recovery.action.failed",
         "recovery.verified",
+        "recovery.approval.stepup_verified",
         "recovery.escalated",
         "recovery.stopped"
     }

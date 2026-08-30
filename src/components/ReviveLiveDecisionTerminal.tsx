@@ -4,14 +4,14 @@ import {
   Sparkles,
   Check,
   X,
-  Clock,
   RotateCw,
   Play,
   Pause,
   ArrowUpRight,
   TrendingUp,
   ShieldCheck,
-  Zap
+  Zap,
+  Activity
 } from "lucide-react";
 import { formatINR } from "../data/mockData";
 
@@ -58,145 +58,148 @@ const INITIAL_DECISIONS: RetryDecisionItem[] = [
     amount: "₹32,400",
     declineReason: "Bank Switch Glitch",
     status: "recovered",
-    statusText: "Instant retry triggered",
-    detail: "HDFC bank direct route re-established",
+    statusText: "Recovered via smart retry",
+    detail: "09:14 AM IST (14m post-outage)",
     badge: "RECOVERED",
-    caseId: "RV-10298"
+    caseId: "RV-10293"
   },
   {
     id: "4",
-    txn: "TXN_8861",
-    inv: "INV-20502",
-    amount: "₹19,250",
-    declineReason: "Issuer Do Not Honor",
+    txn: "TXN_8858",
+    inv: "INV-20504",
+    amount: "₹4,200",
+    declineReason: "3DS Auth Drop",
     status: "rerouted",
-    statusText: "Retry rerouted",
-    detail: "Peak authorization window (14:30 IST)",
-    caseId: "RV-10295"
+    statusText: "1-Click UPI link dispatched",
+    detail: "WhatsApp payment link opened",
+    caseId: "RV-10294"
   },
   {
     id: "5",
-    txn: "TXN_8888",
-    inv: "INV-20523",
-    amount: "₹45,000",
-    declineReason: "Issuer Gateway Timeout",
-    status: "recovered",
-    statusText: "Instant retry triggered",
-    detail: "Secondary gateway cascade captured",
-    badge: "RECOVERED",
-    caseId: "RV-10300"
-  }
-];
-
-const ROTATING_NEW_ITEMS: Array<Omit<RetryDecisionItem, "id">> = [
-  {
-    txn: "TXN_8902",
-    inv: "INV-20540",
-    amount: "₹24,800",
-    declineReason: "Gateway Timeout (504)",
-    status: "recovered",
-    statusText: "Adaptive cascade triggered",
-    detail: "Axis Bank backup direct route captured",
-    badge: "RECOVERED",
+    txn: "TXN_8863",
+    inv: "INV-20519",
+    amount: "₹68,500",
+    declineReason: "High-Value Threshold",
+    status: "scheduled",
+    statusText: "Awaiting Operator Sign-off",
+    detail: "Policy approval gate active",
     caseId: "RV-10295"
-  },
-  {
-    txn: "TXN_8915",
-    inv: "INV-20555",
-    amount: "₹12,400",
-    declineReason: "Insufficient Balance",
-    status: "scheduled",
-    statusText: "Retry scheduled: 1st of month 08:30 AM",
-    detail: "Monthly payroll credit detected",
-    caseId: "RV-10299"
-  },
-  {
-    txn: "TXN_8928",
-    inv: "INV-20569",
-    amount: "₹55,000",
-    declineReason: "Card Velocity Limit",
-    status: "scheduled",
-    statusText: "Smart backoff retry: +4 hours",
-    detail: "Cooling period window calculation",
-    caseId: "RV-10296"
-  },
-  {
-    txn: "TXN_8940",
-    inv: "INV-20582",
-    amount: "₹38,900",
-    declineReason: "3DS Auth Failure",
-    status: "paused",
-    statusText: "1-Click WhatsApp payment link sent",
-    detail: "Frictionless checkout token created",
-    caseId: "RV-10293"
   }
 ];
 
-export const ReviveLiveDecisionTerminal: React.FC = () => {
+const SIMULATION_TEMPLATES = [
+  {
+    txn: "TXN_8869",
+    inv: "INV-20528",
+    amount: "₹18,500",
+    declineReason: "Bank Switch Outage",
+    status: "recovered" as const,
+    statusText: "Recovered via smart retry",
+    detail: "HDFC gateway switch restored",
+    badge: "RECOVERED"
+  },
+  {
+    txn: "TXN_8874",
+    inv: "INV-20535",
+    amount: "₹9,200",
+    declineReason: "Pre-Salary Liquidity Dip",
+    status: "scheduled" as const,
+    statusText: "Smart retry window set",
+    detail: "Payroll credit window aligned"
+  },
+  {
+    txn: "TXN_8881",
+    inv: "INV-20542",
+    amount: "₹24,000",
+    declineReason: "Card Expiration",
+    status: "paused" as const,
+    statusText: "Retries stopped per policy",
+    detail: "1-Click WhatsApp update sent"
+  }
+];
+
+interface ReviveLiveDecisionTerminalProps {
+  recoveredRevenue?: number;
+  recoveryRate?: number;
+}
+
+export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProps> = ({
+  recoveredRevenue = 596534.34,
+  recoveryRate = 53.6
+}) => {
   const [decisions, setDecisions] = useState<RetryDecisionItem[]>(INITIAL_DECISIONS);
-  const [recoveredAmount, setRecoveredAmount] = useState<number>(142605);
-  const [isLive, setIsLive] = useState<boolean>(true);
+  const [isLive, setIsLive] = useState(true);
+  const [recoveredAmount, setRecoveredAmount] = useState(recoveredRevenue);
   const [analyzingItem, setAnalyzingItem] = useState<string | null>(null);
 
-  // Live streaming simulation interval
+  useEffect(() => {
+    setRecoveredAmount(recoveredRevenue);
+  }, [recoveredRevenue]);
+
   useEffect(() => {
     if (!isLive) return;
 
     const interval = setInterval(() => {
-      const nextTemplate = ROTATING_NEW_ITEMS[Math.floor(Math.random() * ROTATING_NEW_ITEMS.length)];
-      const randomTxnNum = Math.floor(8890 + Math.random() * 200);
-      const randomInvNum = Math.floor(20530 + Math.random() * 200);
+      const randomTemplate =
+        SIMULATION_TEMPLATES[Math.floor(Math.random() * SIMULATION_TEMPLATES.length)];
+      const randomId = String(Date.now());
+      const randomCaseNum = Math.floor(10300 + Math.random() * 80);
 
       const newItem: RetryDecisionItem = {
-        ...nextTemplate,
-        id: Date.now().toString(),
-        txn: `TXN_${randomTxnNum}`,
-        inv: `INV-${randomInvNum}`,
+        id: randomId,
+        txn: randomTemplate.txn,
+        inv: randomTemplate.inv,
+        amount: randomTemplate.amount,
+        declineReason: randomTemplate.declineReason,
         status: "analyzing",
-        statusText: "Analyzing 200+ signals &middot; Issuer switch &middot; Liquidity heuristics..."
+        statusText: "Analyzing 200+ ML Signals...",
+        detail: "Evaluating optimal liquidity window",
+        caseId: `RV-${randomCaseNum}`
       };
 
-      setAnalyzingItem(newItem.id);
+      setAnalyzingItem(randomId);
       setDecisions((prev) => [newItem, ...prev.slice(0, 4)]);
 
       setTimeout(() => {
         setDecisions((prev) =>
           prev.map((item) => {
-            if (item.id === newItem.id) {
+            if (item.id === randomId) {
               return {
                 ...item,
-                status: nextTemplate.status,
-                statusText: nextTemplate.statusText,
-                detail: nextTemplate.detail,
-                badge: nextTemplate.badge
+                status: randomTemplate.status,
+                statusText: randomTemplate.statusText,
+                detail: randomTemplate.detail,
+                badge: randomTemplate.badge
               };
             }
             return item;
           })
         );
         setAnalyzingItem(null);
-
-        if (nextTemplate.status === "recovered") {
-          setRecoveredAmount((prev) => prev + Math.floor(2400 + Math.random() * 5000));
+        if (randomTemplate.status === "recovered") {
+          setRecoveredAmount((prev) => prev + 4999);
         }
-      }, 1600);
-    }, 4500);
+      }, 1200);
+    }, 9000);
 
     return () => clearInterval(interval);
   }, [isLive]);
 
   const triggerManualSimulation = () => {
-    const randomTemplate = ROTATING_NEW_ITEMS[Math.floor(Math.random() * ROTATING_NEW_ITEMS.length)];
-    const randomTxnNum = Math.floor(9000 + Math.random() * 500);
-    const randomInvNum = Math.floor(20700 + Math.random() * 500);
+    const randomTemplate =
+      SIMULATION_TEMPLATES[Math.floor(Math.random() * SIMULATION_TEMPLATES.length)];
+    const manualId = String(Date.now());
 
     const manualItem: RetryDecisionItem = {
-      ...randomTemplate,
-      id: Date.now().toString(),
-      txn: `TXN_${randomTxnNum}`,
-      inv: `INV-${randomInvNum}`,
+      id: manualId,
+      txn: `TXN_${Math.floor(8900 + Math.random() * 99)}`,
+      inv: `INV_${Math.floor(20600 + Math.random() * 99)}`,
+      amount: "₹18,500",
+      declineReason: randomTemplate.declineReason,
       status: "analyzing",
-      statusText: "Analyzing 200+ signals &middot; Issuer switch &middot; Liquidity heuristics..."
+      statusText: "Ingesting Failure Telemetry...",
+      detail: "Evaluating customer payment history",
+      caseId: `RV-${Math.floor(10300 + Math.random() * 80)}`
     };
 
     setAnalyzingItem(manualItem.id);
@@ -221,20 +224,20 @@ export const ReviveLiveDecisionTerminal: React.FC = () => {
       if (randomTemplate.status === "recovered") {
         setRecoveredAmount((prev) => prev + 4999);
       }
-    }, 1400);
+    }, 1200);
   };
 
   return (
-    <div className="relative rounded-2xl bg-[#081520]/95 border border-[#14364D] p-5 sm:p-6 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:border-[#1E4E6E] font-sans">
+    <div className="relative rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] p-5 sm:p-6 shadow-premium-md font-sans">
       {/* Terminal Top Bar */}
-      <div className="flex items-center justify-between border-b border-[#14364D]/80 pb-3.5 mb-4">
+      <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3.5 mb-4">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] inline-block"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-danger)] inline-block"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-warning)] inline-block"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-success)] inline-block"></span>
           </div>
-          <span className="ml-2 text-xs font-semibold text-white tracking-wide">
+          <span className="ml-2 text-xs font-semibold text-[var(--color-text-primary)] tracking-wide">
             Revive &middot; Live Retry Decisions
           </span>
         </div>
@@ -243,14 +246,14 @@ export const ReviveLiveDecisionTerminal: React.FC = () => {
           <button
             onClick={() => setIsLive(!isLive)}
             title={isLive ? "Pause live simulation" : "Resume live simulation"}
-            className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-[#0E2333] hover:bg-[#15344C] text-slate-300 border border-[#1A425E] transition-colors"
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border)] transition-colors cursor-pointer"
           >
-            {isLive ? <Pause className="w-3 h-3 text-cyan-400" /> : <Play className="w-3 h-3 text-emerald-400" />}
+            {isLive ? <Pause className="w-3 h-3 text-[var(--color-accent)]" /> : <Play className="w-3 h-3 text-emerald-500" />}
             <span className="text-[11px] font-medium">{isLive ? "Live Stream" : "Paused"}</span>
           </button>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Active</span>
           </div>
         </div>
@@ -259,42 +262,42 @@ export const ReviveLiveDecisionTerminal: React.FC = () => {
       {/* 3 Metric Cards Grid (INR figures) */}
       <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-4">
         {/* Metric 1 */}
-        <div className="p-3.5 rounded-xl bg-[#0B1E2D]/90 border border-[#173B54]">
-          <p className="text-[11px] font-medium text-slate-400 leading-tight">
+        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+          <p className="text-[11px] font-medium text-[var(--color-text-secondary)] leading-tight">
             Total Recovered
           </p>
-          <p className="text-lg sm:text-xl font-extrabold text-white mt-1 tracking-tight">
+          <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
             {formatINR(recoveredAmount)}
           </p>
-          <p className="text-[10px] text-cyan-400 mt-1 flex items-center gap-0.5 font-medium">
+          <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
             <TrendingUp className="w-3 h-3" />
             <span>quarter-to-date</span>
           </p>
         </div>
 
         {/* Metric 2 */}
-        <div className="p-3.5 rounded-xl bg-[#0B1E2D]/90 border border-[#173B54]">
-          <p className="text-[11px] font-medium text-slate-400 leading-tight">
+        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+          <p className="text-[11px] font-medium text-[var(--color-text-secondary)] leading-tight">
             Added to Topline
           </p>
-          <p className="text-lg sm:text-xl font-extrabold text-white mt-1 tracking-tight">
+          <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
             +4.8%
           </p>
-          <p className="text-[10px] text-cyan-400 mt-1 flex items-center gap-0.5 font-medium">
+          <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
             <TrendingUp className="w-3 h-3" />
             <span>vs. fixed schedule</span>
           </p>
         </div>
 
         {/* Metric 3 */}
-        <div className="p-3.5 rounded-xl bg-[#0B1E2D]/90 border border-[#173B54]">
-          <p className="text-[11px] font-medium text-slate-400 leading-tight">
+        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+          <p className="text-[11px] font-medium text-[var(--color-text-secondary)] leading-tight">
             Recovery Rate
           </p>
-          <p className="text-lg sm:text-xl font-extrabold text-white mt-1 tracking-tight">
-            65.2%
+          <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
+            {recoveryRate}%
           </p>
-          <p className="text-[10px] text-cyan-400 mt-1 flex items-center gap-0.5 font-medium">
+          <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
             <TrendingUp className="w-3 h-3" />
             <span>retried invoices</span>
           </p>
@@ -304,12 +307,12 @@ export const ReviveLiveDecisionTerminal: React.FC = () => {
       {/* Live Retry Decisions Stream Container */}
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider font-mono">
+          <span className="text-[11px] font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider font-mono">
             LIVE STREAMING DECISIONS
           </span>
           <button
             onClick={triggerManualSimulation}
-            className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+            className="text-xs text-[var(--color-accent)] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
           >
             <RotateCw className="w-3 h-3" />
             <span>Simulate Failure Ingress</span>
@@ -326,21 +329,21 @@ export const ReviveLiveDecisionTerminal: React.FC = () => {
                 key={item.id}
                 className={`p-3 rounded-xl border text-xs transition-all duration-300 ${
                   isAnalyzing
-                    ? "bg-[#0E283C]/95 border-cyan-500/50 shadow-md shadow-cyan-950/40"
+                    ? "bg-[var(--color-accent-subtle)] border-[var(--color-accent-border)] shadow-sm"
                     : item.status === "recovered"
-                    ? "bg-[#092233]/80 border-emerald-500/30 hover:border-emerald-500/50"
-                    : "bg-[#091D2C]/70 border-[#143952] hover:border-[#1F5478]"
+                    ? "bg-emerald-500/10 border-emerald-500/30"
+                    : "bg-[var(--color-bg-canvas)] border-[var(--color-border-subtle)] hover:border-[var(--color-border)]"
                 }`}
               >
                 {/* Header Line: TXN · INV + Decline Reason */}
                 <div className="flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5 text-slate-300">
-                    <span className="font-mono font-bold">{item.txn}</span>
-                    <span className="text-slate-600">&middot;</span>
-                    <span className="font-mono text-slate-400">{item.inv}</span>
+                  <div className="flex items-center gap-1.5 text-[var(--color-text-secondary)]">
+                    <span className="font-mono font-bold text-[var(--color-text-primary)]">{item.txn}</span>
+                    <span className="text-[var(--color-text-muted)]">&middot;</span>
+                    <span className="font-mono text-[var(--color-text-muted)]">{item.inv}</span>
                   </div>
 
-                  <div className="flex items-center gap-1 text-rose-400 font-medium">
+                  <div className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
                     <X className="w-3 h-3" />
                     <span>Declined: {item.declineReason}</span>
                   </div>
@@ -349,21 +352,21 @@ export const ReviveLiveDecisionTerminal: React.FC = () => {
                 {/* Sub Line: AI Decision & Status Outcome */}
                 <div className="mt-1.5 flex items-center justify-between text-[11px]">
                   {isAnalyzing ? (
-                    <div className="flex items-center gap-1.5 text-cyan-300 animate-pulse font-mono">
-                      <Sparkles className="w-3 h-3 text-cyan-400" />
+                    <div className="flex items-center gap-1.5 text-[var(--color-accent)] animate-pulse font-mono">
+                      <Sparkles className="w-3 h-3 text-[var(--color-accent)]" />
                       <span>{item.statusText}</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 text-slate-300">
-                      <span className="text-cyan-400 font-bold">&rarr;</span>
-                      <span className="font-medium text-white">{item.statusText}</span>
-                      <span className="text-slate-500">&middot;</span>
-                      <span className="text-slate-400">{item.detail}</span>
+                    <div className="flex items-center gap-1 text-[var(--color-text-secondary)]">
+                      <span className="text-[var(--color-accent)] font-bold">&rarr;</span>
+                      <span className="font-medium text-[var(--color-text-primary)]">{item.statusText}</span>
+                      <span className="text-[var(--color-text-muted)]">&middot;</span>
+                      <span className="text-[var(--color-text-muted)]">{item.detail}</span>
                     </div>
                   )}
 
                   {item.badge === "RECOVERED" && !isAnalyzing && (
-                    <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold text-[9px] tracking-wider flex items-center gap-0.5 shadow-sm shadow-emerald-500/30">
+                    <span className="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold text-[9px] tracking-wider flex items-center gap-0.5 shadow-sm">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                       <span>RECOVERED</span>
                     </span>
@@ -376,14 +379,14 @@ export const ReviveLiveDecisionTerminal: React.FC = () => {
       </div>
 
       {/* Footer Navigation within Terminal */}
-      <div className="mt-4 pt-3 border-t border-[#14364D]/60 flex items-center justify-between text-[11px]">
-        <div className="flex items-center gap-1.5 text-slate-400">
-          <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+      <div className="mt-4 pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-[11px]">
+        <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
+          <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
           <span>Multi-Gateway Adaptive Retries</span>
         </div>
         <Link
           to="/cases/RV-10291"
-          className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 hover:underline"
+          className="text-[var(--color-accent)] hover:underline font-semibold flex items-center gap-1"
         >
           <span>Deep Dive Case RV-10291</span>
           <ArrowUpRight className="w-3 h-3" />

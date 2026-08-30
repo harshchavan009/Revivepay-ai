@@ -34,44 +34,44 @@ export const ExecutionTracker: React.FC<ExecutionTrackerProps> = ({ caseData }) 
   ];
 
   return (
-    <div className="bg-[#0B0F19] border border-slate-800 rounded-xl p-5 shadow-lg space-y-3">
+    <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-premium-sm space-y-4 font-sans">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-blue-400" />
+        <h3 className="font-bold text-[var(--color-text-primary)] text-sm flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-[var(--color-accent)]" />
           <span>Autonomous Execution Pipeline State</span>
         </h3>
-        <span className="text-[11px] font-mono text-slate-400">
-          State: <span className="text-slate-200 font-bold">{caseData.execution_status}</span>
+        <span className="text-[11px] font-mono text-[var(--color-text-secondary)]">
+          State: <span className="text-[var(--color-text-primary)] font-bold">{caseData.execution_status}</span>
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1">
         {steps.map((s, idx) => (
           <div
             key={idx}
-            className={`p-2.5 rounded-lg border flex flex-col justify-between text-xs transition-all ${
+            className={`p-3.5 rounded-xl border flex flex-col justify-between text-xs transition-all ${
               s.complete
-                ? "bg-emerald-950/20 border-emerald-500/40 text-emerald-300"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
                 : s.current
-                ? "bg-amber-950/20 border-amber-500/40 text-amber-300 animate-pulse"
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 animate-pulse"
                 : s.failed
-                ? "bg-rose-950/20 border-rose-500/40 text-rose-300"
-                : "bg-slate-900/40 border-slate-800 text-slate-500"
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300"
+                : "bg-[var(--color-bg-canvas)] border-[var(--color-border-subtle)] text-[var(--color-text-muted)]"
             }`}
           >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="font-mono text-[10px] text-slate-500">Step {idx + 1}</span>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[10px] text-[var(--color-text-muted)] font-bold">Step {idx + 1}</span>
               {s.complete ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               ) : s.current ? (
-                <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                <RefreshCw className="w-3.5 h-3.5 text-amber-500 animate-spin" />
               ) : s.failed ? (
-                <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                <XCircle className="w-3.5 h-3.5 text-rose-500" />
               ) : (
-                <Clock className="w-3.5 h-3.5 text-slate-600" />
+                <Clock className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
               )}
             </div>
-            <p className="font-semibold text-[11px] truncate">{s.label.split(". ")[1]}</p>
+            <p className="font-bold text-[11px] truncate">{s.label.split(". ")[1]}</p>
           </div>
         ))}
       </div>

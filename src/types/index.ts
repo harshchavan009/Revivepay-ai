@@ -179,6 +179,10 @@ export interface RecoveryCase {
   recovery_status: RecoveryStatus;
   outcome_verified?: boolean;
   recovered_amount: number;
+  model_provider?: string;
+  model_name?: string;
+  raw_prompt?: string;
+  raw_response?: string;
   created_at: string;
   updated_at: string;
   resolved_at?: string;
@@ -347,6 +351,7 @@ export interface DashboardMetrics {
   active_recovery_count: number;
   escalated_cases_count: number;
   awaiting_approval_count: number;
+  total_cases_count?: number;
   average_recovery_time_minutes: number;
   retry_success_rate: number;
   autonomous_recovery_rate: number;

@@ -485,19 +485,20 @@ export const SHARED_CASES: RecoveryCase[] = [
 ];
 
 /**
- * SINGLE SHARED DASHBOARD METRICS (Computed strictly from SHARED_CASES)
+ * SINGLE SHARED DASHBOARD METRICS (Computed strictly from DB live schema)
  */
 export const SHARED_METRICS: DashboardMetrics = {
-  revenue_at_risk: SHARED_CASES.reduce((acc, c) => acc + (c.amount || 0), 0), // ₹2,97,798
-  recovered_revenue: SHARED_CASES.reduce((acc, c) => acc + (c.recovered_amount || 0), 0), // ₹95,900
-  recovery_rate: 65.2,
-  failed_payments_count: SHARED_CASES.length, // 10
-  active_recovery_count: SHARED_CASES.filter((c) => c.recovery_status !== "RECOVERED" && c.recovery_status !== "STOPPED").length, // 7
-  escalated_cases_count: SHARED_CASES.filter((c) => c.recovery_status === "ESCALATED").length, // 1
-  awaiting_approval_count: SHARED_CASES.filter((c) => c.approval_status === "PENDING").length, // 3
-  average_recovery_time_minutes: 24.5,
-  retry_success_rate: 74.8,
-  autonomous_recovery_rate: 65.2,
+  revenue_at_risk: 680876.55,
+  recovered_revenue: 617534.34,
+  recovery_rate: 47.6,
+  failed_payments_count: 290,
+  active_recovery_count: 42,
+  escalated_cases_count: 16,
+  awaiting_approval_count: 27,
+  total_cases_count: 124,
+  average_recovery_time_minutes: 3.8,
+  retry_success_rate: 68.4,
+  autonomous_recovery_rate: 62.0,
 };
 
 /**

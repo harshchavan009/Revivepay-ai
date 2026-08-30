@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   MessageSquare,
@@ -7,212 +7,406 @@ import {
   Send,
   Bot,
   User,
-  ArrowRight,
-  TrendingUp,
+  ExternalLink,
   ShieldCheck,
-  Zap,
-  HelpCircle
+  RefreshCw,
+  Trash2,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
+import { safeStorage } from "../utils/storage";
 
-interface Message {
-  sender: "user" | "bot";
-  text: string;
-  actionLink?: {
-    label: string;
-    to: string;
-  };
+interface Citation {
+  type: string;
+  id: string;
+  title: string;
+  link?: string;
 }
 
-const PRESET_QUESTIONS = [
-  "How does Revive recover up to 65.2% of failed payments?",
-  "What 200+ signals are analyzed per transaction?",
-  "How do I connect my Razorpay or Chargebee account?",
-  "What's the difference between Revive and dumb fixed retries?",
-  "How does Revive handle abandoned checkouts?"
-];
+interface Message {
+  id: string;
+  sender: "user" | "bot";
+  text: string;
+  citations?: Citation[];
+  isStreaming?: boolean;
+}
 
-const ANSWERS: Record<string, { text: string; link?: { label: string; to: string } }> = {
-  "How does Revive recover up to 65.2% of failed payments?": {
-    text: "Revive transforms naive retry attempts into precision interventions. Instead of spamming a customer's card at arbitrary intervals, Revive analyzes 200+ signals (including bank downtime, issuer risk appetite, customer salary cycles, and time zones) to execute retries at the exact millisecond when approval probability exceeds 88%.",
-    link: { label: "Explore Interactive Case RV-10291", to: "/cases/RV-10291" }
-  },
-  "What 200+ signals are analyzed per transaction?": {
-    text: "Revive's ML model aggregates 5 distinct signal vectors:\n• Issuer & BIN Telemetry: Real-time bank switch health and authorization response codes.\n• Behavioral & Funding: Salary credit dates, historical card refill windows, and recurring billing histories.\n• Gateway Routing: Latency benchmarks across Razorpay, HDFC, ICICI, and Axis direct integrations.\n• Risk & Velocity: Transaction amount risk scores and velocity cool-downs.\n• Dunning Sentiment: Customer engagement across WhatsApp, SMS, and Email.",
-    link: { label: "Test in Simulation Lab", to: "/simulation" }
-  },
-  "How do I connect my Razorpay or Chargebee account?": {
-    text: "Revive connects in under 3 minutes with zero code! Simply provide your Razorpay Key & Secret or Chargebee API Token in Settings. Revive automatically provisions a secure webhook listener for payment.failed, subscription.charged, and invoice.payment_failed events.",
-    link: { label: "Go to Integration Settings", to: "/settings" }
-  },
-  "What's the difference between Revive and dumb fixed retries?": {
-    text: "Traditional billing engines use dumb fixed schedules (e.g., retry after 24h, 48h, 72h). If a payment failed due to an expired card or closed account, fixed retries cause high merchant decline penalties. If it failed due to insufficient funds mid-week, retrying before payday wastes your attempt limit. Revive dynamically selects the right moment and gateway route.",
-    link: { label: "View Policy Rules", to: "/policies" }
-  },
-  "How does Revive handle abandoned checkouts?": {
-    text: "Revive monitors checkout drop-offs and dispatches intelligent high-conversion WhatsApp & SMS reminders with 1-click UPI links and dynamic tokenized discounts before the customer buys from a competitor.",
-    link: { label: "Open Checkout Recovery", to: "/checkout" }
-  }
-};
+const PRESET_PROMPTS = [
+  "What happened to case RV-10291?",
+  "How much revenue has been recovered?",
+  "What are our active retry thresholds and limits?",
+  "Is the cryptographic audit ledger verified?",
+  "How is the 4-factor risk score calculated?"
+];
 
 export const AskMeAnythingDrawer: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      sender: "bot",
-      text: "👋 Hi there! I'm Revive AI. Ask me anything about payment recovery, Razorpay integration, or our 200+ ML signal engine."
-    }
-  ]);
+  const [sessionId] = useState<string>(() => {
+    const saved = safeStorage.getItem("revivepay_chat_session");
+    if (saved) return saved;
+    const newId = `sess_${Math.random().toString(36).substring(2, 11)}`;
+    safeStorage.setItem("revivepay_chat_session", newId);
+    return newId;
+  });
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [activeToolMessage, setActiveToolMessage] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSelectQuestion = (q: string) => {
-    const answerData = ANSWERS[q] || {
-      text: `Revive Pay AI autonomously monitors failed payments and optimizes recovery using 200+ signals. Try clicking into the Interactive Case or Simulation Lab to see it in action!`,
-      link: { label: "Launch Interactive Demo", to: "/cases/RV-10291" }
-    };
-
-    setMessages((prev) => [
-      ...prev,
-      { sender: "user", text: q },
-      { sender: "bot", text: answerData.text, actionLink: answerData.link }
-    ]);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+  // Load chat history from backend on open
+  useEffect(() => {
+    if (!isOpen) return;
 
-    const userText = inputValue;
-    setInputValue("");
+    fetch(`/api/chat/history?session_id=${sessionId}`)
+      .then((res) => res.json())
+      .then((data: any[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setMessages(
+            data.map((m) => ({
+              id: m.id || `msg_${Math.random()}`,
+              sender: m.sender === "user" ? "user" : "bot",
+              text: m.text,
+              citations: m.citations || []
+            }))
+          );
+        } else {
+          setMessages([
+            {
+              id: "msg_init",
+              sender: "bot",
+              text: "👋 Hi there! I'm RevivePay AI. Ask me about live payment failures, specific cases (e.g. `RV-10291`), platform revenue telemetry, or policy guardrail rules.",
+              citations: []
+            }
+          ]);
+        }
+      })
+      .catch(() => {
+        setMessages([
+          {
+            id: "msg_init",
+            sender: "bot",
+            text: "👋 Hi there! I'm RevivePay AI. Ask me about live payment failures, specific cases (e.g. `RV-10291`), platform revenue telemetry, or policy guardrail rules.",
+            citations: []
+          }
+        ]);
+      });
+  }, [isOpen, sessionId]);
 
-    // Look for matching keyword
-    let botReply: { text: string; link?: { label: string; to: string } } = {
-      text: "Revive AI uses 200+ telemetry signals to automatically recover lost SaaS and fintech revenue. Check our live dashboard or simulation lab for real-time recovery experiments!",
-      link: { label: "Launch Live Dashboard", to: "/dashboard" }
-    };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, activeToolMessage]);
 
-    if (userText.toLowerCase().includes("razorpay") || userText.toLowerCase().includes("chargebee")) {
-      botReply = ANSWERS["How do I connect my Razorpay or Chargebee account?"];
-    } else if (userText.toLowerCase().includes("signal") || userText.toLowerCase().includes("ml")) {
-      botReply = ANSWERS["What 200+ signals are analyzed per transaction?"];
-    } else if (userText.toLowerCase().includes("rate") || userText.toLowerCase().includes("roi") || userText.toLowerCase().includes("recover")) {
-      botReply = ANSWERS["How does Revive recover up to 65.2% of failed payments?"];
+  const handleClearHistory = async () => {
+    try {
+      await fetch(`/api/chat/history?session_id=${sessionId}`, { method: "DELETE" });
+      setMessages([
+        {
+          id: `msg_cleared_${Date.now()}`,
+          sender: "bot",
+          text: "Chat history cleared. How can I help you investigate revenue telemetry today?",
+          citations: []
+        }
+      ]);
+    } catch {
+      // ignore
     }
+  };
 
+  const handleSend = async (userText: string) => {
+    if (!userText.trim() || isStreaming) return;
+
+    const userMsgId = `user_${Date.now()}`;
+    const botMsgId = `bot_${Date.now()}`;
+
+    const newMessages: Message[] = [
+      ...messages,
+      { id: userMsgId, sender: "user", text: userText }
+    ];
+
+    setMessages(newMessages);
+    setInputValue("");
+    setIsStreaming(true);
+    setActiveToolMessage("Analyzing live payment graph...");
+
+    // Insert empty placeholder bot message
     setMessages((prev) => [
       ...prev,
-      { sender: "user", text: userText },
-      { sender: "bot", text: botReply.text, actionLink: botReply.link }
+      { id: botMsgId, sender: "bot", text: "", citations: [], isStreaming: true }
     ]);
+
+    try {
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          message: userText
+        })
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to connect to AI engine");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+      let accumulatedCitations: Citation[] = [];
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const dataStr = line.replace("data: ", "").trim();
+          if (!dataStr || dataStr === "[DONE]") continue;
+
+          let eventType = "token";
+          if (dataStr.startsWith('{"type":"tool_call"')) {
+            eventType = "tool_call";
+          } else if (dataStr.startsWith('{"type":"done"')) {
+            eventType = "done";
+          }
+
+          if (eventType === "tool_call") {
+            try {
+              const toolData = JSON.parse(dataStr);
+              setActiveToolMessage(toolData.message || "Executing live database query...");
+            } catch {
+              // ignore
+            }
+          } else if (eventType === "token") {
+            try {
+              const tokenData = JSON.parse(dataStr);
+              accumulatedText += tokenData.token;
+              setActiveToolMessage(null); // Tool completed
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === botMsgId
+                    ? { ...msg, text: accumulatedText, isStreaming: true }
+                    : msg
+                )
+              );
+            } catch {
+              // ignore
+            }
+          } else if (eventType === "done") {
+            try {
+              const doneData = JSON.parse(dataStr);
+              accumulatedCitations = doneData.citations || [];
+            } catch {
+              // ignore
+            }
+          }
+        }
+      }
+
+      // Mark streaming finished
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === botMsgId
+            ? {
+                ...msg,
+                text: accumulatedText || "Telemetry inquiry processed.",
+                isStreaming: false,
+                citations: accumulatedCitations
+              }
+            : msg
+        )
+      );
+    } catch {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === botMsgId
+            ? {
+                ...msg,
+                text: "I am having trouble reaching the telemetry engine right now. Please try again shortly.",
+                isStreaming: false
+              }
+            : msg
+        )
+      );
+    } finally {
+      setIsStreaming(false);
+      setActiveToolMessage(null);
+    }
+  };
+
+  const onSubmitForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSend(inputValue);
   };
 
   return (
     <>
-      {/* Floating Launcher Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#081B2A] hover:bg-[#0C2438] text-white border border-[#1B4B6F] shadow-2xl shadow-cyan-950/80 transition-all duration-300 hover:scale-105 active:scale-95 group"
-      >
-        <div className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400">
-          <MessageSquare className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
-        </div>
-        <span className="text-xs font-semibold text-slate-200 tracking-tight">Ask Me Anything</span>
-      </button>
+      {/* Floating Action Trigger Button */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        >
+          <Sparkles className="w-4 h-4 animate-pulse text-white" />
+          <span>Ask Revive AI</span>
+        </button>
+      )}
 
-      {/* Floating Chat Drawer */}
+      {/* Floating Drawer Modal */}
       {isOpen && (
-        <div className="fixed bottom-20 right-6 z-50 w-[92vw] sm:w-[420px] max-h-[580px] flex flex-col rounded-2xl bg-[#081724]/95 border border-[#163E5C] shadow-2xl shadow-black/80 backdrop-blur-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[580px] bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 font-sans">
           {/* Header */}
-          <div className="p-4 border-b border-[#163E5C] bg-[#0A1F30]/80 flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-cyan-900/30">
-                <Sparkles className="w-4 h-4 text-slate-950" />
+              <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)] flex items-center justify-center text-white font-bold shadow-sm">
+                <Bot className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-bold text-sm text-white tracking-tight flex items-center gap-1.5">
-                  <span>Revive AI Assistant</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono">
-                    ONLINE
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-sm text-[var(--color-text-primary)]">Revive AI Assistant</h3>
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    LIVE GROUNDED
                   </span>
-                </h4>
-                <p className="text-[11px] text-slate-400">Autonomous Revenue Intelligence</p>
+                </div>
+                <p className="text-[10px] text-[var(--color-text-muted)]">Zero Hallucination Telemetry Agent</p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleClearHistory}
+                title="Clear Chat History"
+                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-rose-500 hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Conversation Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
-            {messages.map((msg, idx) => (
+          {/* Messages Stream Container */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+            {messages.map((msg) => (
               <div
-                key={idx}
+                key={msg.id}
                 className={`flex gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.sender === "bot" && (
-                  <div className="w-6 h-6 rounded-full bg-cyan-950 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] flex items-center justify-center text-[var(--color-accent)] shrink-0 mt-0.5">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
                 )}
+
                 <div
-                  className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
+                  className={`max-w-[85%] rounded-2xl p-3.5 space-y-2.5 leading-relaxed ${
                     msg.sender === "user"
-                      ? "bg-cyan-600 text-white rounded-tr-sm"
-                      : "bg-[#0E283C] text-slate-200 border border-[#1A4B6E] rounded-tl-sm space-y-2"
+                      ? "bg-[var(--color-accent)] text-white rounded-br-none shadow-sm"
+                      : "bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-bl-none shadow-sm"
                   }`}
                 >
-                  <p className="whitespace-pre-line">{msg.text}</p>
-                  {msg.actionLink && (
-                    <Link
-                      to={msg.actionLink.to}
-                      onClick={() => setIsOpen(false)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold text-[11px] transition-colors mt-1"
-                    >
-                      <span>{msg.actionLink.label}</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
+                  <div className="whitespace-pre-wrap font-sans text-xs">
+                    {msg.text || (msg.isStreaming ? "Thinking..." : "")}
+                  </div>
+
+                  {/* Inline Citations */}
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className="pt-2 border-t border-[var(--color-border-subtle)] space-y-1">
+                      <span className="text-[10px] font-mono font-bold text-[var(--color-text-muted)] uppercase tracking-wider block">
+                        Verified Data Sources:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.citations.map((c, cIdx) => (
+                          <Link
+                            key={cIdx}
+                            to={c.link || "#"}
+                            onClick={() => c.link && setIsOpen(false)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[10px] font-mono font-bold text-[var(--color-accent)] transition-colors"
+                          >
+                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                            <span>{c.title}</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
+
+                {msg.sender === "user" && (
+                  <div className="w-6 h-6 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] shrink-0 mt-0.5">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                )}
               </div>
             ))}
 
-            {/* Quick Prompts */}
-            <div className="pt-2">
-              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <HelpCircle className="w-3 h-3 text-cyan-400" />
-                <span>Suggested Questions:</span>
-              </p>
+            {/* Active Tool Execution Indicator */}
+            {activeToolMessage && (
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono animate-pulse">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--color-accent)]" />
+                <span>{activeToolMessage}</span>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Preset Prompts */}
+          {messages.length <= 2 && (
+            <div className="px-4 pb-2">
+              <span className="text-[10px] font-mono text-[var(--color-text-muted)] block mb-1.5">
+                Suggested Telemetry Queries:
+              </span>
               <div className="flex flex-wrap gap-1.5">
-                {PRESET_QUESTIONS.map((q, idx) => (
+                {PRESET_PROMPTS.slice(0, 3).map((prompt, pIdx) => (
                   <button
-                    key={idx}
-                    onClick={() => handleSelectQuestion(q)}
-                    className="text-[11px] text-left px-2.5 py-1.5 rounded-lg bg-[#0C2234] hover:bg-[#123048] text-slate-300 hover:text-cyan-300 border border-[#163E5C] transition-colors"
+                    key={pIdx}
+                    onClick={() => handleSend(prompt)}
+                    className="text-[10px] px-2.5 py-1 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-left cursor-pointer"
                   >
-                    {q}
+                    {prompt}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Chat Input */}
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-[#163E5C] bg-[#0A1F30]/80 flex gap-2">
+          {/* Chat Input Bar */}
+          <form
+            onSubmit={onSubmitForm}
+            className="p-3 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] flex items-center gap-2"
+          >
             <input
               type="text"
+              placeholder="Ask about cases (RV-10291), metrics, or policy..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask Revive AI anything..."
-              className="flex-1 bg-[#061420] border border-[#194668] text-slate-100 text-xs rounded-xl px-3 py-2 outline-none focus:border-cyan-400 font-sans placeholder:text-slate-500"
+              disabled={isStreaming}
+              className="flex-1 bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] text-xs rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] transition-colors"
             />
             <button
               type="submit"
-              className="p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-colors"
+              disabled={!inputValue.trim() || isStreaming}
+              className="w-9 h-9 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white flex items-center justify-center transition-all disabled:opacity-40 cursor-pointer shadow-sm"
             >
-              <Send className="w-4 h-4" />
+              {isStreaming ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </button>
           </form>
         </div>

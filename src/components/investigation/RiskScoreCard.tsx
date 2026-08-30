@@ -15,42 +15,42 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({ score, level, fact
   const severityFactor = factors?.failure_severity_factor ?? 25.0;
 
   const items = [
-    { label: "Transaction Value", weight: "35%", value: valueFactor, color: "bg-blue-500" },
+    { label: "Transaction Value", weight: "35%", value: valueFactor, color: "bg-[var(--color-accent)]" },
     { label: "Recovery Likelihood", weight: "25%", value: recoveryFactor, color: "bg-emerald-500" },
     { label: "Customer History Risk", weight: "20%", value: historyFactor, color: "bg-purple-500" },
     { label: "Failure Severity", weight: "20%", value: severityFactor, color: "bg-amber-500" },
   ];
 
   return (
-    <div className="bg-[#0B0F19] border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+    <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-premium-sm space-y-5 font-sans">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
             <Gauge className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-100 text-sm">Deterministic Revenue Risk Engine</h3>
-            <p className="text-[11px] text-slate-400 font-mono">Formula: 0.35·V + 0.25·R + 0.20·H + 0.20·S</p>
+            <h3 className="font-bold text-[var(--color-text-primary)] text-sm">Deterministic Revenue Risk Engine</h3>
+            <p className="text-[11px] text-[var(--color-text-secondary)] font-mono">Formula: 0.35·V + 0.25·R + 0.20·H + 0.20·S</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-2xl font-black text-amber-400">{Math.round(score)}</span>
-          <span className="text-xs text-slate-500 font-mono">/100</span>
+          <span className="font-mono text-2xl font-black text-amber-600 dark:text-amber-400">{Math.round(score)}</span>
+          <span className="text-xs text-[var(--color-text-muted)] font-mono">/100</span>
           <RiskBadge level={level} />
         </div>
       </div>
 
       {/* 4 Factor Breakdown Bars */}
-      <div className="space-y-3 pt-2">
+      <div className="space-y-3 pt-1">
         {items.map((item) => (
           <div key={item.label} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-300 font-medium">
-                {item.label} <span className="text-slate-500 font-mono">({item.weight})</span>
+              <span className="text-[var(--color-text-secondary)] font-medium">
+                {item.label} <span className="text-[var(--color-text-muted)] font-mono">({item.weight})</span>
               </span>
-              <span className="font-mono font-bold text-slate-200">{Math.round(item.value)}/100</span>
+              <span className="font-mono font-bold text-[var(--color-text-primary)]">{Math.round(item.value)}/100</span>
             </div>
-            <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+            <div className="h-2 w-full bg-[var(--color-bg-canvas)] rounded-full overflow-hidden border border-[var(--color-border-subtle)]">
               <div
                 className={`h-full rounded-full transition-all duration-700 ${item.color}`}
                 style={{ width: `${Math.min(100, Math.max(5, item.value))}%` }}
@@ -60,8 +60,8 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({ score, level, fact
         ))}
       </div>
 
-      <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2">
-        <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+      <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)] flex items-start gap-2">
+        <Info className="w-4 h-4 text-[var(--color-accent)] shrink-0 mt-0.5" />
         <span>
           Risk score is calculated deterministically before AI agent analysis to prevent hallucinated scores and enforce predictable policy routing.
         </span>

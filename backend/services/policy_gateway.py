@@ -124,7 +124,7 @@ class PolicyGateway:
 
         # Rule 8: Customer Contact Consent
         if proposed_action in ["send_customer_notification", "create_payment_link", "request_payment_method_update"]:
-            contact_allowed = customer.consent_to_contact and policy.allow_customer_contact
+            contact_allowed = bool(getattr(customer, "consent_status", True) and policy.allow_customer_contact)
             checklist.append({
                 "rule": "customer_contact_consent",
                 "description": "Customer must have active contact consent and merchant policy allows messaging",

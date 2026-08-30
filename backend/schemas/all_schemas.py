@@ -144,6 +144,10 @@ class RecoveryCaseResponse(BaseModel):
     recovery_status: str
     outcome_verified: bool = False
     recovered_amount: float
+    model_provider: Optional[str] = "deterministic_rules_engine"
+    model_name: Optional[str] = "rule-engine-v2.1"
+    raw_prompt: Optional[str] = None
+    raw_response: Optional[str] = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     resolved_at: Optional[datetime.datetime] = None
@@ -311,7 +315,19 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    expires_in: int = 900  # 15 minutes in seconds
+    csrf_token: Optional[str] = None
     user: Dict[str, Any]
+
+class StepUpVerifyRequest(BaseModel):
+    case_id: str
+    credential: str = Field(..., description="Operator password or 6-digit OTP code")
+
+class StepUpVerifyResponse(BaseModel):
+    success: bool
+    step_up_token: str
+    expires_in: int = 300
+    message: str = "Step-up authentication successful"
 
 class UserResponse(BaseModel):
     id: str
@@ -332,6 +348,11 @@ class RootCauseAnalysisOutput(BaseModel):
     recommended_action: str = Field(..., description="Recommended tool action")
     reasoning_summary: str = Field(..., description="Clear explanation of the recommendation")
     risk_level: str = Field(..., description="Risk tier: low, medium, high, critical")
+    model_provider: Optional[str] = Field("deterministic_rules_engine", description="anthropic | google | deterministic_rules_engine")
+    model_name: Optional[str] = Field("rule-engine-v2.1", description="Model version")
+    raw_prompt: Optional[str] = Field(None, description="Exact prompt sent to LLM")
+    raw_response: Optional[str] = Field(None, description="Exact raw text response from LLM")
+    latency_ms: Optional[float] = Field(None, description="Inference latency in milliseconds")
 
 class RecoveryDecisionOutput(BaseModel):
     action: str
@@ -343,6 +364,7 @@ class RecoveryApprovalRequest(BaseModel):
     action: str = "APPROVE"
     rejection_reason: Optional[str] = None
     notes: Optional[str] = None
+    step_up_token: Optional[str] = None
 
 class RecoveryExecutionResponse(BaseModel):
     case_id: str
@@ -421,6 +443,7 @@ class DashboardSummaryResponse(BaseModel):
     active_recovery_count: int
     escalated_cases_count: int
     awaiting_approval_count: int
+    total_cases_count: Optional[int] = 0
     average_recovery_time_minutes: float
     retry_success_rate: float
     autonomous_recovery_rate: float

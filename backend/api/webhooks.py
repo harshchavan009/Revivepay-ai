@@ -30,12 +30,16 @@ async def handle_razorpay_webhook(
     body_str = raw_body.decode("utf-8") if raw_body else "{}"
 
     # 1. HMAC-SHA256 Signature Verification
-    # Razorpay sends raw signature in 'X-Razorpay-Signature' header
-    if x_razorpay_signature and x_razorpay_signature != "test_signature":
+    # Razorpay sends raw hex signature in 'X-Razorpay-Signature' header
+    if not x_razorpay_signature:
+        logger.warning("Rejected Razorpay webhook with missing X-Razorpay-Signature header.")
+        raise HTTPException(status_code=401, detail="Missing X-Razorpay-Signature header")
+
+    if x_razorpay_signature != "test_signature":
         is_valid = RazorpayService.verify_webhook_signature(raw_body, x_razorpay_signature)
         if not is_valid:
-            logger.warning("Rejected Razorpay webhook with invalid HMAC-SHA256 signature.")
-            raise HTTPException(status_code=400, detail="Invalid Razorpay webhook signature (HMAC-SHA256 verification failed)")
+            logger.warning("Rejected Razorpay webhook with invalid/tampered HMAC-SHA256 signature.")
+            raise HTTPException(status_code=401, detail="Invalid Razorpay webhook signature (HMAC-SHA256 verification failed)")
 
     try:
         payload = json.loads(body_str)

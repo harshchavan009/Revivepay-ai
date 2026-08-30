@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { apiClient } from "../services";
+import { safeStorage } from "../utils/storage";
 
 export type ThemeMode = "dark" | "light" | "system";
 
@@ -14,7 +15,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem("revivepay_theme") as ThemeMode;
+    const saved = safeStorage.getItem("revivepay_theme") as ThemeMode;
     if (saved && ["dark", "light", "system"].includes(saved)) {
       return saved;
     }
@@ -72,10 +73,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = (newTheme: ThemeMode) => {
     setThemeState(newTheme);
-    localStorage.setItem("revivepay_theme", newTheme);
+    safeStorage.setItem("revivepay_theme", newTheme);
 
     // Sync to backend profile if user token exists
-    const token = localStorage.getItem("auth_token");
+    const token = safeStorage.getItem("auth_token");
     if (token) {
       apiClient.patch("/auth/theme", { theme: newTheme }).catch(() => {
         // ignore offline sync

@@ -36,6 +36,9 @@ class MetricsService:
             RecoveryCase.approval_status == "PENDING"
         ).count()
 
+        # 7. Total Cases Count
+        total_cases = db.query(RecoveryCase).count()
+
         # Calculate dynamic Recovery Rate %
         total_impact = risk_sum + recovered_sum
         recovery_rate = round((recovered_sum / max(1.0, total_impact)) * 100.0, 1) if total_impact > 0 else 45.0
@@ -48,6 +51,7 @@ class MetricsService:
             "active_recovery_count": active_count,
             "escalated_cases_count": escalated_count,
             "awaiting_approval_count": approval_count,
+            "total_cases_count": total_cases,
             "average_recovery_time_minutes": 3.8,
             "retry_success_rate": 68.4,
             "autonomous_recovery_rate": 62.0

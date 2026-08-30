@@ -144,16 +144,20 @@ class RecoveryEngine:
 
         # 3. AI Root-Cause Analysis Agent & Persist AgentDecision (recovery.ai.diagnosed)
         ai_context = {
+            "case_id": case.case_id,
+            "payment_id": payment.payment_id,
+            "customer_name": customer.name if customer else "Enterprise Customer",
             "amount": payment.amount,
             "currency": payment.currency,
+            "payment_method": getattr(payment, "payment_method", "card") or "card",
             "failure_category": payment.failure_category,
             "failure_code": payment.failure_code,
             "failure_reason": payment.failure_reason,
-            "successful_payments": customer.total_successful_payments,
-            "failed_payments": customer.total_failed_payments,
+            "successful_payments": customer.total_successful_payments if customer else 0,
+            "failed_payments": customer.total_failed_payments if customer else 0,
             "retry_count": payment.retry_count,
             "risk_score": risk_score,
-            "customer_tier": customer.account_tier
+            "customer_tier": customer.account_tier if customer else "STANDARD"
         }
         ai_analysis = ai_service.analyze_root_cause(ai_context)
         case.root_cause = ai_analysis.root_cause
@@ -162,23 +166,26 @@ class RecoveryEngine:
         case.recommended_action = ai_analysis.recommended_action
         case.reasoning_summary = ai_analysis.reasoning_summary
 
-        # Domain Entity: AgentDecision
+        # Domain Entity: AgentDecision (persists transparent model input/output audit pair)
         decision_entity = AgentDecision(
             decision_id=f"dec_{uuid.uuid4().hex[:12]}",
             case_id=case.case_id,
-            model_provider="gemini",
-            model_name="gemini-1.5-pro",
+            model_provider=ai_analysis.model_provider or "deterministic_rules_engine",
+            model_name=ai_analysis.model_name or "rules-engine-v2.1",
             prompt_version="v2.1",
             input_version="v1.0",
             root_cause=ai_analysis.root_cause,
             confidence=ai_analysis.confidence,
             evidence=ai_analysis.evidence,
             recommended_action=ai_analysis.recommended_action,
+            reasoning_narrative=ai_analysis.reasoning_summary,
+            prompt_raw=ai_analysis.raw_prompt,
+            response_raw=ai_analysis.raw_response,
             decision_timestamp=datetime.datetime.utcnow()
         )
         db.add(decision_entity)
 
-        # Canonical Event: recovery.ai.diagnosed
+        # Canonical Event: recovery.ai.diagnosed (with full model provenance in audit trail)
         AuditService.log_event(
             db=db,
             case_id=case.case_id,
@@ -190,9 +197,11 @@ class RecoveryEngine:
                 "root_cause": ai_analysis.root_cause,
                 "confidence": ai_analysis.confidence,
                 "recommended_action": ai_analysis.recommended_action,
-                "reasoning": ai_analysis.reasoning_summary
+                "reasoning": ai_analysis.reasoning_summary,
+                "model_provider": ai_analysis.model_provider,
+                "model_name": ai_analysis.model_name
             },
-            notes=f"AI Root-Cause Diagnosis: {ai_analysis.root_cause} ({int(ai_analysis.confidence*100)}% confidence)"
+            notes=f"AI Root-Cause Diagnosis via [{ai_analysis.model_provider or 'deterministic_rules_engine'}]: {ai_analysis.root_cause} ({int(ai_analysis.confidence*100)}% confidence)"
         )
 
         # 4. Deterministic Policy Gateway (recovery.policy.passed or recovery.policy.blocked)
@@ -458,9 +467,10 @@ class RecoveryEngine:
                 case.recovered_amount = payment.amount
                 case.outcome_verified = True
                 case.resolved_at = datetime.datetime.utcnow()
-                customer.total_successful_payments += 1
-                customer.lifetime_value += payment.amount
-                customer.last_successful_payment_at = datetime.datetime.utcnow()
+                if customer:
+                    customer.total_successful_payments += 1
+                    customer.lifetime_value += payment.amount
+                    customer.last_successful_payment_at = datetime.datetime.utcnow()
 
                 rec_action.execution_status = "COMPLETED"
                 rec_action.provider_reference = rzp_pay_id
@@ -482,7 +492,7 @@ class RecoveryEngine:
                 notify_live_event("payment_recovered", {
                     "case_id": case.case_id,
                     "amount": payment.amount,
-                    "customer_name": customer.name,
+                    "customer_name": customer.name if customer else "Enterprise Customer",
                     "payment_id": rzp_pay_id,
                     "status": "RECOVERED"
                 })

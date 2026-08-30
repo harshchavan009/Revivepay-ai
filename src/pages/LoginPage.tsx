@@ -15,16 +15,18 @@ import {
   EyeOff
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useMetrics } from "../context/MetricsContext";
 import { UserRole } from "../types";
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, register, switchPersona, isLoading } = useAuth();
+  const { login, demoLogin, register, isLoading } = useAuth();
+  const { recoveryRate } = useMetrics();
 
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("operator@revivepay.ai");
-  const [password, setPassword] = useState("password123");
-  const [name, setName] = useState("Rohan Deshmukh");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("REVENUE_OPERATOR");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -38,27 +40,25 @@ export const LoginPage: React.FC = () => {
     navigate("/dashboard");
   };
 
-  const handleQuickLogin = (selectedRole: UserRole, demoEmail: string, demoName: string) => {
-    switchPersona(selectedRole);
-    setEmail(demoEmail);
-    setName(demoName);
+  const handlePersonaLogin = async (persona: "merchant_owner" | "revenue_operator" | "support_operator" | "admin") => {
+    await demoLogin(persona);
     navigate("/dashboard");
   };
 
   return (
-    <div className="min-h-screen bg-[#041018] text-slate-100 selection:bg-cyan-500 selection:text-slate-950 font-sans flex flex-col justify-between p-4 sm:p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--color-bg-canvas)] text-[var(--color-text-primary)] selection:bg-[var(--color-accent)] selection:text-white font-sans flex flex-col justify-between p-4 sm:p-6 relative overflow-hidden transition-colors">
       {/* Background ambient lighting */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(6,182,212,0.15),rgba(0,0,0,0))] pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(79,95,240,0.15),rgba(0,0,0,0))] pointer-events-none" />
 
       {/* Top Bar Header */}
       <div className="max-w-7xl w-full mx-auto flex items-center justify-between z-10 py-2">
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#FF5E3A] via-[#FF7A59] to-[#FFA07A] flex items-center justify-center shadow-lg shadow-orange-950/40 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm group-hover:scale-105 transition-transform text-white">
+            <Zap className="w-4 h-4 fill-current" />
           </div>
-          <span className="font-bold text-xl tracking-tight text-white flex items-center gap-1.5">
-            <span>revive</span>
-            <span className="text-cyan-400 text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/30">
+          <span className="font-bold text-xl tracking-tight text-[var(--color-text-primary)] flex items-center gap-1.5">
+            <span>RevivePay</span>
+            <span className="text-[var(--color-accent)] text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)]">
               AI
             </span>
           </span>
@@ -66,7 +66,7 @@ export const LoginPage: React.FC = () => {
 
         <Link
           to="/"
-          className="text-xs font-semibold text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+          className="text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors flex items-center gap-1"
         >
           <span>Back to Landing Page</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -75,38 +75,38 @@ export const LoginPage: React.FC = () => {
 
       {/* Main Login / Register Card Area */}
       <div className="max-w-4xl w-full mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 items-center my-auto z-10 py-6">
-        {/* Left Side: Revive AI Highlights & Problem Context (as in reference Image 1) */}
+        {/* Left Side: Revive AI Highlights & Problem Context */}
         <div className="md:col-span-5 space-y-6 hidden md:block text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse"></span>
             <span>AUTONOMOUS REVENUE RECOVERY</span>
           </div>
 
-          <h2 className="text-3xl font-extrabold text-white tracking-tight leading-snug">
-            Recover up to <span className="text-cyan-400">65.2%</span> of failed payments automatically.
+          <h2 className="text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight leading-snug">
+            Recover up to <span className="text-[var(--color-accent)]">{recoveryRate.toFixed(1)}%</span> of failed payments automatically.
           </h2>
 
-          <div className="p-4 rounded-xl bg-[#081B2B] border border-[#143C5C] space-y-2 text-xs">
-            <div className="flex items-center justify-between text-slate-400 font-mono text-[10px] uppercase font-bold">
+          <div className="p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-2 text-xs shadow-premium-sm">
+            <div className="flex items-center justify-between text-[var(--color-text-muted)] font-mono text-[10px] uppercase font-bold">
               <span>PROBLEM STATEMENT</span>
-              <span className="text-cyan-400">REVIVE SOLUTION</span>
+              <span className="text-[var(--color-accent)]">REVIVE SOLUTION</span>
             </div>
-            <p className="text-slate-300 leading-relaxed">
+            <p className="text-[var(--color-text-secondary)] leading-relaxed">
               Merchants lose significant revenue every day to transient bank switch glitches, expired cards, and checkout abandonment. Revive reads 200+ signals per payment to execute retries at peak liquidity windows.
             </p>
           </div>
 
-          <div className="space-y-3 text-xs text-slate-300">
+          <div className="space-y-3 text-xs text-[var(--color-text-secondary)]">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>Razorpay & Chargebee Webhooks Integration</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <span>Razorpay Webhooks Ingestion with HMAC Verification</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[var(--color-accent)] flex-shrink-0" />
               <span>200+ ML Signals Timing & Cascading Engine</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-purple-400 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-purple-500 flex-shrink-0" />
               <span>Ramp-Grade Policy Gates & Operator Approvals</span>
             </div>
           </div>
@@ -114,25 +114,25 @@ export const LoginPage: React.FC = () => {
 
         {/* Right Side: Auth Card with 1-Click Demo Personas */}
         <div className="md:col-span-7 space-y-4">
-          <div className="p-6 sm:p-8 rounded-2xl bg-[#081826]/95 border border-[#163E5C] shadow-2xl shadow-black/80 backdrop-blur-xl">
+          <div className="p-6 sm:p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-md backdrop-blur-xl">
             {/* Header & Tabs */}
-            <div className="flex items-center justify-between border-b border-[#163E5C] pb-4 mb-6">
+            <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-4 mb-6">
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">
+                <h3 className="text-xl font-bold text-[var(--color-text-primary)] tracking-tight">
                   {authMode === "signin" ? "Sign in to RevivePay" : "Create Revive Account"}
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Enterprise Autonomous Revenue Operating System</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Enterprise Autonomous Revenue Operating System</p>
               </div>
 
               {/* Mode Toggle Pills */}
-              <div className="flex p-1 rounded-lg bg-[#051420] border border-[#13354E] text-xs font-semibold">
+              <div className="flex p-1 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setAuthMode("signin")}
-                  className={`px-3 py-1 rounded-md transition-all ${
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     authMode === "signin"
-                      ? "bg-cyan-500 text-slate-950 font-bold shadow"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-[var(--color-accent)] text-white font-bold shadow-sm"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   }`}
                 >
                   Sign In
@@ -140,10 +140,10 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAuthMode("signup")}
-                  className={`px-3 py-1 rounded-md transition-all ${
+                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     authMode === "signup"
-                      ? "bg-cyan-500 text-slate-950 font-bold shadow"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-[var(--color-accent)] text-white font-bold shadow-sm"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   }`}
                 >
                   Sign Up
@@ -152,50 +152,50 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* 1-Click Demo Persona Login Section */}
-            <div className="p-3.5 rounded-xl bg-[#0A2033] border border-[#194668] space-y-2 mb-6">
+            <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2 mb-6">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-[11px] font-bold text-[var(--color-text-primary)] uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                   <span>1-Click Demo Persona Login</span>
                 </span>
-                <span className="text-[10px] text-cyan-400 font-mono">Instant Access</span>
+                <span className="text-[10px] text-[var(--color-accent)] font-mono font-semibold">Signed Session</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin("MERCHANT_OWNER", "owner@revivepay.ai", "Aditya Sengupta")}
-                  className="p-2.5 rounded-lg bg-[#061724] hover:bg-[#0B253A] text-left border border-[#153B57] hover:border-cyan-500/50 transition-all group"
+                  onClick={() => handlePersonaLogin("merchant_owner")}
+                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
                 >
-                  <p className="font-semibold text-slate-200 group-hover:text-cyan-300">Aditya Sengupta</p>
-                  <p className="text-[10px] text-slate-400 font-mono">Merchant Owner</p>
+                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Aditya Sengupta</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] font-mono">Merchant Owner</p>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin("REVENUE_OPERATOR", "operator@revivepay.ai", "Rohan Deshmukh")}
-                  className="p-2.5 rounded-lg bg-[#061724] hover:bg-[#0B253A] text-left border border-[#153B57] hover:border-cyan-500/50 transition-all group"
+                  onClick={() => handlePersonaLogin("revenue_operator")}
+                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
                 >
-                  <p className="font-semibold text-slate-200 group-hover:text-cyan-300">Rohan Deshmukh</p>
-                  <p className="text-[10px] text-cyan-400 font-mono">Revenue Operator</p>
+                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Rohan Deshmukh</p>
+                  <p className="text-[10px] text-[var(--color-accent)] font-mono">Revenue Operator</p>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin("SUPPORT_OPERATOR", "support@revivepay.ai", "Sneha Kulkarni")}
-                  className="p-2.5 rounded-lg bg-[#061724] hover:bg-[#0B253A] text-left border border-[#153B57] hover:border-cyan-500/50 transition-all group"
+                  onClick={() => handlePersonaLogin("support_operator")}
+                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
                 >
-                  <p className="font-semibold text-slate-200 group-hover:text-cyan-300">Sneha Kulkarni</p>
-                  <p className="text-[10px] text-slate-400 font-mono">Support Operator</p>
+                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Sneha Kulkarni</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] font-mono">Support Operator</p>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin("ADMIN", "admin@revivepay.ai", "Harsh Chavan")}
-                  className="p-2.5 rounded-lg bg-[#061724] hover:bg-[#0B253A] text-left border border-[#153B57] hover:border-cyan-500/50 transition-all group"
+                  onClick={() => handlePersonaLogin("admin")}
+                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
                 >
-                  <p className="font-semibold text-slate-200 group-hover:text-cyan-300">Harsh Chavan</p>
-                  <p className="text-[10px] text-purple-400 font-mono">Admin / Lead</p>
+                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Harsh Chavan</p>
+                  <p className="text-[10px] text-purple-500 font-mono">Admin / Lead</p>
                 </button>
               </div>
             </div>
@@ -204,60 +204,60 @@ export const LoginPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               {authMode === "signup" && (
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-300">Full Name</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)]">Full Name</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="Jane Doe"
-                    className="w-full bg-[#051420] border border-[#163E5C] text-slate-100 rounded-lg px-3.5 py-2.5 outline-none focus:border-cyan-400 font-sans"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
                   />
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="font-semibold text-slate-300">Work Email Address</label>
+                <label className="font-semibold text-[var(--color-text-secondary)]">Work Email Address</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <Mail className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-3" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="name@company.com"
-                    className="w-full bg-[#051420] border border-[#163E5C] text-slate-100 rounded-lg pl-10 pr-3.5 py-2.5 outline-none focus:border-cyan-400 font-sans"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
-                  <label className="font-semibold text-slate-300">Password</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)]">Password</label>
                   {authMode === "signin" && (
                     <button
                       type="button"
                       onClick={() => alert("Password reset instructions sent to your email.")}
-                      className="text-[11px] text-cyan-400 hover:underline"
+                      className="text-[11px] text-[var(--color-accent)] hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>
                   )}
                 </div>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <Lock className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-3" />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••••••"
-                    className="w-full bg-[#051420] border border-[#163E5C] text-slate-100 rounded-lg pl-10 pr-10 py-2.5 outline-none focus:border-cyan-400 font-sans"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl pl-10 pr-10 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-3 text-slate-500 hover:text-slate-300"
+                    className="absolute right-3.5 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -266,11 +266,11 @@ export const LoginPage: React.FC = () => {
 
               {authMode === "signup" && (
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-300">Organization Role</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)]">Organization Role</label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full bg-[#051420] border border-[#163E5C] text-slate-100 rounded-lg px-3.5 py-2.5 outline-none focus:border-cyan-400 font-sans"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans cursor-pointer"
                   >
                     <option value="REVENUE_OPERATOR">Revenue Operator (Recovery Operations)</option>
                     <option value="MERCHANT_OWNER">Merchant Owner (Executive & Financial View)</option>
@@ -284,7 +284,7 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-cyan-950/60 transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 mt-2"
+                className="w-full py-3 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs sm:text-sm shadow-premium-sm transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 mt-2 cursor-pointer"
               >
                 <span>
                   {isLoading
@@ -297,9 +297,9 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            <div className="mt-5 pt-4 border-t border-[#163E5C] text-center text-xs text-slate-400">
+            <div className="mt-5 pt-4 border-t border-[var(--color-border-subtle)] text-center text-xs text-[var(--color-text-secondary)]">
               <span>Want to test without signing in? </span>
-              <Link to="/cases/RV-10291" className="text-cyan-400 font-semibold hover:underline">
+              <Link to="/cases/RV-10291" className="text-[var(--color-accent)] font-semibold hover:underline">
                 Explore Live Demo Case RV-10291 →
               </Link>
             </div>
@@ -308,10 +308,12 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Footer info */}
-      <div className="max-w-7xl w-full mx-auto flex items-center justify-between text-xs text-slate-500 z-10 py-2 border-t border-[#133248]/40">
+      <div className="max-w-7xl w-full mx-auto flex items-center justify-between text-xs text-[var(--color-text-muted)] z-10 py-2 border-t border-[var(--color-border-subtle)]">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>SOC-2 Type II Certified · PCI-DSS Level 1 · 256-bit TLS</span>
+          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+          <Link to="/security" className="hover:text-[var(--color-text-primary)] transition-colors">
+            Built with SOC-2-aligned access controls · PCI-DSS-informed data handling patterns · 256-bit TLS
+          </Link>
         </div>
         <p>© 2026 RevivePay AI Inc. All rights reserved.</p>
       </div>

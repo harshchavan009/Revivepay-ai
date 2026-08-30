@@ -118,18 +118,18 @@ export const LiveActivityTicker: React.FC = () => {
   const current = activities[index] || activities[0];
 
   return (
-    <div className="bg-[#040E17] border-b border-[#102B3E] px-6 py-2 flex items-center justify-between text-xs text-slate-300 select-none">
+    <div className="bg-[var(--color-bg-canvas)] border-b border-[var(--color-border-subtle)] px-6 py-2 flex items-center justify-between text-xs text-[var(--color-text-secondary)] select-none transition-colors">
       <div className="flex items-center gap-3 overflow-hidden">
-        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/80 text-cyan-400 font-mono text-[10px] font-bold tracking-wider uppercase shrink-0 border border-cyan-500/30">
-          <span className={`w-1.5 h-1.5 rounded-full ${isLiveConnected ? "bg-emerald-400 animate-ping" : "bg-cyan-400"}`}></span>
+        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-mono text-[10px] font-bold tracking-wider uppercase shrink-0 border border-[var(--color-accent-border)]">
+          <span className={`w-1.5 h-1.5 rounded-full ${isLiveConnected ? "bg-emerald-500 animate-ping" : "bg-[var(--color-accent)]"}`}></span>
           <span>{isLiveConnected ? "Live SSE Stream" : "Live ML Stream"}</span>
         </div>
 
         <div className="flex items-center gap-2 truncate text-xs">
-          <span className="text-slate-500 text-[11px] shrink-0 font-mono">{current.time}:</span>
-          <span className="text-slate-200 truncate">{current.text}</span>
+          <span className="text-[var(--color-text-muted)] text-[11px] shrink-0 font-mono">{current.time}:</span>
+          <span className="text-[var(--color-text-primary)] truncate">{current.text}</span>
           {current.amount && (
-            <span className={`font-mono font-bold shrink-0 ${current.amount.startsWith("+") ? "text-emerald-400" : "text-amber-400"}`}>
+            <span className={`font-mono font-bold shrink-0 ${current.amount.startsWith("+") ? "text-emerald-500" : "text-amber-500"}`}>
               {current.amount}
             </span>
           )}
@@ -138,7 +138,7 @@ export const LiveActivityTicker: React.FC = () => {
 
       <Link
         to="/ai-activity"
-        className="flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold shrink-0 ml-4 transition-colors hover:underline"
+        className="flex items-center gap-1 text-[11px] text-[var(--color-accent)] hover:underline font-semibold shrink-0 ml-4 transition-colors"
       >
         <span>View Full Activity</span>
         <ArrowRight className="w-3 h-3" />

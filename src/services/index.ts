@@ -12,6 +12,7 @@ import {
   User
 } from "../types";
 import { SHARED_CASES, SHARED_METRICS, SHARED_SUBSCRIPTIONS, SHARED_PAYMENTS, SHARED_ABANDONED_CARTS } from "../data/mockData";
+import { safeStorage } from "../utils/storage";
 
 const API_BASE_URL = "/api";
 
@@ -20,23 +21,99 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 8000,
+  timeout: 10000,
+  withCredentials: true,
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("auth_token");
+  const token = safeStorage.getItem("auth_token") || safeStorage.getItem("revivepay_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const csrf = safeStorage.getItem("csrf_token");
+  if (csrf && ["post", "put", "delete", "patch"].includes(config.method?.toLowerCase() || "")) {
+    config.headers["X-CSRF-Token"] = csrf;
   }
   return config;
 });
 
+// Automatic token refresh interceptor on 401
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/auth/demo-login") &&
+      !originalRequest.url?.includes("/auth/refresh") &&
+      !originalRequest.url?.includes("/auth/step-up-verify")
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshRes = await axios.post<{ access_token: string; csrf_token?: string; user: User }>(
+          "/api/auth/refresh",
+          {},
+          { withCredentials: true }
+        );
+        const newToken = refreshRes.data.access_token;
+        safeStorage.setItem("auth_token", newToken);
+        safeStorage.setItem("revivepay_token", newToken);
+        if (refreshRes.data.csrf_token) {
+          safeStorage.setItem("csrf_token", refreshRes.data.csrf_token);
+        }
+        processQueue(null, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return apiClient(originalRequest);
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authService = {
   login: async (email?: string, password?: string, role: string = "REVENUE_OPERATOR"): Promise<{ token: string; user: User }> => {
     try {
-      const res = await apiClient.post<{ access_token: string; user: User }>("/auth/login", { email, password, role });
+      const res = await apiClient.post<{ access_token: string; csrf_token?: string; user: User }>("/auth/login", { email, password, role });
       const token = res.data.access_token || "mock_token";
-      localStorage.setItem("auth_token", token);
+      safeStorage.setItem("auth_token", token);
+      safeStorage.setItem("revivepay_token", token);
+      if (res.data.csrf_token) {
+        safeStorage.setItem("csrf_token", res.data.csrf_token);
+      }
       return { token, user: res.data.user };
     } catch {
       const mockUser: User = {
@@ -47,7 +124,7 @@ export const authService = {
         is_active: true,
         created_at: new Date().toISOString()
       };
-      localStorage.setItem("auth_token", "mock_jwt_token");
+      safeStorage.setItem("auth_token", "mock_jwt_token");
       return { token: "mock_jwt_token", user: mockUser };
     }
   },
@@ -71,7 +148,7 @@ export const authService = {
       const res = await apiClient.get<User>("/auth/me");
       return res.data;
     } catch {
-      const token = localStorage.getItem("auth_token");
+      const token = safeStorage.getItem("auth_token");
       if (!token) return null;
       return {
         id: "usr_mock_001",
@@ -83,11 +160,43 @@ export const authService = {
       };
     }
   },
+  demoLogin: async (persona: "merchant_owner" | "revenue_operator" | "support_operator" | "admin"): Promise<{ token: string; user: User }> => {
+    const res = await apiClient.post<{ access_token: string; csrf_token?: string; token_type: string; user: User }>("/auth/demo-login", { persona });
+    const token = res.data.access_token;
+    safeStorage.setItem("auth_token", token);
+    safeStorage.setItem("revivepay_token", token);
+    safeStorage.setItem("revivepay_user", JSON.stringify(res.data.user));
+    if (res.data.csrf_token) {
+      safeStorage.setItem("csrf_token", res.data.csrf_token);
+    }
+    return { token, user: res.data.user };
+  },
+  stepUpVerify: async (caseId: string, credential: string): Promise<{ success: boolean; step_up_token: string; message: string }> => {
+    const res = await apiClient.post<{ success: boolean; step_up_token: string; message: string }>("/auth/step-up-verify", {
+      case_id: caseId,
+      credential
+    });
+    return res.data;
+  },
+  getEnvironment: async (): Promise<{ environment: string; environment_label: string; project_name: string; access_token_expire_minutes?: number; high_value_threshold?: number }> => {
+    try {
+      const res = await apiClient.get<{ environment: string; environment_label: string; project_name: string; access_token_expire_minutes?: number; high_value_threshold?: number }>("/auth/environment");
+      return res.data;
+    } catch {
+      return {
+        environment: "sandbox",
+        environment_label: "Sandbox Environment — Razorpay Test Mode",
+        project_name: "RevivePay AI",
+        access_token_expire_minutes: 15,
+        high_value_threshold: 50000.0
+      };
+    }
+  },
   switchPersona: async (role: string, email?: string): Promise<{ token: string; user: User }> => {
     try {
       const res = await apiClient.post<{ access_token: string; user: User }>("/auth/switch-persona", { role, email });
       const token = res.data.access_token;
-      localStorage.setItem("auth_token", token);
+      safeStorage.setItem("auth_token", token);
       return { token, user: res.data.user };
     } catch {
       const mockUser: User = {
@@ -102,7 +211,10 @@ export const authService = {
     }
   },
   logout: async () => {
-    localStorage.removeItem("auth_token");
+    safeStorage.removeItem("auth_token");
+    safeStorage.removeItem("revivepay_token");
+    safeStorage.removeItem("revivepay_user");
+    safeStorage.removeItem("csrf_token");
     try {
       await apiClient.post("/auth/logout");
     } catch {
@@ -190,11 +302,18 @@ export const recoveryService = {
       return found;
     }
   },
-  approveCase: async (caseId: string, notes?: string): Promise<RecoveryCase> => {
+  approveCase: async (caseId: string, notes?: string, stepUpToken?: string): Promise<RecoveryCase> => {
     try {
-      const res = await apiClient.post<RecoveryCase>(`/recovery/${caseId}/approve`, { action: "APPROVE", notes });
+      const res = await apiClient.post<RecoveryCase>(`/recovery/${caseId}/approve`, {
+        action: "APPROVE",
+        notes,
+        step_up_token: stepUpToken
+      });
       return res.data;
-    } catch {
+    } catch (e: any) {
+      if (e.response?.status === 400 && e.response?.data?.detail) {
+        throw new Error(e.response.data.detail);
+      }
       const found = SHARED_CASES.find(c => c.id === caseId || c.case_id === caseId) || SHARED_CASES[0];
       found.approval_status = "APPROVED";
       found.recovery_status = "RECOVERED";

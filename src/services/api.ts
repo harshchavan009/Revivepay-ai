@@ -1,4 +1,5 @@
 import axios from "axios";
+import { safeStorage } from "../utils/storage";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
   ? `${import.meta.env.VITE_API_BASE_URL}/api`
@@ -12,7 +13,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("revivepay_token");
+  const token = safeStorage.getItem("revivepay_token") || safeStorage.getItem("auth_token");
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }

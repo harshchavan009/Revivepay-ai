@@ -39,23 +39,40 @@ def test_razorpay_hmac_sha256_verification():
 
 def test_razorpay_webhook_endpoint_signature_validation():
     """
-    Test that invalid signatures are rejected by FastAPI endpoint with HTTP 400.
+    Test that invalid signatures and tampered payloads are rejected by FastAPI endpoint with HTTP 401.
     """
     secret = settings.RAZORPAY_WEBHOOK_SECRET
     body = {"event": "payment.failed", "event_id": f"event_{uuid.uuid4().hex[:10]}"}
     raw_bytes = json.dumps(body).encode("utf-8")
 
-    # Invalid signature
+    # 1. Missing signature header -> 401
+    response_missing = client.post(
+        "/api/webhooks/razorpay",
+        data=raw_bytes
+    )
+    assert response_missing.status_code == 401
+    assert "Missing X-Razorpay-Signature" in response_missing.json()["detail"]
+
+    # 2. Invalid signature -> 401
     response = client.post(
         "/api/webhooks/razorpay",
         data=raw_bytes,
         headers={"X-Razorpay-Signature": "invalid_fake_signature"}
     )
-    assert response.status_code == 400
+    assert response.status_code == 401
     assert "Invalid Razorpay webhook signature" in response.json()["detail"]
 
-    # Valid signature
+    # 3. Tampered payload -> 401
     valid_sig = generate_razorpay_signature(raw_bytes, secret)
+    tampered_bytes = json.dumps({"event": "payment.failed", "event_id": "tampered_id", "amount": 9999999}).encode("utf-8")
+    response_tampered = client.post(
+        "/api/webhooks/razorpay",
+        data=tampered_bytes,
+        headers={"X-Razorpay-Signature": valid_sig}
+    )
+    assert response_tampered.status_code == 401
+
+    # 4. Valid signature -> 200
     response_valid = client.post(
         "/api/webhooks/razorpay",
         data=raw_bytes,

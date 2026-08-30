@@ -29,6 +29,7 @@ class RecoveryEventType(str, Enum):
     ACTION_EXECUTED = "recovery.action.executed"
     ACTION_FAILED = "recovery.action.failed"
     VERIFIED = "recovery.verified"
+    STEPUP_VERIFIED = "recovery.approval.stepup_verified"
     ESCALATED = "recovery.escalated"
     STOPPED = "recovery.stopped"
 
@@ -51,6 +52,13 @@ class CheckoutEventType(str, Enum):
     CHECKOUT_PAYMENT_STARTED = "checkout.payment_started"
     CHECKOUT_ABANDONED = "checkout.abandoned"
     CHECKOUT_RECOVERED = "checkout.recovered"
+
+
+# ==========================================
+# 5. CHAT / INQUIRY EVENT TAXONOMY
+# ==========================================
+class ChatEventType(str, Enum):
+    CHAT_INQUIRY_RESOLVED = "chat.inquiry_resolved"
 
 
 # ==========================================
@@ -78,6 +86,7 @@ ALL_CANONICAL_EVENTS: Set[str] = {
     RecoveryEventType.ACTION_EXECUTED.value,
     RecoveryEventType.ACTION_FAILED.value,
     RecoveryEventType.VERIFIED.value,
+    RecoveryEventType.STEPUP_VERIFIED.value,
     RecoveryEventType.ESCALATED.value,
     RecoveryEventType.STOPPED.value,
 
@@ -92,6 +101,9 @@ ALL_CANONICAL_EVENTS: Set[str] = {
     CheckoutEventType.CHECKOUT_PAYMENT_STARTED.value,
     CheckoutEventType.CHECKOUT_ABANDONED.value,
     CheckoutEventType.CHECKOUT_RECOVERED.value,
+
+    # Chat events
+    ChatEventType.CHAT_INQUIRY_RESOLVED.value,
 }
 
 def is_canonical_event(event_type: str) -> bool:

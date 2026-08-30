@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from backend.services.broadcaster import _active_connections, broadcast_live_event, notify_live_event
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Live Events"])
 
 @router.get("/events/stream")
-async def stream_live_events():
+async def stream_live_events(request: Request):
     """
     Server-Sent Events (SSE) stream endpoint for real-time live telemetry ticker & dashboard updates.
     """
@@ -26,12 +26,14 @@ async def stream_live_events():
             yield f"event: connected\ndata: {greeting}\n\n"
 
             while True:
+                if await request.is_disconnected():
+                    break
                 try:
-                    message = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    message = await asyncio.wait_for(queue.get(), timeout=10.0)
                     yield message
                 except asyncio.TimeoutError:
                     yield ": ping\n\n"
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, Exception):
             pass
         finally:
             _active_connections.discard(queue)
