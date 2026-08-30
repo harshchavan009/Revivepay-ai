@@ -66,6 +66,13 @@ class ChatEventType(str, Enum):
 
 
 # ==========================================
+# 6. WEBHOOK SECURITY EVENT TAXONOMY
+# ==========================================
+class WebhookEventType(str, Enum):
+    WEBHOOK_VERIFICATION_REJECTED = "webhook.verification.rejected"
+
+
+# ==========================================
 # COMPLETE CANONICAL EVENT REGISTRY
 # ==========================================
 ALL_CANONICAL_EVENTS: Set[str] = {
@@ -92,6 +99,7 @@ ALL_CANONICAL_EVENTS: Set[str] = {
     RecoveryEventType.VERIFIED.value,
     RecoveryEventType.STEPUP_VERIFIED.value,
     RecoveryEventType.TAT_BREACHED.value,
+    RecoveryEventType.POLICY_OVERRODE_AI.value,
     RecoveryEventType.ESCALATED.value,
     RecoveryEventType.STOPPED.value,
 
@@ -111,6 +119,9 @@ ALL_CANONICAL_EVENTS: Set[str] = {
 
     # Chat events
     ChatEventType.CHAT_INQUIRY_RESOLVED.value,
+
+    # Webhook Security Defense events
+    WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
 }
 
 

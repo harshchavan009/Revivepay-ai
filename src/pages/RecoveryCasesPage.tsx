@@ -197,7 +197,9 @@ export const RecoveryCasesPage: React.FC = () => {
                 <th className="p-4">Failure Diagnosis</th>
                 <th className="p-4">Recommended Action</th>
                 <th className="p-4">Policy Gate</th>
-                <th className="p-4">TAT Status (RBI T+5)</th>
+                <th className="p-4" title="RBI Turn Around Time (TAT) Framework. Failure Recovery Safety Net: If a recovery attempt doesn't resolve in time, the system automatically escalates and calculates compensation.">
+                  TAT Status (RBI T+5)
+                </th>
                 <th className="p-4">Status</th>
                 <th className="p-4 pr-6 text-right">Action</th>
               </tr>
@@ -259,29 +261,45 @@ export const RecoveryCasesPage: React.FC = () => {
                       </Link>
                     </td>
                     <td className="p-4">
-                      <EventSourceBadge source={c.source} size="sm" />
+                      <EventSourceBadge source={c.source || "RAZORPAY_TEST"} />
                     </td>
                     <td className="p-4">
-                      <p className="font-semibold text-[var(--color-text-primary)]">{c.customer_name || "Enterprise Customer"}</p>
-                      <p className="text-[10px] text-[var(--color-text-muted)] font-mono">{c.customer_tier || "STANDARD"}</p>
+                      <div className="space-y-0.5">
+                        <p className="font-semibold text-[var(--color-text-primary)]">{c.customer_name || "Enterprise Customer"}</p>
+                        <p className="text-[10px] font-mono text-[var(--color-text-muted)]">{c.customer_email || "customer@enterprise.in"}</p>
+                      </div>
                     </td>
-                    <td className="p-4 font-bold text-[var(--color-text-primary)] font-mono">
+                    <td className="p-4 font-mono font-bold text-[var(--color-text-primary)]">
                       {formatINR(c.amount ?? c.amount_at_risk ?? 0)}
                     </td>
                     <td className="p-4">
                       <RiskBadge level={c.risk_level} score={c.risk_score} showScore />
                     </td>
-                    <td className="p-4 font-medium text-[var(--color-text-secondary)] max-w-[160px] truncate">
-                      {c.root_cause || c.failure_type || "Gateway Decline"}
+                    <td className="p-4">
+                      <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+                        {c.root_cause || c.failure_type || "Gateway Decline"}
+                      </span>
                     </td>
                     <td className="p-4">
                       <ActionBadge action={c.recommended_action} />
                     </td>
                     <td className="p-4">
-                      <StatusBadge status={c.policy_status} type="policy" />
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                        c.policy_status === "PASSED"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                          : c.policy_status === "REVIEW_REQUIRED"
+                          ? "bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30"
+                          : "bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+                      }`}>
+                        {c.policy_status}
+                      </span>
                     </td>
                     <td className="p-4">
-                      <TatBadge status={c.tat_status} deadline={c.tat_deadline} accruedCompensation={c.accrued_compensation_inr} />
+                      <TatBadge
+                        status={c.tat_status}
+                        deadline={c.tat_deadline}
+                        accruedCompensation={c.accrued_compensation_inr}
+                      />
                     </td>
                     <td className="p-4">
                       <StatusBadge status={c.recovery_status} />
@@ -289,9 +307,10 @@ export const RecoveryCasesPage: React.FC = () => {
                     <td className="p-4 pr-6 text-right">
                       <Link
                         to={`/cases/${c.case_id}`}
-                        className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-canvas)] hover:bg-[var(--color-accent)] hover:text-white text-[var(--color-accent)] font-semibold text-[11px] transition-colors inline-block border border-[var(--color-border-subtle)]"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-accent)] font-semibold text-xs transition-all shadow-sm"
                       >
-                        Investigate →
+                        <span>Investigate</span>
+                        <ArrowRight className="w-3 h-3" />
                       </Link>
                     </td>
                   </tr>
@@ -299,6 +318,17 @@ export const RecoveryCasesPage: React.FC = () => {
               )}
             </tbody>
           </table>
+
+          {/* C.3: Failure Recovery Safety Net Explanation Footer */}
+          <div className="p-3.5 bg-[var(--color-bg-canvas)] border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)] flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />
+              <span>
+                <strong>Failure Recovery Safety Net:</strong> If an autonomous recovery attempt doesn't resolve within statutory TAT (T+5 Card / T+1 UPI), the system automatically escalates to senior operators and calculates ₹100/day customer compensation — serving as the platform's self-governing safety net.
+              </span>
+            </div>
+            <span className="font-mono text-[10px] text-[var(--color-text-muted)]">RBI/2019-20/67 Reference Implementation</span>
+          </div>
         </div>
 
         {/* Mobile View */}

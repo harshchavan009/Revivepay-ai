@@ -80,10 +80,34 @@ export const SimulationCenterPage: React.FC = () => {
             )}
           </div>
 
-          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>{activeSimulation.message}</span>
-          </div>
+          {/* C.1: Security Ingress Defense Banner on Chaos Tampered Webhook */}
+          {activeSimulation.status === "REJECTED_401" ? (
+            <div className="p-4 rounded-xl bg-rose-500/10 border-2 border-rose-500/40 text-xs text-rose-800 dark:text-rose-200 space-y-2 shadow-premium-sm">
+              <div className="flex items-center gap-2 font-bold text-sm text-rose-700 dark:text-rose-300">
+                <ShieldAlert className="w-5 h-5 text-rose-500 shrink-0" />
+                <span>Security Ingress Defense: Tampered HMAC-SHA256 Signature Rejection (HTTP 401)</span>
+              </div>
+              <p className="font-mono text-[11px] leading-relaxed">
+                {activeSimulation.message}
+              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-mono">
+                <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-800 dark:text-rose-200 font-bold border border-rose-500/30">
+                  HTTP 401 Unauthorized
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-[var(--color-bg-canvas)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">
+                  Action: Payload Discarded • Zero DB Case Mutation
+                </span>
+                <span className="ml-auto text-[var(--color-text-muted)]">
+                  Logged to Audit: <code className="text-rose-600 dark:text-rose-400 font-bold">webhook.verification.rejected</code>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>{activeSimulation.message}</span>
+            </div>
+          )}
 
           {/* B.1: Demonstrable Policy Override Banner */}
           {activeSimulation.overrode_ai_recommendation && (

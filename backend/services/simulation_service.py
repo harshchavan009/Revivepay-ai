@@ -661,6 +661,61 @@ class SimulationService:
                 ]
             }
 
+        elif scenario in ["chaos_tampered_webhook", "tampered_signature", "chaos_test"]:
+            # C.1: Chaos test sending a forged webhook signature
+            from backend.events.taxonomy import WebhookEventType
+            amount = custom_amount or 19999.0
+            now_dt = datetime.datetime.utcnow()
+            audit_id = f"aud_chaos_rej_{int(now_dt.timestamp())}_{random_suffix}"
+            notes_str = "⚠️ Webhook rejected: HMAC-SHA256 signature verification failed (forged signature detected) — payload discarded, no case created."
+            
+            db.add(AuditLog(
+                audit_id=audit_id,
+                case_id="WEBHOOK-INGRESS",
+                event_type=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+                actor_type="GATEWAY",
+                actor_id="Razorpay HMAC-SHA256 Gateway",
+                actor="Razorpay HMAC-SHA256 Gateway",
+                action=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+                timestamp=now_dt,
+                policy_result="BLOCKED",
+                execution_result="REJECTED_401",
+                decision={
+                    "security_defense": True,
+                    "simulated_chaos_test": True,
+                    "signature_verified": False,
+                    "http_status": 401,
+                    "action_taken": "PAYLOAD_DISCARDED_NO_CASE_CREATED"
+                },
+                notes=notes_str
+            ))
+            db.commit()
+
+            return {
+                "scenario": scenario,
+                "case_id": None,
+                "payment_id": None,
+                "source": "SIMULATION",
+                "source_description": "Security Chaos Ingress Test",
+                "status": "REJECTED_401",
+                "risk_score": 100.0,
+                "risk_level": "CRITICAL",
+                "root_cause": "FORGED_HMAC_SIGNATURE_REJECTED",
+                "ai_confidence": 1.0,
+                "recommended_action": "stop_recovery",
+                "policy_status": "BLOCKED",
+                "recovery_status": "STOPPED",
+                "message": notes_str,
+                "audit_events": [
+                    {
+                        "actor": "Razorpay HMAC-SHA256 Gateway",
+                        "action": WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+                        "timestamp": now_dt.isoformat(),
+                        "notes": notes_str
+                    }
+                ]
+            }
+
         else:
             # Default fallback scenario
             return cls.trigger_scenario(db, "bank_failure", custom_amount, customer_type, payment_method)

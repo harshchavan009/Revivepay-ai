@@ -286,6 +286,17 @@ export const SubscriptionsPage: React.FC = () => {
               )}
             </tbody>
           </table>
+
+          {/* C.3: Pre-Debit Failure Prevention Footer */}
+          <div className="p-3.5 bg-[var(--color-bg-canvas)] border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)] flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>
+                <strong>Pre-Debit Failure Prevention:</strong> Enforces statutory 24-hour pre-debit notifications and auto-pauses dunning upon customer opt-out — eliminating bank mandate revocations and involuntary churn before debit failure occurs.
+              </span>
+            </div>
+            <span className="font-mono text-[10px] text-[var(--color-text-muted)]">RBI e-Mandate Framework</span>
+          </div>
         </div>
       </div>
 

@@ -31,6 +31,7 @@ import { SecurityPage } from "./pages/SecurityPage";
 import { ArchitecturePage } from "./pages/ArchitecturePage";
 import { EngineeringNotesPage } from "./pages/EngineeringNotesPage";
 import { SystemEvaluationPage } from "./pages/SystemEvaluationPage";
+import { HardeningLogPage } from "./pages/HardeningLogPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { AskMeAnythingDrawer } from "./components/AskMeAnythingDrawer";
 
@@ -101,6 +102,7 @@ export const App: React.FC = () => {
                 <Route path="/evaluation" element={<SystemEvaluationPage />} />
                 <Route path="/changelog" element={<EngineeringNotesPage />} />
                 <Route path="/engineering-notes" element={<EngineeringNotesPage />} />
+                <Route path="/hardening-log" element={<HardeningLogPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/cases" element={<RecoveryCasesPage />} />
                 <Route path="/recovery-cases" element={<RecoveryCasesPage />} />

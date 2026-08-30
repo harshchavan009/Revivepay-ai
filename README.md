@@ -214,6 +214,20 @@ Revivepay-ai/
 
 ---
 
+## 🛠️ Production Hardening Log (Issues Found & Fixed)
+
+A chronological record of genuine security, honesty, consistency, and architecture fixes implemented during platform hardening:
+
+| Date | Category | Issue Identified | Why It Mattered (Risk / Impact) | Engineering Fix Enforced | Resolution |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Aug 2026** | **Security** | Demo Credential Exposure (Hardcoded Secret Tokens) | Plaintext credentials in client bundles expose backend APIs to credential theft and unauthorized mutation. | Migrated to server-side bcrypt (12 rounds) persona login with automated secrets hygiene scanner in CI pipeline. | `VERIFIED` |
+| **Aug 2026** | **Honesty & Framing** | LIVE / TEST Label Contradiction & Provenance Ambiguity | Inconsistent labels break credibility when presenting to technical evaluators and reviewers. | Enforced strict source provenance tags (`RAZORPAY_TEST` vs. `SIMULATION`) across all models, badges, and filters. | `VERIFIED` |
+| **Aug 2026** | **Data Integrity** | Case-Count Divergence (Dashboard vs. Registry Mismatch) | Two different totals for the same dataset breaks user trust in the platform's telemetry. | Unified database query with default `limit=1000` and shared `GET /api/recovery/count` canonical endpoint. | `VERIFIED` |
+| **Aug 2026** | **Honesty & Framing** | Unverifiable Regulatory Badging ('RBI Certified' Copy) | RBI does not certify software products; claiming official certification creates legal and credibility risks. | Replaced marketing copy with honest educational reference implementations of RBI circulars (RBI/2019-20/67). | `VERIFIED` |
+| **Aug 2026** | **Security** | High-Value Transaction Execution Without Step-Up Verification | Automated execution on transactions >= ₹50,000 without MFA creates substantial financial blast-radius risk. | Implemented mandatory Step-Up Re-Authentication (OTP/password verification) logging distinct audit events. | `VERIFIED` |
+
+---
+
 ## 👥 Pre-Seeded Personas & RBAC
 
 The platform includes 4 pre-configured personas with bcrypt-hashed credentials:

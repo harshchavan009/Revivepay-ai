@@ -19,6 +19,7 @@ import {
   FileCode,
   RotateCcw,
   Cpu,
+  Wrench,
   X
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -67,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
       items: [
         { label: "200+ ML Signals Feed", icon: Sparkles, path: "/ai-activity" },
         { label: "System Evaluation", icon: Cpu, path: "/evaluation" },
+        { label: "Hardening Log", icon: Wrench, path: "/hardening-log" },
         { label: "Immutable Audit Log", icon: Clock, path: "/audit" },
         { label: "Policy Guardrails", icon: Lock, path: "/policies" },
         { label: "Engineering Notes", icon: FileCode, path: "/changelog" },

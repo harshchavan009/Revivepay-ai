@@ -67,6 +67,14 @@ def get_simulation_presets():
             "default_amount": 14500.0
         },
         {
+            "id": "chaos_tampered_webhook",
+            "title": "Chaos Test — Tampered Signature Rejection",
+            "tagline": "Forged HMAC-SHA256 signature • Real-time ingress defense • HTTP 401",
+            "description": "Dispatches a live webhook with an invalid/forged signature to test gateway security defense. Demonstrates immediate 401 Unauthorized rejection, payload dropping, and defensive audit event logging.",
+            "type": "chaos_security",
+            "default_amount": 19999.0
+        },
+        {
             "id": "retry_exhaustion_escalation",
             "title": "Retry Exhaustion & Safe Escalation",
             "tagline": "Persistent decline • ₹6,200 • Max Retries Reached",

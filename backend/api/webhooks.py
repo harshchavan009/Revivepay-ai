@@ -33,12 +33,54 @@ async def handle_razorpay_webhook(
     # Razorpay sends raw hex signature in 'X-Razorpay-Signature' header
     if not x_razorpay_signature:
         logger.warning("Rejected Razorpay webhook with missing X-Razorpay-Signature header.")
+        from backend.models.all_models import AuditLog
+        from backend.events.taxonomy import WebhookEventType
+        now_dt = datetime.datetime.utcnow()
+        try:
+            db.add(AuditLog(
+                audit_id=f"aud_sec_{uuid.uuid4().hex[:10]}",
+                case_id="WEBHOOK-INGRESS",
+                event_type=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+                actor_type="GATEWAY",
+                actor_id="Razorpay Ingress Defense",
+                actor="Razorpay HMAC-SHA256 Gateway",
+                action=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+                timestamp=now_dt,
+                policy_result="BLOCKED",
+                execution_result="REJECTED_401",
+                decision={"reason": "MISSING_SIGNATURE", "security_defense": True},
+                notes="Security defense: Webhook rejected due to missing X-Razorpay-Signature header. Payload dropped."
+            ))
+            db.commit()
+        except Exception:
+            pass
         raise HTTPException(status_code=401, detail="Missing X-Razorpay-Signature header")
 
     if x_razorpay_signature != "test_signature":
         is_valid = RazorpayService.verify_webhook_signature(raw_body, x_razorpay_signature)
         if not is_valid:
             logger.warning("Rejected Razorpay webhook with invalid/tampered HMAC-SHA256 signature.")
+            from backend.models.all_models import AuditLog
+            from backend.events.taxonomy import WebhookEventType
+            now_dt = datetime.datetime.utcnow()
+            try:
+                db.add(AuditLog(
+                    audit_id=f"aud_sec_{uuid.uuid4().hex[:10]}",
+                    case_id="WEBHOOK-INGRESS",
+                    event_type=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+                    actor_type="GATEWAY",
+                    actor_id="Razorpay Ingress Defense",
+                    actor="Razorpay HMAC-SHA256 Gateway",
+                    action=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+                    timestamp=now_dt,
+                    policy_result="BLOCKED",
+                    execution_result="REJECTED_401",
+                    decision={"reason": "INVALID_SIGNATURE", "security_defense": True, "signature_received": f"{x_razorpay_signature[:10]}..."},
+                    notes="Security defense: Webhook rejected due to invalid/forged HMAC-SHA256 signature. Payload dropped."
+                ))
+                db.commit()
+            except Exception:
+                pass
             raise HTTPException(status_code=401, detail="Invalid Razorpay webhook signature (HMAC-SHA256 verification failed)")
 
     try:
