@@ -252,6 +252,14 @@ export const EngineeringNotesPage: React.FC = () => {
                   <span className="text-[10px] text-emerald-500 font-bold">SAFE FLOOR</span>
                 </div>
               </div>
+
+              {/* B.4: Architecture Decision — Model Choice Rationale */}
+              <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2 text-xs text-[var(--color-text-secondary)]">
+                <p className="font-bold text-[var(--color-text-primary)]">Architecture Rationale: Multi-Tier LLMs vs. Static Classification</p>
+                <p className="leading-relaxed text-[11px]">
+                  Payment failure telemetry in India's banking ecosystem is inherently heterogeneous, unstandardized, and constantly evolving across issuer switches and mandate limits. A fixed classification model or fine-tuned weights degrades rapidly as banks alter internal error payloads. <strong>Claude 3.5 Sonnet</strong> was selected as primary reasoner for multi-step contextual synthesis across noisy logs, with <strong>Google Gemini 1.5 Pro</strong> providing automatic sub-second failover on latency spikes. Crucially, deterministic policy gates sit between LLM reasoning and execution, ensuring model hallucinations cannot trigger unauthorized financial retries.
+                </p>
+              </div>
             </div>
           </div>
         )}

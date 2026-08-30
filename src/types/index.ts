@@ -184,11 +184,25 @@ export interface RecoveryCase {
   accrued_compensation_inr?: number;
   model_provider?: string;
   model_name?: string;
+  overrode_ai_recommendation?: boolean;
+  ai_original_recommendation?: string;
+  ai_override_reason?: string;
   raw_prompt?: string;
   raw_response?: string;
   created_at: string;
   updated_at: string;
   resolved_at?: string;
+}
+
+export interface AIBudgetStatus {
+  used: number;
+  total: number;
+  remaining: number;
+  is_exhausted: boolean;
+  deterministic_fallback_active: boolean;
+  primary_model: string;
+  fallback_model: string;
+  safe_floor_model: string;
 }
 
 // ==========================================
@@ -387,6 +401,10 @@ export interface SimulationResult {
   recommended_action: string;
   policy_status: string;
   recovery_status: string;
+  model_name?: string;
+  overrode_ai_recommendation?: boolean;
+  ai_original_recommendation?: string;
+  ai_override_reason?: string;
   message: string;
   audit_events: Array<{ actor: string; action: string; timestamp: string; notes?: string }>;
 }

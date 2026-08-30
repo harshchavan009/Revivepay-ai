@@ -31,6 +31,7 @@ class RecoveryEventType(str, Enum):
     VERIFIED = "recovery.verified"
     STEPUP_VERIFIED = "recovery.approval.stepup_verified"
     TAT_BREACHED = "recovery.case.tat_breached"
+    POLICY_OVERRODE_AI = "recovery.policy.overrode_ai_recommendation"
     ESCALATED = "recovery.escalated"
     STOPPED = "recovery.stopped"
 

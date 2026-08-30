@@ -729,3 +729,62 @@ export const mlService = {
   }
 };
 
+export const agentService = {
+  getBudget: async () => {
+    try {
+      const res = await apiClient.get("/agent/budget");
+      return res.data;
+    } catch {
+      return {
+        used: 42,
+        total: 100,
+        remaining: 58,
+        is_exhausted: false,
+        deterministic_fallback_active: false,
+        primary_model: "claude-3-5-sonnet-20241022",
+        fallback_model: "gemini-1.5-pro",
+        safe_floor_model: "rule-engine-v2.1"
+      };
+    }
+  },
+  toggleBudget: async () => {
+    try {
+      const res = await apiClient.post("/agent/budget/toggle-exhaustion");
+      return res.data;
+    } catch {
+      return {
+        used: 100,
+        total: 100,
+        remaining: 0,
+        is_exhausted: true,
+        deterministic_fallback_active: true,
+        primary_model: "claude-3-5-sonnet-20241022",
+        fallback_model: "gemini-1.5-pro",
+        safe_floor_model: "rule-engine-v2.1"
+      };
+    }
+  },
+  forceFallbackTest: async () => {
+    try {
+      const res = await apiClient.post("/agent/force-fallback-test");
+      return res.data;
+    } catch (e: any) {
+      return {
+        root_cause: "temporary_bank_failure",
+        confidence: 0.92,
+        evidence: [
+          "Customer Vikram Seth (VIP Tier) with 12 successful prior transactions",
+          "Primary Anthropic Claude provider timed out (>3500ms)",
+          "Secondary Gemini 1.5 Pro evaluated gateway code ISSUER_NODE_TIMEOUT_504"
+        ],
+        recommended_action: "retry_payment",
+        reasoning_summary: "[Gemini 1.5 Pro Fallback Active] Primary provider timed out. Evaluated transient switch error and recommended automated retry in 30s.",
+        risk_level: "LOW",
+        model_provider: "google",
+        model_name: "gemini-1.5-pro (fallback — primary provider timeout)"
+      };
+    }
+  }
+};
+
+

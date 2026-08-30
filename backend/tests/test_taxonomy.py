@@ -40,6 +40,7 @@ def test_recovery_event_taxonomy():
         "recovery.verified",
         "recovery.approval.stepup_verified",
         "recovery.case.tat_breached",
+        "recovery.policy.overrode_ai_recommendation",
         "recovery.escalated",
         "recovery.stopped"
     }

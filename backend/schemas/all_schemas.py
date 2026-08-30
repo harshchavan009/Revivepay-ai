@@ -152,6 +152,9 @@ class RecoveryCaseResponse(BaseModel):
     
     model_provider: Optional[str] = "deterministic_rules_engine"
     model_name: Optional[str] = "rule-engine-v2.1"
+    overrode_ai_recommendation: bool = False
+    ai_original_recommendation: Optional[str] = None
+    ai_override_reason: Optional[str] = None
     raw_prompt: Optional[str] = None
     raw_response: Optional[str] = None
     created_at: datetime.datetime
@@ -483,5 +486,9 @@ class SimulationResponse(BaseModel):
     recommended_action: str
     policy_status: str
     recovery_status: str
+    model_name: Optional[str] = None
+    overrode_ai_recommendation: bool = False
+    ai_original_recommendation: Optional[str] = None
+    ai_override_reason: Optional[str] = None
     message: str
     audit_events: List[Dict[str, Any]]

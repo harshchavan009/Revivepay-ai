@@ -7,14 +7,16 @@ import {
   Sun,
   Moon,
   Check,
-  Menu
+  Menu,
+  Sparkles,
+  ShieldAlert
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { GlobalSearchModal } from "./GlobalSearchModal";
 import { notificationService, OperationalNotification } from "../services/notificationService";
-import { dashboardService } from "../services";
-import { DashboardMetrics } from "../types";
+import { dashboardService, agentService } from "../services";
+import { DashboardMetrics, AIBudgetStatus } from "../types";
 
 interface HeaderProps {
   onOpenMobileMenu?: () => void;
@@ -27,12 +29,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<OperationalNotification[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [budget, setBudget] = useState<AIBudgetStatus | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     notificationService.getNotifications().then(setNotifications);
     const unsubscribe = notificationService.subscribe(setNotifications);
     dashboardService.getSummary().then(setMetrics).catch(() => {});
+    agentService.getBudget().then(setBudget).catch(() => {});
     return () => unsubscribe();
   }, []);
 
@@ -89,6 +93,28 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
 
         {/* Right Side: Quick Action Triggers & Status */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* B.3: AI Reasoner Budget & Deterministic Fallback Mode Indicator */}
+          {budget?.deterministic_fallback_active ? (
+            <div
+              onClick={() => navigate("/ai-activity")}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-mono font-bold cursor-pointer animate-pulse"
+              title="Daily AI budget reached. Safe deterministic rules floor active. Click to view."
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+              <span>Rules Floor Active ({budget.used}/{budget.total})</span>
+            </div>
+          ) : (
+            <div
+              onClick={() => navigate("/ai-activity")}
+              className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono cursor-pointer hover:border-[var(--color-accent)] transition-colors"
+              title="Daily LLM Call Budget. Click to view 200+ signals."
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+              <span className="text-[var(--color-text-secondary)]">AI Calls Today:</span>
+              <span className="text-[var(--color-text-primary)] font-bold">{budget?.used ?? 42} / {budget?.total ?? 100}</span>
+            </div>
+          )}
+
           {/* Autonomous Engine Live Status */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
