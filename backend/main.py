@@ -15,12 +15,15 @@ from backend.seed_data import seed_database
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("revivepay")
 
-# Initialize database schema
-Base.metadata.create_all(bind=engine)
+# Database schema initialization
+# In production, schema migrations are explicitly managed via Alembic (`alembic upgrade head`).
+# In local development / test environments with SQLite, create schema if not present.
+if settings.ENVIRONMENT != "production" or "sqlite" in settings.DATABASE_URL:
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="RevivePay AI",
-    description="Enterprise-Grade Autonomous Revenue Recovery & Payment Failure Resolution Platform",
+    description="Production-Oriented Fintech Engineering Prototype for Autonomous Revenue Recovery & Payment Failure Resolution",
     version="1.0.0",
     openapi_url="/openapi.json",
     docs_url="/docs",

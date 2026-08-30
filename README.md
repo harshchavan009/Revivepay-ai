@@ -1,17 +1,17 @@
 # ⚡ Revive AI — Autonomous Revenue Recovery & Payment Failure Resolution Platform
-### *Turning Failed Payments, Subscription Declines, and Checkout Abandonment into Recoverable Revenue*
+### *A Production-Oriented Fintech Engineering Prototype for Payment Recovery & Failure Resolution*
 
 [![RevivePay CI Suite](https://github.com/harshchavan009/Revivepay-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/harshchavan009/Revivepay-ai/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![React 19](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-emerald.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.0-336791.svg)](https://www.postgresql.org/)
-[![Tests](https://img.shields.io/badge/tests-60%20passing-success.svg)](backend/tests/)
+[![Tests](https://img.shields.io/badge/tests-67%20passing-success.svg)](backend/tests/)
 [![ML Model](https://img.shields.io/badge/ML%20Model-Gradient%20Boosting%20(ROC--AUC%200.81)-indigo.svg)](ml/)
 [![Audit Chain](https://img.shields.io/badge/Audit%20Ledger-SHA--256%20Hash--Chained-emerald.svg)](backend/services/audit_service.py)
 
 > **Recover Revenue Before It's Lost.**  
-> Revive AI is a production-oriented, policy-governed autonomous revenue recovery platform designed to eliminate financial leakage caused by transient payment failures, recurring subscription dunning declines, and abandoned checkout sessions.
+> Revive AI is a **production-oriented fintech engineering prototype** designed to demonstrate policy-governed autonomous revenue recovery across transient payment failures, recurring subscription dunning declines, and abandoned checkout sessions.
 
 ---
 
@@ -81,7 +81,7 @@ $$\text{Risk Score} = 0.35 \times \text{Value Factor} + 0.25 \times \text{Recove
 | **80 – 100** | `CRITICAL` | Mandatory human authorization required |
 
 ### 3. 🤖 Empirical ML Recovery Likelihood Classifier (`ml/`)
-An independent machine learning pipeline estimates the empirical probability of payment recovery: $P(\text{recovery\_success})$.
+An independent machine learning pipeline trained on synthetic multi-pattern transaction telemetry estimates the empirical probability of recovery: $P(\text{recovery\_success})$.
 - **Algorithm**: `CalibratedClassifierCV(GradientBoostingClassifier, cv=5, method='isotonic')`
 - **10 Candidate Signals**: `transaction_amount`, `failure_category_encoded`, `payment_method_encoded`, `customer_success_rate`, `customer_failure_rate`, `retry_count`, `customer_tenure_days`, `is_subscription`, `previous_recovery_success`, `checkout_intent_score`.
 - **Empirical Diagnostics**:
@@ -149,40 +149,36 @@ stateDiagram-v2
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend UI** | React 19, TypeScript, Vite, Tailwind CSS, Recharts, Lucide Icons, React Router v6, Axios |
-| **Backend API** | FastAPI, Python 3.11+, Pydantic v2, SQLAlchemy 2.0, Alembic, Uvicorn, SlowAPI |
-| **Machine Learning** | Scikit-learn, Gradient Boosting, Isotonic Probability Calibration, Joblib, NumPy |
-| **Artificial Intelligence** | Anthropic Claude 3.5 Sonnet, Google Gemini 1.5 Pro, Deterministic Rules Engine |
-| **Database & ORM** | PostgreSQL 16 (Production/Staging), SQLite (Lightweight Local Dev) |
-| **Payment Integration** | Razorpay Test Mode, Timing-Safe HMAC-SHA256 Webhooks, Idempotency Deduplication |
-| **Security & Auth** | JWT Access Tokens (15m), httpOnly SameSite Refresh Cookies (7d), Step-Up MFA, CSRF, CSP |
-| **DevOps & CI/CD** | Docker, Docker Compose, GitHub Actions CI Workflow, Secrets Hygiene Scanners |
+| **Frontend UI** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Recharts |
+| **Backend API** | FastAPI 0.115, Python 3.11+, Pydantic v2, Uvicorn (ASGI) |
+| **Database & ORM** | PostgreSQL 16 (Production) / SQLite (Dev), SQLAlchemy 2.0, Alembic |
+| **Machine Learning** | Scikit-learn (Calibrated Gradient Boosting), NumPy, Pandas, Joblib |
+| **AI Reasoning** | Multi-Tier Orchestrator: Anthropic Claude 3.5 Sonnet $\rightarrow$ Google Gemini 1.5 Pro $\rightarrow$ Deterministic Rules |
+| **Gateway Integration** | Razorpay Test Mode API, HMAC-SHA256 Webhook Ingestion & Idempotency Filter |
+| **Observability & Audit**| SHA-256 Hash-Chained Audit Ledger, Server-Sent Events (SSE) Live Feed, Structured Logging |
+| **Containerization** | Docker, Docker Compose, Nginx (Frontend Reverse Proxy) |
+| **CI / CD** | GitHub Actions (Lint, ML Calibration, Secrets Hygiene Audit, 67 Pytest Suite) |
 
 ---
 
-## 📂 Project Structure
+## 📁 Repository Directory Structure
 
-```
-Revivepay-ai/
+```text
+.
 ├── backend/
-│   ├── api/                     # 17 Modular FastAPI REST Routers
-│   │   ├── auth.py              # JWT authentication & persona login
-│   │   ├── recovery.py          # Recovery case registry & approval actions
-│   │   ├── ml_evaluation.py     # ML diagnostics & system telemetry endpoints
-│   │   ├── webhooks.py          # Razorpay HMAC-SHA256 webhook ingestion
-│   │   ├── simulation.py        # 8 domain failure simulation scenarios
-│   │   └── audit.py             # Hash-chain verification endpoint
-│   ├── events/taxonomy.py       # Canonical domain event definitions
-│   ├── models/all_models.py     # 11 SQLAlchemy domain entities
-│   ├── schemas/all_schemas.py   # Pydantic request/response schemas
-│   ├── services/
-│   │   ├── recovery_engine.py   # 12-state recovery orchestrator
+│   ├── api/                     # FastAPI route handlers (auth, recovery, webhooks, ml)
+│   ├── events/                  # Canonical event taxonomy & validator
+│   ├── models/                  # 11 SQLAlchemy domain entities
+│   ├── schemas/                 # Pydantic v2 response & request schemas
+│   ├── services/                # Core domain business logic
+│   │   ├── razorpay_service.py  # HMAC-SHA256 verification & test API client
+│   │   ├── recovery_engine.py   # Recovery orchestration & state machine
 │   │   ├── risk_engine.py       # 4-factor deterministic risk scorer
 │   │   ├── ai_agent.py          # 3-tier multi-LLM root-cause reasoner
 │   │   ├── policy_gateway.py    # Deterministic safety rules gateway
 │   │   ├── outcome_verification_service.py # Settlement verification
 │   │   └── audit_service.py     # SHA-256 hash-chain builder
-│   ├── tests/                   # 60 Pytest backend integration tests
+│   ├── tests/                   # 67 Pytest backend integration tests
 │   ├── database.py              # SQLAlchemy connection pooling & SessionLocal
 │   ├── config.py                # Pydantic settings & environment configuration
 │   └── main.py                  # FastAPI application entrypoint & middleware
@@ -196,10 +192,11 @@ Revivepay-ai/
 ├── src/
 │   ├── components/              # Header, Sidebar, ErrorBoundary, LiveTicker
 │   ├── context/                 # AuthContext, MetricsContext, ThemeContext
-│   ├── pages/                   # 26 Production pages (Dashboard, Cases, etc.)
+│   ├── pages/                   # 27 Production pages (Dashboard, Cases, etc.)
 │   │   ├── DashboardPage.tsx    # Executive KPIs & real-time telemetry
 │   │   ├── SystemEvaluationPage.tsx # Live ML diagnostics & playground
 │   │   ├── RecoveryCasesPage.tsx# Recovery registry & TAT breach badges
+│   │   ├── HardeningLogPage.tsx # Issues found and fixed log
 │   │   └── ApprovalCenterPage.tsx# Human-in-the-loop review queue
 │   ├── services/                # Centralized typed Axios API clients
 │   └── utils/errorTracking.ts   # Client telemetry & error instrumentation
@@ -230,14 +227,16 @@ A chronological record of genuine security, honesty, consistency, and architectu
 
 ## 👥 Pre-Seeded Personas & RBAC
 
-The platform includes 4 pre-configured personas with bcrypt-hashed credentials:
+The platform includes 4 pre-configured personas with secure server-side bcrypt password verification for testing role-based access control:
 
-| Persona | Email | Password | Role | Permissions |
-| :--- | :--- | :--- | :--- | :--- |
-| **Merchant Owner** | `owner@revivepay.ai` | `password123` | `MERCHANT_OWNER` | Policy configuration, revenue analytics, payout views |
-| **Revenue Operator** | `operator@revivepay.ai` | `password123` | `REVENUE_OPERATOR` | Approve/reject cases, execute retries, simulations |
-| **Support Operator** | `support@revivepay.ai` | `password123` | `SUPPORT_OPERATOR` | Read-only investigation, customer communications |
-| **Admin** | `admin@revivepay.ai` | `password123` | `ADMIN` | Platform administration, webhook key management |
+| Persona | Email | Assigned Role | Permissions & Scope |
+| :--- | :--- | :--- | :--- |
+| **Merchant Owner** | `owner@revivepay.ai` | `MERCHANT_OWNER` | Policy configuration, revenue analytics, payout views |
+| **Revenue Operator** | `operator@revivepay.ai` | `REVENUE_OPERATOR` | Approve/reject cases, execute retries, simulations |
+| **Support Operator** | `support@revivepay.ai` | `SUPPORT_OPERATOR` | Read-only investigation, customer communications |
+| **Admin** | `admin@revivepay.ai` | `ADMIN` | Platform administration, webhook key management |
+
+> **Note on Authentication**: Demo accounts use standard sandbox evaluation passwords seeded via environment configuration (`.env`). In production deployments, Revive AI delegates authentication to enterprise SAML 2.0 / OIDC identity providers with enforced Multi-Factor Authentication (MFA).
 
 ---
 
@@ -301,7 +300,7 @@ docker compose up --build -d
 
 ## 🧪 Testing & Quality Invariants
 
-Revive AI enforces 60 automated tests across all domain invariants:
+Revive AI enforces 67 automated tests across all domain invariants:
 
 ```bash
 PYTHONPATH=. pytest backend/tests/ -v -W ignore
@@ -315,24 +314,27 @@ PYTHONPATH=. pytest backend/tests/ -v -W ignore
 - `test_step_up_auth_required_for_high_value_cases`: Transactions $\ge$ ₹50,000 enforce re-authentication.
 - `test_tat_breach_detection_and_compensation_calculation`: Auto-calculates ₹100/day compensation on overdue cases.
 - `test_outcome_verification_success`: Requires provider transaction reference before marking `RECOVERED`.
+- `test_chaos_tampered_webhook_simulation`: Forged webhook signatures rejected with HTTP 401 and logged as security defense.
 
 ---
 
 ## 🔒 Security & Secrets Hygiene
 
-- **Zero Plaintext Credentials**: All passwords hashed using `bcrypt` ($12$ rounds).
+- **Zero Plaintext Credentials in Source**: All secrets loaded from environment variables (`.env`).
+- **Cryptographic Hashing**: User authentication verified via `bcrypt` ($12$ rounds).
 - **Session Protection**: Short-lived JWTs ($15$ min) + httpOnly, Secure, SameSite=Strict refresh cookies.
-- **CSRF Token Defense**: State-changing operations validate cryptographic double-submit cookies.
+- **CSRF Defense**: State-changing operations validate cryptographic double-submit cookies.
 - **Anti-Abuse Rate Limiting**: Sliding window limiter on `/api/auth/*` ($15/\text{min}$), `/api/webhooks/*` ($120/\text{min}$), and `/api/chat` ($30/\text{min}$).
 - **Security Headers**: `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security: max-age=31536000`.
 
 ---
 
-## ⚖️ Honest Disclaimers & Disclosures
+## ⚖️ Operational Scope & Disclaimers
 
 1. **Sandbox Environment**: All Razorpay gateway interactions run against **Razorpay Test Mode** (`rzp_test_...`). No real fiat currency or bank debiting occurs.
-2. **Educational Reference Implementation**: References to published Reserve Bank of India (RBI) Turn Around Time (TAT) framework (RBI/2019-20/67) and e-Mandate circulars are educational reference implementations of public guidelines and do not constitute official regulatory certification.
-3. **Open-Source Portfolio Project**: Revive AI is an engineering portfolio project created by **Harsh Chavan** and is not a registered corporate entity.
+2. **Synthetic ML Evaluation Data**: The calibrated gradient boosting recovery classifier was trained and evaluated on 1,000 synthetic transaction records modeling representative banking and card-network failure patterns in the Indian payments ecosystem.
+3. **Educational Reference Implementation**: References to published Reserve Bank of India (RBI) Turn Around Time (TAT) framework (RBI/2019-20/67) and e-Mandate circulars are educational reference implementations of public guidelines and do not constitute official regulatory certification.
+4. **Engineering Prototype**: Revive AI is an open-source fintech engineering prototype created by **Harsh Chavan** to demonstrate enterprise-grade revenue recovery architecture.
 
 ---
 

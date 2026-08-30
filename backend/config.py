@@ -5,15 +5,15 @@ from typing import Optional, List
 class Settings(BaseSettings):
     PROJECT_NAME: str = "RevivePay AI"
     API_V1_STR: str = "/api"
-    SECRET_KEY: str = "revivepay_enterprise_fintech_jwt_secret_key_2026_x892"
-    CSRF_SECRET: str = "revivepay_csrf_signing_salt_2026"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # Short-lived 15 minutes
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7     # 7-day httpOnly refresh cookie
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "insecure-dev-secret-key-change-in-production")
+    CSRF_SECRET: str = os.getenv("CSRF_SECRET", "insecure-dev-csrf-salt-change-in-production")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))  # Short-lived 15 minutes
+    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))       # 7-day httpOnly refresh cookie
     
     # Rate Limiting & High-Value Governance
-    RATE_LIMIT_AUTH_PER_MINUTE: int = 15
-    RATE_LIMIT_WEBHOOK_PER_MINUTE: int = 120
-    HIGH_VALUE_THRESHOLD: float = 50000.0
+    RATE_LIMIT_AUTH_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_AUTH_PER_MINUTE", "15"))
+    RATE_LIMIT_WEBHOOK_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_WEBHOOK_PER_MINUTE", "120"))
+    HIGH_VALUE_THRESHOLD: float = float(os.getenv("HIGH_VALUE_THRESHOLD", "50000.0"))
     
     # RBI Guideline Reference Framework Settings (RBI/2019-20/67 & e-Mandates)
     TAT_UPI_DAYS: int = 1                     # UPI auto-reversal deadline T+1
@@ -22,28 +22,28 @@ class Settings(BaseSettings):
     MANDATE_AFA_THRESHOLD: float = 15000.0    # RBI e-Mandate AFA setup threshold (₹15,000)
     
     # LLM Quota & Cost Guardrails
-    DAILY_LLM_CALL_BUDGET: int = 100          # Daily LLM call cap before deterministic fallback
+    DAILY_LLM_CALL_BUDGET: int = int(os.getenv("DAILY_LLM_CALL_BUDGET", "100"))  # Daily LLM call cap before deterministic fallback
     
-    # Database
-    DATABASE_URL: str = "sqlite:///./revivepay.db"
+    # Database (Alembic managed in production)
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./revivepay.db")
     
     # Environment Configuration
-    ENVIRONMENT: str = "sandbox"  # sandbox | production
-    ENVIRONMENT_LABEL: str = "Sandbox Environment — Razorpay Test Mode"
-    PUBLIC_APP_URL: str = "https://demo.revivepay.ai"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "sandbox")  # sandbox | production
+    ENVIRONMENT_LABEL: str = os.getenv("ENVIRONMENT_LABEL", "Sandbox Environment — Razorpay Test Mode")
+    PUBLIC_APP_URL: str = os.getenv("PUBLIC_APP_URL", "https://demo.revivepay.ai")
 
-    # Razorpay Test Mode
-    RAZORPAY_KEY_ID: str = "rzp_test_revivepay2026"
-    RAZORPAY_KEY_SECRET: str = "secret_revivepay_fintech_test"
-    RAZORPAY_WEBHOOK_SECRET: str = "whsec_revivepay_test_webhook_2026"
+    # Razorpay Test Mode (Configured via Environment)
+    RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "rzp_test_placeholder_key")
+    RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "placeholder_razorpay_secret")
+    RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "whsec_placeholder_test_secret")
     
     # LLM Settings (Multi-tier: Claude primary -> Gemini fallback -> Deterministic safety rules)
-    ANTHROPIC_API_KEY: Optional[str] = None
-    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
-    GEMINI_API_KEY: Optional[str] = None
-    LLM_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "gemini-1.5-pro"
-    OPENAI_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY", None)
+    ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+    GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", None)
+    LLM_API_KEY: Optional[str] = os.getenv("LLM_API_KEY", None)
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-1.5-pro")
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY", None)
     
     # CORS
     CORS_ORIGINS: List[str] = [

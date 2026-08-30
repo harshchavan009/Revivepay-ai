@@ -5,15 +5,15 @@ services:
     image: postgres:16-alpine
     container_name: revivepay_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: revivepay_secure_postgres_pass_2026
-      POSTGRES_DB: revivepay
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-revivepay}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d revivepay"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-revivepay}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,13 +27,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:revivepay_secure_postgres_pass_2026@postgres:5432/revivepay
-      - ENVIRONMENT=production
-      - SECRET_KEY=revivepay_enterprise_fintech_jwt_secret_key_2026_x892
-      - CSRF_SECRET=revivepay_enterprise_csrf_salt_secret_2026_x892
-      - RAZORPAY_KEY_ID=rzp_test_revivepay2026
-      - RAZORPAY_KEY_SECRET=secret_revivepay_fintech_test
-      - RAZORPAY_WEBHOOK_SECRET=whsec_revivepay_test_webhook_2026
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password_dev}@postgres:5432/${POSTGRES_DB:-revivepay}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - SECRET_KEY=${SECRET_KEY:-insecure_jwt_secret_override_in_env}
+      - CSRF_SECRET=${CSRF_SECRET:-insecure_csrf_secret_override_in_env}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-rzp_test_placeholder_key}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-placeholder_razorpay_secret}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-whsec_placeholder_test_secret}
     depends_on:
       postgres:
         condition: service_healthy
