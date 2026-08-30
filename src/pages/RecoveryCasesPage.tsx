@@ -71,7 +71,9 @@ export const RecoveryCasesPage: React.FC = () => {
               CASE INVESTIGATION QUEUE
             </span>
             <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
-              {cases.length} Total Cases
+              {filteredCases.length !== cases.length
+                ? `Showing ${filteredCases.length} of ${cases.length} Cases (Filtered)`
+                : `${cases.length} Total Cases`}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)] tracking-tight mt-1 flex items-center gap-2">

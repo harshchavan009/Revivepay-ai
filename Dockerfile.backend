@@ -6,6 +6,14 @@ COPY backend/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ backend/
+COPY ml/ ml/
+COPY alembic/ alembic/
+COPY alembic.ini .
+
+ENV PYTHONPATH=/app
+
+# Train ML baseline artifact if missing during container build
+RUN python3 ml/train.py
 
 EXPOSE 8000
 

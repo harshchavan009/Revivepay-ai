@@ -113,6 +113,57 @@ def test_policy_gateway_permanent_failure_blocking():
     assert status == "BLOCKED"
     assert "permanent" in reason.lower()
 
+def test_policy_gateway_amount_above_maximum_automated_threshold_requires_human_approval():
+    """
+    Asserts that a transaction above the Maximum Automated Action Amount is always
+    routed to Human-in-the-Loop (REVIEW_REQUIRED), regardless of high AI confidence (e.g. 0.99).
+    """
+    policy = PolicyConfig(
+        max_auto_retries=2,
+        max_auto_amount=10000.0,
+        high_value_approval_threshold=50000.0,
+        min_ai_confidence=0.80,
+        allow_customer_contact=True,
+        allowed_actions=["retry_payment", "create_payment_link"]
+    )
+    customer = Customer(
+        customer_id="cust_test_high_val",
+        merchant_id="m1",
+        external_customer_id="ext_cust_high_val",
+        name="High Net Worth Client",
+        email="client@example.com",
+        consent_status=True
+    )
+    payment_high_val = Payment(
+        payment_id="pay_test_high_val",
+        merchant_id="m1",
+        customer_id="cust_test_high_val",
+        amount=25000.0,  # Above max_auto_amount (10000.0)
+        status="FAILED",
+        failure_category="temporary_bank_failure",
+        retry_count=0,
+        max_retry_count=2
+    )
+    case = RecoveryCase(
+        case_id="RV-TEST-HIGH-VAL",
+        payment_id="pay_test_high_val",
+        customer_id="cust_test_high_val",
+        amount_at_risk=25000.0,
+        failure_type="BANK_SWITCH_OUTAGE"
+    )
+
+    status, checklist, reason = PolicyGateway.evaluate(
+        case=case,
+        payment=payment_high_val,
+        customer=customer,
+        policy=policy,
+        proposed_action="retry_payment",
+        ai_confidence=0.99  # Even with 99% AI confidence, must route to Human-in-the-Loop
+    )
+    assert status == "REVIEW_REQUIRED"
+    assert "human" in reason.lower() or "sign-off" in reason.lower() or "operator" in reason.lower()
+
+
 def test_ai_agent_deterministic_fallback():
     context = {
         "amount": 4999.0,
