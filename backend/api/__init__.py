@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from backend.api.auth import router as auth_router
 from backend.api.dashboard import router as dashboard_router
 from backend.api.payments import router as payments_router
-from backend.api.recovery import router as recovery_router
+from backend.api.recovery import router as recovery_router, cases_router
 from backend.api.agent import router as agent_router
 from backend.api.policy import router as policy_router
 from backend.api.subscriptions import router as subscriptions_router
@@ -21,6 +21,7 @@ api_router.include_router(auth_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(payments_router)
 api_router.include_router(recovery_router)
+api_router.include_router(cases_router)
 api_router.include_router(agent_router)
 api_router.include_router(policy_router)
 api_router.include_router(subscriptions_router)

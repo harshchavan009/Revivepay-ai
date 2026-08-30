@@ -315,7 +315,7 @@ export const LoginPage: React.FC = () => {
             Built with SOC-2-aligned access controls · PCI-DSS-informed data handling patterns · 256-bit TLS
           </Link>
         </div>
-        <p>© 2026 RevivePay AI Inc. All rights reserved.</p>
+        <p>© 2026 RevivePay AI — a project by Harsh Chavan</p>
       </div>
     </div>
   );

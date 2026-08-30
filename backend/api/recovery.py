@@ -52,6 +52,9 @@ def map_case_response(case: RecoveryCase, db: Session) -> dict:
         "recovery_status": case.recovery_status,
         "outcome_verified": case.outcome_verified,
         "recovered_amount": case.recovered_amount,
+        "tat_deadline": case.tat_deadline,
+        "tat_status": case.tat_status or "ON_TRACK",
+        "accrued_compensation_inr": case.accrued_compensation_inr or 0.0,
         "model_provider": agent_dec.model_provider if agent_dec else "deterministic_rules_engine",
         "model_name": agent_dec.model_name if agent_dec else "rules-engine-v2.1",
         "raw_prompt": agent_dec.prompt_raw if agent_dec else None,
@@ -61,13 +64,18 @@ def map_case_response(case: RecoveryCase, db: Session) -> dict:
         "resolved_at": case.resolved_at
     }
 
+@router.get("/count")
+def get_recovery_cases_count(db: Session = Depends(get_db)):
+    """Returns the single canonical total count of all recovery cases in the registry."""
+    return {"total_cases": db.query(RecoveryCase).count()}
+
 @router.get("/cases", response_model=List[RecoveryCaseResponse])
 def get_recovery_cases(
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
     approval_status: Optional[str] = None,
     search: Optional[str] = None,
-    limit: int = 50,
+    limit: int = 1000,
     offset: int = 0,
     db: Session = Depends(get_db)
 ):
@@ -212,3 +220,23 @@ def stop_case(
     case.recommended_action = "stop_recovery"
     RecoveryEngine.execute_recovery_action(db=db, case=case, actor=f"{current_user.name} ({current_user.role})")
     return map_case_response(case, db)
+
+# Direct /cases alias router
+cases_router = APIRouter(prefix="/cases", tags=["Cases Direct Access"])
+
+@cases_router.get("/count")
+def get_cases_count_direct(db: Session = Depends(get_db)):
+    return {"total_cases": db.query(RecoveryCase).count()}
+
+@cases_router.get("", response_model=List[RecoveryCaseResponse])
+def get_cases_direct(
+    status: Optional[str] = None,
+    risk_level: Optional[str] = None,
+    approval_status: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 1000,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    return get_recovery_cases(status, risk_level, approval_status, search, limit, offset, db)
+

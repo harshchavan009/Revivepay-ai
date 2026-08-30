@@ -487,9 +487,9 @@ def seed_database(force_reseed: bool = False):
             tat_dl = created_time + (datetime.timedelta(days=1) if is_upi else datetime.timedelta(days=7))
             now_dt = datetime.datetime.utcnow()
             
-            if (case_counter % 7 == 0) and rec_status not in ["RECOVERED", "STOPPED"]:
+            if ((case_counter in [10294, 10297]) or (case_counter % 7 == 0)) and rec_status not in ["RECOVERED", "STOPPED"]:
                 # Seed a breached TAT case
-                tat_dl = now_dt - datetime.timedelta(days=random.randint(2, 5))
+                tat_dl = now_dt - datetime.timedelta(days=random.randint(2, 4))
                 days_over = (now_dt - tat_dl).days
                 tat_stat = "BREACHED"
                 accrued_comp = round(days_over * 100.0, 2)
@@ -498,6 +498,7 @@ def seed_database(force_reseed: bool = False):
                 app_req = True
                 app_stat = "PENDING"
                 exec_stat = "IDLE"
+                reasoning_txt = f"Statutory RBI TAT deadline breached by {days_over} days for {c.name}. Escalated to Approval Center with ₹{accrued_comp:,.0f} statutory compensation accrued."
             elif (tat_dl - now_dt) <= datetime.timedelta(hours=24) and (tat_dl >= now_dt):
                 tat_stat = "DUE_TODAY"
                 accrued_comp = 0.0
