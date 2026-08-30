@@ -14,6 +14,7 @@ from backend.api.events_stream import router as events_stream_router
 from backend.api.chat import router as chat_router
 from backend.api.status import router as status_router
 from backend.api.analytics import router as analytics_router
+from backend.api.ml_evaluation import router as ml_router
 
 api_router = APIRouter()
 
@@ -33,6 +34,7 @@ api_router.include_router(events_stream_router)
 api_router.include_router(chat_router)
 api_router.include_router(status_router)
 api_router.include_router(analytics_router)
+api_router.include_router(ml_router)
 
 @api_router.get("/health")
 def api_health():

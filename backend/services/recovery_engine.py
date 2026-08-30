@@ -16,6 +16,7 @@ from backend.services.ai_agent import ai_service
 from backend.services.policy_gateway import PolicyGateway
 from backend.services.razorpay_service import RazorpayService
 from backend.services.audit_service import AuditService
+from backend.services.outcome_verification_service import OutcomeVerificationService
 from backend.services.broadcaster import notify_live_event
 
 logger = logging.getLogger(__name__)

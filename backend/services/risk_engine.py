@@ -34,19 +34,33 @@ class RevenueRiskEngine:
             value_factor = min(100.0, 90.0 + ((amount - 50000.0) / 100000.0) * 10.0)
 
         # 2. Recovery Likelihood Factor (0 to 100, where higher score means higher risk / difficulty)
-        # Temporary bank glitches are easy to recover (low risk), invalid cards or multiple retries are harder (higher risk)
-        recoverability_map = {
-            "temporary_bank_failure": 20.0,
-            "network_timeout": 25.0,
-            "insufficient_funds": 55.0,
-            "card_expired": 75.0,
-            "invalid_card_details": 85.0,
-            "fraud_block": 95.0,
-            "checkout_drop": 40.0,
-        }
-        base_recovery_risk = recoverability_map.get(failure_category, 50.0)
-        # Additional retry penalty
-        recovery_factor = min(100.0, base_recovery_risk + (retry_count * 15.0))
+        # Driven by our Calibrated ML Recovery Likelihood Model (ml.predict)
+        try:
+            from ml.predict import predict_recovery_likelihood
+            ml_res = predict_recovery_likelihood(
+                amount=amount,
+                failure_category=failure_category,
+                customer_success_count=successful_payments,
+                customer_failure_count=failed_payments,
+                retry_count=retry_count
+            )
+            ml_prob = ml_res.get("recovery_likelihood_prob", 0.65)
+            # Higher likelihood of recovery = lower risk
+            recovery_factor = round(max(0.0, min(100.0, (1.0 - ml_prob) * 100.0)), 1)
+            ml_meta = ml_res
+        except Exception:
+            recoverability_map = {
+                "temporary_bank_failure": 20.0,
+                "network_timeout": 25.0,
+                "insufficient_funds": 55.0,
+                "card_expired": 75.0,
+                "invalid_card_details": 85.0,
+                "fraud_block": 95.0,
+                "checkout_drop": 40.0,
+            }
+            base_recovery_risk = recoverability_map.get(failure_category, 50.0)
+            recovery_factor = min(100.0, base_recovery_risk + (retry_count * 15.0))
+            ml_meta = {"recovery_likelihood_prob": 0.65, "algorithm": "heuristic_fallback"}
 
         # 3. Customer Payment History Factor (0 to 100)
         # High success ratio = lower risk; multiple past failures = high risk
@@ -104,7 +118,8 @@ class RevenueRiskEngine:
                 "severity": 0.20
             },
             "scoring_method": "deterministic_weighted_v1",
-            "model_version": cls.MODEL_VERSION
+            "model_version": cls.MODEL_VERSION,
+            "ml_recovery_model": ml_meta
         }
 
         return final_score, risk_level, breakdown

@@ -104,7 +104,13 @@ export const Footer: React.FC = () => {
           </h4>
           <ul className="space-y-2 text-[var(--color-text-secondary)]">
             <li>
-              <Link to="/changelog" className="text-[var(--color-accent)] font-semibold hover:underline flex items-center gap-1">
+              <Link to="/evaluation" className="text-[var(--color-accent)] font-semibold hover:underline flex items-center gap-1">
+                <span>System Evaluation</span>
+                <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold">ML</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/changelog" className="hover:text-[var(--color-accent)] transition-colors flex items-center gap-1">
                 <span>Engineering Notes</span>
                 <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] font-bold">ADR</span>
               </Link>

@@ -26,6 +26,11 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest httpx
 
+      - name: Train & Validate ML Recovery Model
+        run: |
+          PYTHONPATH=. python3 ml/train.py
+          PYTHONPATH=. python3 ml/evaluate.py
+
       - name: Run Backend Pytest Suite & Domain Invariant Verifications
         run: |
           PYTHONPATH=. pytest backend/tests/ -v -W ignore

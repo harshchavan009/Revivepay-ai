@@ -1,0 +1,98 @@
+{
+  "model_name": "RevivePay Calibrated Gradient Boosting Recovery Classifier",
+  "model_version": "v1.2.0",
+  "training_dataset_size": 5000,
+  "test_dataset_size": 1000,
+  "trained_at": "2026-08-30T18:08:27.937418Z",
+  "roc_auc": 0.8094,
+  "precision": 0.8146,
+  "recall": 0.9341,
+  "f1_score": 0.8702,
+  "brier_score": 0.1401,
+  "confusion_matrix": [
+    [
+      99,
+      158
+    ],
+    [
+      49,
+      694
+    ]
+  ],
+  "feature_importances": {
+    "transaction_amount": 0.1002,
+    "failure_category_encoded": 0.3293,
+    "payment_method_encoded": 0.0164,
+    "customer_success_rate": 0.0691,
+    "customer_failure_rate": 0.0657,
+    "retry_count": 0.1866,
+    "customer_tenure_days": 0.0968,
+    "is_subscription": 0.0067,
+    "previous_recovery_success": 0.0387,
+    "checkout_intent_score": 0.0905
+  },
+  "calibration_curve": [
+    {
+      "bin": 1,
+      "predicted_probability": 0.0832,
+      "empirical_probability": 0.05
+    },
+    {
+      "bin": 2,
+      "predicted_probability": 0.1507,
+      "empirical_probability": 0.069
+    },
+    {
+      "bin": 3,
+      "predicted_probability": 0.2552,
+      "empirical_probability": 0.4
+    },
+    {
+      "bin": 4,
+      "predicted_probability": 0.3466,
+      "empirical_probability": 0.48
+    },
+    {
+      "bin": 5,
+      "predicted_probability": 0.4482,
+      "empirical_probability": 0.4815
+    },
+    {
+      "bin": 6,
+      "predicted_probability": 0.5513,
+      "empirical_probability": 0.45
+    },
+    {
+      "bin": 7,
+      "predicted_probability": 0.6592,
+      "empirical_probability": 0.5765
+    },
+    {
+      "bin": 8,
+      "predicted_probability": 0.7556,
+      "empirical_probability": 0.7661
+    },
+    {
+      "bin": 9,
+      "predicted_probability": 0.8454,
+      "empirical_probability": 0.8828
+    },
+    {
+      "bin": 10,
+      "predicted_probability": 0.9461,
+      "empirical_probability": 0.9354
+    }
+  ],
+  "features": [
+    "transaction_amount",
+    "failure_category_encoded",
+    "payment_method_encoded",
+    "customer_success_rate",
+    "customer_failure_rate",
+    "retry_count",
+    "customer_tenure_days",
+    "is_subscription",
+    "previous_recovery_success",
+    "checkout_intent_score"
+  ]
+}

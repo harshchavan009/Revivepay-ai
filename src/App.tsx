@@ -30,6 +30,7 @@ import { PrivacyPage } from "./pages/PrivacyPage";
 import { SecurityPage } from "./pages/SecurityPage";
 import { ArchitecturePage } from "./pages/ArchitecturePage";
 import { EngineeringNotesPage } from "./pages/EngineeringNotesPage";
+import { SystemEvaluationPage } from "./pages/SystemEvaluationPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { AskMeAnythingDrawer } from "./components/AskMeAnythingDrawer";
 
@@ -53,6 +54,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     location.pathname === "/security" ||
     location.pathname === "/architecture" ||
     location.pathname === "/engineering" ||
+    location.pathname === "/evaluation" ||
     location.pathname === "/changelog" ||
     location.pathname === "/engineering-notes"
   );
@@ -96,6 +98,7 @@ export const App: React.FC = () => {
                 <Route path="/security" element={<SecurityPage />} />
                 <Route path="/architecture" element={<ArchitecturePage />} />
                 <Route path="/engineering" element={<ArchitecturePage />} />
+                <Route path="/evaluation" element={<SystemEvaluationPage />} />
                 <Route path="/changelog" element={<EngineeringNotesPage />} />
                 <Route path="/engineering-notes" element={<EngineeringNotesPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />

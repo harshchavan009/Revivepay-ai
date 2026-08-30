@@ -3,11 +3,12 @@
 [![RevivePay CI Suite](https://github.com/harshchavan009/Revivepay-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/harshchavan009/Revivepay-ai/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![React 19](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-emerald.svg)](https://fastapi.tiangolo.com/)
-[![Tests](https://img.shields.io/badge/tests-51%20passing-success.svg)](backend/tests/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-emerald.svg)](https://fastapi.tiangolo.com/)
+[![Tests](https://img.shields.io/badge/tests-60%20passing-success.svg)](backend/tests/)
+[![ML Model](https://img.shields.io/badge/ML%20Model-Gradient%20Boosting%20(ROC--AUC%200.81)-indigo.svg)](ml/)
 
 > **Recover Revenue Before It's Lost.**  
-> Production-grade, policy-governed autonomous revenue recovery engine with cryptographic hash-chained audit trails, real-time telemetry streaming, reference implementations of published RBI guidelines, and genuine Razorpay test mode integration.
+> Production-grade, policy-governed autonomous revenue recovery engine with empirical ML recovery likelihood modeling, cryptographic hash-chained audit trails, real-time telemetry streaming, reference implementations of published RBI guidelines, and genuine Razorpay test mode integration.
 
 ---
 
@@ -15,12 +16,14 @@
 
 **RevivePay AI** is an open-source engineering project by **Harsh Chavan** exploring autonomous financial recovery architectures. Instead of treating payment declines with naive, blind retries, RevivePay implements an intelligent, policy-governed autonomous recovery lifecycle:
 
-$$\textbf{DETECT} \longrightarrow \textbf{DIAGNOSE} \longrightarrow \textbf{DECIDE} \longrightarrow \textbf{ACT} \longrightarrow \textbf{VERIFY} \longrightarrow \textbf{MEASURE}$$
+$$\textbf{INGEST} \longrightarrow \textbf{RISK SCORE} \longrightarrow \textbf{ML LIKELIHOOD} \longrightarrow \textbf{AI DIAGNOSIS} \longrightarrow \textbf{POLICY GATE} \longrightarrow \textbf{EXECUTE} \longrightarrow \textbf{VERIFY} \longrightarrow \textbf{AUDIT}$$
 
 ### 🎯 Key Design Principles
 - **Bank-Grade Credibility**: Real database persistence, real JWT auth with role enforcement, and cryptographic block verification.
+- **Calibrated ML Likelihood Model**: Real scikit-learn Gradient Boosting Classifier predicting $P(\text{recovery\_success})$ with isotonic probability calibration (ROC-AUC: 0.81, F1: 0.87).
+- **Dedicated Outcome Verification**: Isolated settlement verification service enforcing amount matching and provider transaction ID integrity before committing recovery.
 - **Deterministic Policy Guardrails**: Bounded retries, amount thresholds, and mandatory Human-in-the-Loop review queues for high-risk actions.
-- **RBI Guidance Reference Implementation**: Working models of RBI Turn Around Time (RBI/2019-20/67) ₹100/day compensation framework and e-Mandate 24-hour pre-debit notifications.
+- **RBI Guidance Reference Implementation**: Working reference implementations of RBI Turn Around Time (RBI/2019-20/67) ₹100/day compensation framework and e-Mandate 24-hour pre-debit notifications.
 - **Single Source of Truth**: Unified domain models across payments, recovery cases, subscriptions, and audit logs.
 
 ---
@@ -31,19 +34,44 @@ $$\textbf{DETECT} \longrightarrow \textbf{DIAGNOSE} \longrightarrow \textbf{DECI
 flowchart TD
     A[Payment / Webhook Ingestion] --> B[Razorpay Test Mode / HMAC-SHA256 Verification]
     B --> C[4-Factor Revenue Risk Engine]
-    C --> D[AI Root-Cause Diagnosis Agent (Gemini / Claude / Fallback)]
-    D --> E[Recovery Decision Engine]
+    C --> D[Calibrated ML Recovery Likelihood Model]
+    D --> E[Multi-Tier AI Root-Cause Reasoner]
     E --> F{Deterministic Policy & Safety Gateway}
     F -- Action Blocked --> G[Safe Escalation / Human Review Queue]
     F -- Auto-Approved (Low Risk) --> H[Execute Recovery Action]
     F -- High Value / Low Confidence --> I[Human Approval Queue]
-    I -- Approved --> H
+    I -- Approved (Step-Up Auth >= ₹50k) --> H
     I -- Rejected --> G
-    H --> J[Outcome Verification & Razorpay Client]
-    J --> K[SHA-256 Hash-Chained Audit Ledger]
-    K --> L[Server-Sent Events (SSE) Live Broadcast]
-    L --> M[Executive Command Center & Real-Time Stream]
+    H --> J[Dedicated Outcome Verification Service]
+    J -- Settlement Verified --> K[Mark RECOVERED & Update Revenue Metrics]
+    J -- Verification Failed --> G
+    K --> L[SHA-256 Hash-Chained Cryptographic Audit Ledger]
+    L --> M[Server-Sent Events (SSE) Live Broadcast]
+    M --> N[Executive Command Center & System Evaluation View]
 ```
+
+---
+
+## 🤖 Machine Learning Recovery Likelihood Engine (`ml/`)
+
+RevivePay incorporates a calibrated Machine Learning classifier predicting the empirical probability of payment recovery:
+
+- **Model Architecture**: `CalibratedClassifierCV(GradientBoostingClassifier, cv=5, method='isotonic')`
+- **Candidate Features (10 signals)**:
+  1. `transaction_amount` (INR)
+  2. `failure_category_encoded` (Switch outage, network timeout, insufficient funds, expired card)
+  3. `payment_method_encoded` (UPI, Card, Netbanking, Wallet, EMI)
+  4. `customer_success_rate` & `customer_failure_rate`
+  5. `retry_count` (Current attempt number)
+  6. `customer_tenure_days`
+  7. `is_subscription` (Recurring mandate vs one-off checkout)
+  8. `previous_recovery_success` (Historical dunning response)
+  9. `checkout_intent_score` (Cart engagement intensity)
+- **Empirical Test Metrics**:
+  - **ROC-AUC Score**: `0.8094`
+  - **F1 Score**: `0.8702`
+  - **Precision**: `0.8146` | **Recall**: `0.9341`
+  - **Brier Calibration Score**: `0.1401` (Well-calibrated probability floor)
 
 ---
 
@@ -60,7 +88,7 @@ $$\text{entry\_hash} = \text{SHA-256}(\text{previous\_hash} + \text{audit\_id} +
 
 ## 📐 Deterministic Risk Scoring Formula
 
-The **Revenue Risk Engine** computes a numerical risk score ($0 \text{ to } 100$) before any AI analysis:
+The **Revenue Risk Engine** computes a numerical risk score ($0 \text{ to } 100$) combining transaction impact and ML recoverability:
 
 $$\text{Risk Score} = 0.35 \times \text{Value Factor} + 0.25 \times \text{Recovery Likelihood} + 0.20 \times \text{Customer History} + 0.20 \times \text{Failure Severity}$$
 
@@ -87,106 +115,67 @@ The application includes 4 pre-seeded personas with bcrypt-hashed credentials:
 ## 🚀 Quickstart & Local Installation
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.11+
 - Node.js 18+
+- Docker & Docker Compose (Optional for containerized PostgreSQL)
 
-### 1. Backend Setup
+### 1. Local Development Setup
 ```bash
-# Navigate to project directory
-cd /Users/harsh/Desktop/Razorpay
+# Clone the repository
+git clone https://github.com/harshchavan009/Revivepay-ai.git
+cd Revivepay-ai
 
-# Install backend dependencies
+# Environment Setup
+cp .env.example .env
+
+# Install Backend Dependencies
 python3 -m pip install -r backend/requirements.txt
 
-### 1. Environment Setup
-```bash
-cp .env.example .env
-# Configure your secrets or run in Sandbox mode
-```
+# Run ML Model Training & Evaluation
+PYTHONPATH=. python3 ml/train.py
+PYTHONPATH=. python3 ml/evaluate.py
 
-### 2. Backend Setup
-```bash
-# Run backend test suite (41 tests)
+# Run Database Migrations via Alembic
+PYTHONPATH=. alembic upgrade head
+
+# Run Backend Test Suite (60 tests)
 PYTHONPATH=. pytest backend/tests -v
 
-# Run Secrets Hygiene CI check
-python3 scripts/audit_secrets.py
-
-# Start FastAPI server
+# Start FastAPI Backend Server
 uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-### 3. Frontend Setup
+### 2. Frontend Setup
 ```bash
 npm install
 npm run build
+npm run dev
+```
+
+### 3. Docker Compose (Full Stack with PostgreSQL)
+```bash
+docker compose up --build -d
 ```
 
 The application will be accessible at:
-- **Frontend Dashboard**: `http://localhost:5173`
+- **Frontend Dashboard**: `http://localhost:5173` (or `http://localhost` via Docker)
 - **Backend API & Swagger Docs**: `http://localhost:8000/docs`
+- **System Evaluation & ML Diagnostics**: `http://localhost:5173/evaluation`
 - **Live Event Stream (SSE)**: `http://localhost:8000/api/events/stream`
 - **Cryptographic Audit Check**: `http://localhost:8000/api/audit/verify-chain`
 
 ---
 
-## 🔒 Phase 3 Security Hardening & Enterprise Governance
+## 🔒 Security Hardening & Enterprise Governance
 
-### 1. Short-Lived JWTs & Secure Session Lifecycle
-- **Access Tokens**: Short-lived 15-minute JWTs (`ACCESS_TOKEN_EXPIRE_MINUTES = 15`).
-- **Refresh Tokens**: 7-day tokens delivered in secure, `httpOnly`, `SameSite=Lax/Strict` cookies via `/api/auth/refresh`.
-- **Automatic Silent Renewal**: Client-side Axios interceptors renew access tokens seamlessly on `401 Unauthorized` without session dropouts.
-
-### 2. Step-Up Re-Authentication for High-Value Governance
-- **Threshold Rule**: Any transaction $\ge$ ₹50,000 requires Step-Up Re-Authentication (MFA OTP or operator password re-entry) before an operator can approve recovery.
-- **Audit Traceability**: Step-up verification is cryptographically recorded in the immutable audit log as `recovery.approval.stepup_verified`.
-
-### 3. Rate Limiting & Anti-Abuse Controls
-- **/api/auth/\***: 15 requests per minute per IP. Exceeding triggers `429 Too Many Requests` with `Retry-After: 60`.
-- **/api/webhooks/\***: 120 requests per minute per IP to protect ingestion routes against denial-of-service.
-
-### 4. HTTP Security Hardening Headers
-Every API and static response includes:
-- `Content-Security-Policy`: Restricts scripts, styles, and data origins.
-- `X-Frame-Options: DENY`: Prevents clickjacking attacks.
-- `X-Content-Type-Options: nosniff`: Prevents MIME-type sniffing.
-- `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`: Enforces TLS transport.
-- `Referrer-Policy: strict-origin-when-cross-origin`.
-
-### 5. Secrets Hygiene & CI Scanner
-- **Zero Bundle Leaks**: Validated via `python3 scripts/audit_secrets.py` which scans `dist/` and `src/` for secret keys, webhook secrets, and private keys.
-- **Environment Template**: See [`.env.example`](file:///.env.example) for documented environment variables.
+1. **Short-Lived JWTs & Secure Session Lifecycle**: 15-minute access tokens + 7-day httpOnly refresh cookies with automated renewal.
+2. **Step-Up Re-Authentication**: Actions $\ge$ ₹50,000 require password/MFA re-verification before approval, logged as `recovery.approval.stepup_verified`.
+3. **Rate Limiting Controls**: Sliding-window limiter on `/api/auth/*` (15/min), `/api/webhooks/*` (120/min), and `/api/chat` (30/min).
+4. **Timing-Safe HMAC-SHA256 Webhooks**: `hmac.compare_digest` cryptographic signature verification on Razorpay events.
+5. **Database Idempotency**: Strict deduplication preventing duplicate event ingestion or execution.
 
 ---
 
-## ⚙️ Environment Variables (`.env`)
-
-See `.env.example` for all configurable parameters:
-
-```bash
-# App & Security
-PROJECT_NAME="RevivePay AI"
-SECRET_KEY="revivepay_enterprise_fintech_jwt_secret_key_2026_x892"
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
-
-# Database Configuration (SQLite default; PostgreSQL supported)
-DATABASE_URL="sqlite:///./revivepay.db"
-
-# Razorpay Test Mode Integration
-RAZORPAY_KEY_ID="rzp_test_revivepay2026"
-RAZORPAY_KEY_SECRET="secret_revivepay_fintech_test"
-RAZORPAY_WEBHOOK_SECRET="whsec_revivepay_test_webhook_2026"
-
-# LLM Provider Configuration (Optional — Deterministic fallback active if empty)
-LLM_PROVIDER="gemini" # gemini, openai, anthropic, or deterministic_fallback
-LLM_API_KEY=""
-LLM_MODEL="gemini-1.5-pro"
-```
-
----
-
-## ⚠️ Known Limitations & Assumptions
-
-1. **Razorpay Live vs. Test Mode**: The system uses Razorpay Test Mode credentials by default (`rzp_test_...`). Live capture and settlement can be enabled simply by setting production `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in `.env`.
-2. **LLM Provider Keys**: If `LLM_API_KEY` is not provided in `.env`, the system automatically activates the high-precision **Deterministic Domain Expert Fallback**, guaranteeing structured JSON evidence and 100% test reliability with zero external latency or rate limits.
-3. **Database Defaults**: SQLite (`./revivepay.db`) is the zero-dependency local default. For multi-instance horizontal scaling, specify a PostgreSQL connection string in `DATABASE_URL`.
+## ⚖️ Honest Disclaimers & Limitations
+- **Sandbox Environment**: All Razorpay interactions utilize Razorpay Test Mode keys (`rzp_test_...`). No real fiat currency or bank debiting occurs.
+- **Reference Implementation**: References to published RBI Turn Around Time (TAT) and e-Mandate circulars are educational reference implementations of public guidelines and do not constitute regulatory endorsement or certification.

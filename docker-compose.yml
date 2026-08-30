@@ -1,27 +1,55 @@
 version: "3.8"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: revivepay_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: revivepay_secure_postgres_pass_2026
+      POSTGRES_DB: revivepay
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d revivepay"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    container_name: revivepay_backend
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./revivepay.db
+      - DATABASE_URL=postgresql://postgres:revivepay_secure_postgres_pass_2026@postgres:5432/revivepay
+      - ENVIRONMENT=production
       - SECRET_KEY=revivepay_enterprise_fintech_jwt_secret_key_2026_x892
+      - CSRF_SECRET=revivepay_enterprise_csrf_salt_secret_2026_x892
       - RAZORPAY_KEY_ID=rzp_test_revivepay2026
       - RAZORPAY_KEY_SECRET=secret_revivepay_fintech_test
       - RAZORPAY_WEBHOOK_SECRET=whsec_revivepay_test_webhook_2026
-      - LLM_PROVIDER=gemini
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    container_name: revivepay_frontend
     ports:
       - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
