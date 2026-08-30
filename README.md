@@ -24,7 +24,7 @@ Traditional recovery systems rely on static, blind retry intervals and generic e
 $$\textbf{INGEST} \longrightarrow \textbf{RISK SCORE} \longrightarrow \textbf{ML LIKELIHOOD} \longrightarrow \textbf{AI DIAGNOSIS} \longrightarrow \textbf{POLICY GATE} \longrightarrow \textbf{EXECUTE} \longrightarrow \textbf{VERIFY} \longrightarrow \textbf{AUDIT}$$
 
 ### 🎯 Core Objectives
-- **Reduce Revenue Loss**: Recover up to $65\%+$ of failed payment volume through intelligent retries and optimized communication links.
+- **Reduce Revenue Loss**: Maximize recovered payment volume through intelligent retries and optimized communication links without triggering issuer fraud blocks.
 - **Explainable Autonomous Actions**: Answer *what* should happen next, *why*, *whether the action is allowed by policy*, and *whether the settlement actually succeeded*.
 - **Bounded Autonomy**: Separate generative AI reasoning from deterministic financial rules, ensuring the LLM cannot execute financial actions without passing strict policy gates.
 - **Cryptographic Auditability**: Every decision, evaluation, and state transition is immutably recorded in a SHA-256 hash-chained ledger.
@@ -83,8 +83,9 @@ $$\text{Risk Score} = 0.35 \times \text{Value Factor} + 0.25 \times \text{Recove
 ### 3. 🤖 Empirical ML Recovery Likelihood Classifier (`ml/`)
 An independent machine learning pipeline trained on synthetic multi-pattern transaction telemetry estimates the empirical probability of recovery: $P(\text{recovery\_success})$.
 - **Algorithm**: `CalibratedClassifierCV(GradientBoostingClassifier, cv=5, method='isotonic')`
+- **Dataset Structure**: 5,000 synthetic transaction failure records (80% training / 20% holdout evaluation split).
 - **10 Candidate Signals**: `transaction_amount`, `failure_category_encoded`, `payment_method_encoded`, `customer_success_rate`, `customer_failure_rate`, `retry_count`, `customer_tenure_days`, `is_subscription`, `previous_recovery_success`, `checkout_intent_score`.
-- **Empirical Diagnostics**:
+- **Synthetic Evaluation Metrics**:
   - **ROC-AUC**: `0.8094`
   - **F1 Score**: `0.8702`
   - **Precision**: `0.8146` | **Recall**: `0.9341`
@@ -105,7 +106,7 @@ Every state transition is linked to its predecessor via cryptographic hashing:
 $$\text{entry\_hash} = \text{SHA-256}(\text{previous\_hash} + \text{audit\_id} + \text{timestamp} + \text{actor} + \text{action} + \text{case\_id} + \text{notes})$$
 
 - **Tamper Evident**: Modifying any past record breaks the cryptographic chain.
-- **Verification Endpoint**: `GET /api/audit/verify-chain` verifies the entire database ledger from genesis to head in $<5\text{ms}$.
+- **Verification Endpoint**: `GET /api/audit/verify-chain` verifies the entire database ledger from genesis to head in real-time.
 
 ### 6. 🔬 Dedicated Outcome Verification Service
 - Isolates payment settlement verification before committing `RECOVERED` state.

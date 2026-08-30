@@ -6,7 +6,7 @@ services:
     container_name: revivepay_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-revivepay}
     ports:
       - "5432:5432"
@@ -27,13 +27,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password_dev}@postgres:5432/${POSTGRES_DB:-revivepay}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-revivepay}}
       - ENVIRONMENT=${ENVIRONMENT:-production}
-      - SECRET_KEY=${SECRET_KEY:-insecure_jwt_secret_override_in_env}
-      - CSRF_SECRET=${CSRF_SECRET:-insecure_csrf_secret_override_in_env}
-      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-rzp_test_placeholder_key}
-      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-placeholder_razorpay_secret}
-      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-whsec_placeholder_test_secret}
+      - SECRET_KEY=${SECRET_KEY}
+      - CSRF_SECRET=${CSRF_SECRET}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET}
+      - LLM_API_KEY=${LLM_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy

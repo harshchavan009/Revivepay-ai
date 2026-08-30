@@ -62,8 +62,22 @@ class Settings(BaseSettings):
             url = url.replace("postgres://", "postgresql://", 1)
         return url
 
+    def validate_production_readiness(self) -> bool:
+        """Enforces that production deployments must explicitly provide critical cryptographic secrets."""
+        if self.ENVIRONMENT.lower() == "production":
+            insecure_defaults = [
+                "insecure-dev-secret-key-change-in-production",
+                "insecure-dev-csrf-salt-change-in-production"
+            ]
+            if self.SECRET_KEY in insecure_defaults:
+                raise ValueError("CRITICAL SECURITY CONFIGURATION ERROR: SECRET_KEY must be set in environment variables in production mode.")
+            if self.CSRF_SECRET in insecure_defaults:
+                raise ValueError("CRITICAL SECURITY CONFIGURATION ERROR: CSRF_SECRET must be set in environment variables in production mode.")
+        return True
+
     class Config:
         env_file = ".env"
         extra = "ignore"
 
 settings = Settings()
+settings.validate_production_readiness()
