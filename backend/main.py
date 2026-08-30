@@ -83,6 +83,19 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
                 headers={"Retry-After": "60"}
             )
 
+    # Rate Limiting: AI Reasoning & Simulation Endpoints (/api/chat, /api/simulation, /api/agent)
+    elif path.startswith("/api/chat") or path.startswith("/api/simulation") or path.startswith("/api/agent"):
+        key = f"ai:{client_ip}"
+        if not rate_limiter.is_allowed(key, max_requests=30):
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": "Too Many Requests: Rate limit exceeded on AI reasoning & simulation routes (30 req/min). Please try again shortly.",
+                    "error_code": "AI_RATE_LIMIT_EXCEEDED"
+                },
+                headers={"Retry-After": "60"}
+            )
+
     response = await call_next(request)
 
     # Mandatory Security Hardening Headers
@@ -135,6 +148,7 @@ def on_startup():
         logger.error(f"Error seeding database: {e}")
 
 @app.get("/health")
+@app.get("/api/health")
 def health():
     return {
         "status": "ok",

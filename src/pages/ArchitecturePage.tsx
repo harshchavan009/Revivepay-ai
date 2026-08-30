@@ -253,19 +253,52 @@ export const ArchitecturePage: React.FC = () => {
           <p className="text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
             RevivePay replaces dumb, blind dunning cron loops with a 7-stage autonomous agent loop. Built with strict deterministic policy guardrails, cryptographic SHA-256 hash chaining, and real-time Razorpay webhook verification.
           </p>
-
           <div className="flex flex-wrap items-center gap-4 pt-2 text-xs font-mono">
             <span className="px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               <span>Zero Frontend Secret Leakage</span>
             </span>
             <span className="px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
-              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-              <span>HMAC-SHA256 Webhook Ingress</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Deterministic Policy Invariants</span>
             </span>
             <span className="px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
-              <Lock className="w-3.5 h-3.5 text-amber-500" />
-              <span>SHA-256 Hash-Chained Audit Ledger</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>SHA-256 Hash Chain Integrity</span>
+            </span>
+          </div>
+        </div>
+
+        {/* INTERVIEW-READINESS ARTIFACT: Why a Deterministic Policy Layer */}
+        <div className="p-6 sm:p-7 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-accent-border)] shadow-premium-md space-y-3">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-[var(--color-accent)]" />
+            <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+              Why a Deterministic Policy Layer, Not Just an LLM?
+            </h2>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-bold border border-[var(--color-accent-border)]">
+              Core Design Invariant
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            The LLM proposes and reasons based on multi-signal telemetry, but a bounded, auditable rules engine (hard retry caps, approval thresholds, confidence floors) has the final say on execution — because payment actions need to be explainable and mathematically safe even if the model's output is unpredictable.
+          </p>
+          <div className="pt-2 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center gap-4 text-xs font-mono text-[var(--color-text-muted)]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Max 2 automated retries</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <span>≥ ₹50,000 Step-Up approval gate</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+              <span>85% minimum confidence floor</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+              <span>7 whitelisted execution tools</span>
             </span>
           </div>
         </div>

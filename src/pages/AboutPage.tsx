@@ -118,6 +118,14 @@ export const AboutPage: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Engineering Portfolio Disclosure */}
+        <div className="p-6 rounded-2xl bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-xs font-mono space-y-1.5 text-center">
+          <span className="font-bold text-[var(--color-accent)] uppercase tracking-wider">ENGINEERING PORTFOLIO SPECIFICATION</span>
+          <p className="text-[var(--color-text-secondary)] text-[11px] max-w-2xl mx-auto leading-relaxed">
+            RevivePay AI is an independent engineering project by <strong className="text-[var(--color-text-primary)]">Harsh Chavan</strong> exploring autonomous multi-agent financial recovery architectures, deterministic safety invariants, and cryptographic audit ledgers in Razorpay test mode.
+          </p>
+        </div>
       </main>
 
       <Footer />

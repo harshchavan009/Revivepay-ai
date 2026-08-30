@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -35,6 +35,12 @@ import { AskMeAnythingDrawer } from "./components/AskMeAnythingDrawer";
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
+
   const isLandingOrAuth = (
     location.pathname === "/" ||
     location.pathname === "/login" ||
@@ -57,11 +63,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden font-sans">
-      <Sidebar />
+      <Sidebar mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--bg-app)]">
-        <Header />
+        <Header onOpenMobileMenu={() => setMobileSidebarOpen(true)} />
         <LiveActivityTicker />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[var(--bg-app)]">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 bg-[var(--bg-app)]">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

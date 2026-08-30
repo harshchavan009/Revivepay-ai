@@ -191,6 +191,14 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* KPI Header with Sandbox Dataset Disclosure */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[var(--color-text-muted)] font-mono">
+        <span className="font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">AUTONOMOUS REVENUE RECOVERY METRICS</span>
+        <span className="px-2.5 py-0.5 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[10px] w-fit">
+          Sandbox dataset metrics · Derived from live seeded test cases
+        </span>
+      </div>
+
       {/* TOP 4 EXECUTIVE KPI CARDS (Spacious +20% padding, Real Elevation) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* KPI 1: Total Recovered Revenue (Hero Metric) */}

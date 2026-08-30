@@ -118,7 +118,11 @@ export const LiveActivityTicker: React.FC = () => {
   const current = activities[index] || activities[0];
 
   return (
-    <div className="bg-[var(--color-bg-canvas)] border-b border-[var(--color-border-subtle)] px-6 py-2 flex items-center justify-between text-xs text-[var(--color-text-secondary)] select-none transition-colors">
+    <div
+      role="status"
+      aria-live="polite"
+      className="bg-[var(--color-bg-canvas)] border-b border-[var(--color-border-subtle)] px-6 py-2 flex items-center justify-between text-xs text-[var(--color-text-secondary)] select-none transition-colors"
+    >
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-mono text-[10px] font-bold tracking-wider uppercase shrink-0 border border-[var(--color-accent-border)]">
           <span className={`w-1.5 h-1.5 rounded-full ${isLiveConnected ? "bg-emerald-500 animate-ping" : "bg-[var(--color-accent)]"}`}></span>

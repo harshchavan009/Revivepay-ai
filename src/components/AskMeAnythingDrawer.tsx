@@ -253,16 +253,17 @@ export const AskMeAnythingDrawer: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          aria-label="Ask Revive AI Assistant"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-md hover:scale-105 active:scale-95 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
         >
-          <Sparkles className="w-4 h-4 animate-pulse text-white" />
+          <Sparkles className="w-4 h-4 animate-pulse text-white shrink-0" />
           <span>Ask Revive AI</span>
         </button>
       )}
 
       {/* Floating Drawer Modal */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[580px] bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 font-sans">
+        <div className="fixed inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-6 sm:right-6 z-50 w-auto sm:w-[420px] max-w-full h-[540px] sm:h-[580px] bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 font-sans">
           {/* Header */}
           <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">

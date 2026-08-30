@@ -219,7 +219,7 @@ export const Footer: React.FC = () => {
       {/* Bottom Sub-footer */}
       <div className="max-w-7xl mx-auto px-6 py-6 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[var(--color-text-secondary)]">
         <div>
-          © {new Date().getFullYear()} RevivePay AI Inc. All rights reserved. Razorpay Partner Network.
+          RevivePay AI — an open-source engineering project by <strong className="text-[var(--color-text-primary)]">Harsh Chavan</strong>. Built for Razorpay test mode exploration.
         </div>
         <div className="flex items-center gap-4 font-mono text-[10px]">
           <span className="flex items-center gap-1">
