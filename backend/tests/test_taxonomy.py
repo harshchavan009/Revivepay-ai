@@ -39,6 +39,7 @@ def test_recovery_event_taxonomy():
         "recovery.action.failed",
         "recovery.verified",
         "recovery.approval.stepup_verified",
+        "recovery.case.tat_breached",
         "recovery.escalated",
         "recovery.stopped"
     }
@@ -50,7 +51,9 @@ def test_subscription_event_taxonomy():
         "subscription.activated",
         "subscription.pending",
         "subscription.charged",
-        "subscription.halted"
+        "subscription.halted",
+        "subscription.mandate.pre_debit_notified",
+        "subscription.mandate.customer_opt_out"
     }
     actual_sub_events = {e.value for e in SubscriptionEventType}
     assert actual_sub_events == expected_sub_events

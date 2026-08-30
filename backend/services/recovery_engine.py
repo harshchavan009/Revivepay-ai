@@ -73,7 +73,17 @@ class RecoveryEngine:
         # Check if recovery case already exists for this payment
         case = db.query(RecoveryCase).filter(RecoveryCase.payment_id == payment.payment_id).first()
         if not case:
-            case_number = f"RV-{datetime.datetime.utcnow().strftime('%m%d')}{payment.payment_id[-4:]}"
+            case_number = f"RV-{datetime.datetime.utcnow().strftime('%m%d')}{uuid.uuid4().hex[:4].upper()}"
+            
+            # Compute RBI Turn Around Time (TAT) deadline based on payment method
+            now = datetime.datetime.utcnow()
+            pm = getattr(payment, "payment_method", "card") or "card"
+            if str(pm).lower() == "upi":
+                tat_deadline = now + datetime.timedelta(days=1)
+            else:
+                # 5 working days (7 calendar days)
+                tat_deadline = now + datetime.timedelta(days=7)
+
             case = RecoveryCase(
                 case_id=case_number,
                 payment_id=payment.payment_id,
@@ -87,7 +97,10 @@ class RecoveryEngine:
                 recovery_status="NEW",
                 approval_required=False,
                 outcome_verified=False,
-                recovered_amount=0.0
+                recovered_amount=0.0,
+                tat_deadline=tat_deadline,
+                tat_status="ON_TRACK",
+                accrued_compensation_inr=0.0
             )
             db.add(case)
             db.commit()
@@ -772,3 +785,52 @@ class RecoveryEngine:
         })
 
         return case
+
+    @classmethod
+    def check_and_update_tat_statuses(cls, db: Session) -> int:
+        """
+        Reference implementation of RBI's Turn Around Time and customer compensation framework (RBI/2019-20/67).
+        Evaluates open recovery cases against their statutory TAT deadline, flags breaches, calculates
+        statutory accrued compensation (₹100/day), and escalates overdue cases to the human approval queue.
+        """
+        now = datetime.datetime.utcnow()
+        open_cases = db.query(RecoveryCase).filter(
+            RecoveryCase.recovery_status.notin_(["RECOVERED", "STOPPED", "REJECTED"])
+        ).all()
+        
+        breached_count = 0
+        for case in open_cases:
+            if not case.tat_deadline:
+                case.tat_deadline = case.created_at + datetime.timedelta(days=7)
+
+            if now > case.tat_deadline:
+                overdue_seconds = (now - case.tat_deadline).total_seconds()
+                days_overdue = max(1, int(overdue_seconds // 86400) + 1)
+                compensation = round(days_overdue * 100.0, 2)
+                
+                was_breached = (case.tat_status == "BREACHED")
+                case.tat_status = "BREACHED"
+                case.accrued_compensation_inr = compensation
+                
+                # Auto-escalate to human-in-the-loop review queue regardless of amount
+                case.policy_status = "REVIEW_REQUIRED"
+                case.approval_required = True
+                if case.recovery_status not in ["AWAITING_APPROVAL", "ESCALATED"]:
+                    case.recovery_status = "AWAITING_APPROVAL"
+                    
+                if not was_breached:
+                    breached_count += 1
+                    AuditService.log_event(
+                        db=db,
+                        case_id=case.case_id,
+                        actor="RBI TAT Policy Monitor",
+                        action=RecoveryEventType.TAT_BREACHED.value,
+                        notes=f"Statutory TAT deadline breached ({days_overdue}d overdue). Accrued customer compensation: ₹{compensation:,.2f}. Escalated to operator queue."
+                    )
+            elif (case.tat_deadline - now) <= datetime.timedelta(hours=24):
+                case.tat_status = "DUE_TODAY"
+            else:
+                case.tat_status = "ON_TRACK"
+
+        db.commit()
+        return breached_count

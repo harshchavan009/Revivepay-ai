@@ -18,6 +18,7 @@ import {
   KeyRound,
   FileCheck,
   Check,
+  Clock,
   ExternalLink
 } from "lucide-react";
 import { Footer } from "../components/Footer";
@@ -300,6 +301,53 @@ export const ArchitecturePage: React.FC = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
               <span>7 whitelisted execution tools</span>
             </span>
+          </div>
+        </div>
+
+        {/* REFERENCE IMPLEMENTATION: RBI GUIDELINE INTEGRATION */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Card 1: RBI TAT Framework */}
+          <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500 shrink-0" />
+              <h3 className="font-bold text-sm text-[var(--color-text-primary)]">
+                RBI Turn Around Time (TAT) Framework
+              </h3>
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-bold">
+                RBI/2019-20/67
+              </span>
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Reference implementation of RBI's Turn Around Time and customer compensation framework for failed transactions (RBI/2019-20/67). This is a working model of the published guideline, not a certified compliance system.
+            </p>
+            <div className="text-[11px] font-mono text-[var(--color-text-muted)] space-y-1 pt-2 border-t border-[var(--color-border-subtle)]">
+              <p>• UPI Rail: Auto-reversal deadline T+1 working day</p>
+              <p>• Card / NEFT: Auto-reversal deadline T+5 working days</p>
+              <p>• ₹100/day statutory penalty accrued for overdue cases</p>
+              <p>• Overdue cases automatically escalated to human approval</p>
+            </div>
+          </div>
+
+          {/* Card 2: RBI e-Mandate Framework */}
+          <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-3">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-purple-500 shrink-0" />
+              <h3 className="font-bold text-sm text-[var(--color-text-primary)]">
+                RBI e-Mandate & AFA Framework
+              </h3>
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30 font-bold">
+                e-Mandate Guidance
+              </span>
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Reference implementation of RBI's e-mandate framework for recurring payments, enforcing 24-hour pre-debit notifications and Additional Factor Authentication (AFA) setup thresholds. This models published guidance, not a certified integration with NPCI's actual mandate registry.
+            </p>
+            <div className="text-[11px] font-mono text-[var(--color-text-muted)] space-y-1 pt-2 border-t border-[var(--color-border-subtle)]">
+              <p>• Subscriptions ≥ ₹15,000 mandate initial AFA setup</p>
+              <p>• Strict 24-hour pre-debit alert window before auto-retry</p>
+              <p>• Simulated customer opt-out logged to immutable audit ledger</p>
+              <p>• Backend enforces window verification on all dunning retries</p>
+            </div>
           </div>
         </div>
 

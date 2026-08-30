@@ -144,6 +144,12 @@ class RecoveryCaseResponse(BaseModel):
     recovery_status: str
     outcome_verified: bool = False
     recovered_amount: float
+    
+    # RBI TAT Reference Framework (RBI/2019-20/67)
+    tat_deadline: Optional[datetime.datetime] = None
+    tat_status: str = "ON_TRACK" # ON_TRACK, DUE_TODAY, BREACHED
+    accrued_compensation_inr: float = 0.0
+    
     model_provider: Optional[str] = "deterministic_rules_engine"
     model_name: Optional[str] = "rule-engine-v2.1"
     raw_prompt: Optional[str] = None
@@ -384,6 +390,8 @@ class PolicyConfigResponse(BaseModel):
     allow_customer_contact: bool
     recovery_time_window_hours: int
     allowed_actions: List[str]
+    mandate_afa_threshold: float = 15000.0
+    tat_auto_escalate: bool = True
     updated_at: datetime.datetime
 
     class Config:
@@ -396,6 +404,8 @@ class PolicyConfigUpdate(BaseModel):
     min_ai_confidence: Optional[float] = None
     allow_customer_contact: Optional[bool] = None
     recovery_time_window_hours: Optional[int] = None
+    mandate_afa_threshold: Optional[float] = None
+    tat_auto_escalate: Optional[bool] = None
     allowed_actions: Optional[List[str]] = None
 
 class SubscriptionResponse(BaseModel):
@@ -413,6 +423,13 @@ class SubscriptionResponse(BaseModel):
     max_retries: int
     failure_reason: Optional[str] = None
     next_retry_at: Optional[datetime.datetime] = None
+    
+    # RBI e-Mandate Fields
+    afa_required: bool = False
+    pre_debit_notification_sent_at: Optional[datetime.datetime] = None
+    opt_out_status: bool = False
+    opt_out_at: Optional[datetime.datetime] = None
+    
     created_at: datetime.datetime
     updated_at: datetime.datetime
 

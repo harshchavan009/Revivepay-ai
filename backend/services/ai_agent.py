@@ -372,15 +372,37 @@ class AIAgentService:
     Routing Hierarchy:
     1. Primary: Anthropic Claude 3.5 Sonnet
     2. Fallback: Google Gemini 1.5 Pro
-    3. Safe Floor: Deterministic Rules Engine
+    3. Safe Floor: Deterministic Rules Engine (with daily budget protection)
     """
     def __init__(self):
         self.fallback = DeterministicFallbackAgent()
         self.claude = ClaudeLLMProvider(settings.ANTHROPIC_API_KEY, settings.ANTHROPIC_MODEL) if settings.ANTHROPIC_API_KEY else None
         self.gemini = GeminiLLMProvider(settings.GEMINI_API_KEY or settings.LLM_API_KEY, settings.LLM_MODEL) if (settings.GEMINI_API_KEY or settings.LLM_API_KEY) else None
+        self.daily_calls_count = 0
+        self.current_day = None
+
+    def _check_and_increment_budget(self) -> bool:
+        import datetime
+        today = datetime.date.today()
+        if self.current_day != today:
+            self.current_day = today
+            self.daily_calls_count = 0
+        
+        max_budget = getattr(settings, "DAILY_LLM_CALL_BUDGET", 100)
+        if self.daily_calls_count >= max_budget:
+            return False
+        self.daily_calls_count += 1
+        return True
 
     def analyze_root_cause(self, context: Dict[str, Any]) -> RootCauseAnalysisOutput:
         case_id = context.get("case_id", "RV-UNKNOWN")
+
+        # 0. Check Daily LLM Call Budget
+        if not self._check_and_increment_budget():
+            logger.info(f"Daily LLM budget reached ({getattr(settings, 'DAILY_LLM_CALL_BUDGET', 100)} calls). Routing case {case_id} to Deterministic Rules Engine...")
+            result = self.fallback.analyze_root_cause(context)
+            result.reasoning_summary = f"AI reasoning temporarily using deterministic fallback — daily demo budget reached. {result.reasoning_summary}"
+            return result
 
         # 1. Try Claude Primary
         if self.claude and settings.ANTHROPIC_API_KEY:

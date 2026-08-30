@@ -178,7 +178,10 @@ export interface RecoveryCase {
   execution_status: ExecutionStatus;
   recovery_status: RecoveryStatus;
   outcome_verified?: boolean;
-  recovered_amount: number;
+  recovered_amount?: number;
+  tat_deadline?: string;
+  tat_status?: "ON_TRACK" | "DUE_TODAY" | "BREACHED" | string;
+  accrued_compensation_inr?: number;
   model_provider?: string;
   model_name?: string;
   raw_prompt?: string;
@@ -320,11 +323,15 @@ export interface SubscriptionItem {
   amount: number;
   currency: string;
   billing_interval: string;
-  current_status: "ACTIVE" | "PAST_DUE" | "RECOVERED" | "CANCELLED";
+  current_status: "ACTIVE" | "PAST_DUE" | "RECOVERED" | "CANCELLED" | "HALTED" | string;
   retry_count: number;
   max_retries: number;
   failure_reason?: string;
   next_retry_at?: string;
+  afa_required?: boolean;
+  pre_debit_notification_sent_at?: string;
+  opt_out_status?: boolean;
+  opt_out_at?: string;
   created_at: string;
   updated_at: string;
 }

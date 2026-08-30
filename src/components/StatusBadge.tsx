@@ -78,3 +78,38 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
     </span>
   );
 };
+
+interface TatBadgeProps {
+  status?: string;
+  deadline?: string;
+  accruedCompensation?: number;
+}
+
+export const TatBadge: React.FC<TatBadgeProps> = ({ status, accruedCompensation = 0 }) => {
+  const norm = (status || "ON_TRACK").toUpperCase();
+
+  if (norm === "BREACHED" || accruedCompensation > 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wide border bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30 shrink-0">
+        <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />
+        <span>TAT Breached · ₹{accruedCompensation.toFixed(0)} Comp.</span>
+      </span>
+    );
+  }
+
+  if (norm === "DUE_TODAY") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wide border bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30 shrink-0">
+        <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+        <span>Due Today (RBI T+5)</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wide border bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 shrink-0">
+      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+      <span>On Track</span>
+    </span>
+  );
+};

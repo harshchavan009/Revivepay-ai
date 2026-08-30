@@ -69,3 +69,17 @@ def trigger_simulation(req: SimulationTriggerRequest, db: Session = Depends(get_
         customer_type=req.customer_type or "returning",
         payment_method=req.payment_method or "card"
     )
+
+@router.post("/reset-demo")
+def reset_demo_dataset():
+    """
+    Resets the entire sandbox database back to pristine seeded state,
+    re-generating all mock cases, payments, and immutable cryptographic ledger blocks.
+    """
+    from backend.seed_data import seed_database
+    seed_database(force_reseed=True)
+    return {
+        "success": True,
+        "message": "Demo sandbox dataset successfully reset to baseline state with verified genesis ledger.",
+        "environment": "Razorpay Test Mode Sandbox"
+    }

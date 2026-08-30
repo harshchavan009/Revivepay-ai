@@ -1,5 +1,6 @@
-from typing import Dict, Any, List, Tuple
-from backend.models.all_models import RecoveryCase, PolicyConfig, Payment, Customer
+import datetime
+from typing import Dict, Any, List, Tuple, Optional
+from backend.models.all_models import RecoveryCase, PolicyConfig, Payment, Customer, Subscription
 
 class PolicyGateway:
     """
@@ -16,7 +17,8 @@ class PolicyGateway:
         customer: Customer,
         policy: PolicyConfig,
         proposed_action: str,
-        ai_confidence: float
+        ai_confidence: float,
+        subscription: Optional[Subscription] = None
     ) -> Tuple[str, List[Dict[str, Any]], str]:
         """
         Returns:
@@ -27,6 +29,7 @@ class PolicyGateway:
         checklist = []
         status = "PASSED"
         reasons = []
+        now = datetime.datetime.utcnow()
 
         # Rule 1: Action Whitelist Check
         is_whitelisted = proposed_action in (policy.allowed_actions or [])
@@ -134,6 +137,50 @@ class PolicyGateway:
             if not contact_allowed:
                 status = "BLOCKED"
                 reasons.append("Customer contact consent missing or disabled.")
+
+        # Rule 9: Reference RBI Turn Around Time (TAT) Framework (RBI/2019-20/67)
+        if getattr(case, "tat_status", None) == "BREACHED" or (case.tat_deadline and now > case.tat_deadline):
+            checklist.append({
+                "rule": "rbi_tat_guideline_compliance",
+                "description": "Statutory Turn Around Time (TAT) deadline must not be overdue (RBI/2019-20/67)",
+                "passed": False,
+                "details": f"TAT auto-reversal deadline breached. Statutory compensation accrued: ₹{case.accrued_compensation_inr:,.2f}. Escalated to operator review."
+            })
+            if status != "BLOCKED":
+                status = "REVIEW_REQUIRED"
+                reasons.append(f"Statutory TAT deadline breached. Accrued compensation: ₹{case.accrued_compensation_inr:,.2f}. Escalated to human operator queue.")
+        else:
+            checklist.append({
+                "rule": "rbi_tat_guideline_compliance",
+                "description": "Statutory Turn Around Time (TAT) deadline compliance (RBI/2019-20/67)",
+                "passed": True,
+                "details": f"Within statutory resolution window (Status: {getattr(case, 'tat_status', 'ON_TRACK')})"
+            })
+
+        # Rule 10: Reference RBI e-Mandate Framework (Pre-Debit Notification & Customer Opt-Out)
+        if subscription:
+            if subscription.opt_out_status:
+                checklist.append({
+                    "rule": "rbi_mandate_customer_opt_out",
+                    "description": "Customer must not have opted out of this scheduled recurring debit",
+                    "passed": False,
+                    "details": f"Customer opted out of recurring charge on {subscription.opt_out_at.strftime('%Y-%m-%d %H:%M UTC') if subscription.opt_out_at else 'prior alert'}. Action blocked."
+                })
+                status = "BLOCKED"
+                reasons.append("Customer initiated mandate opt-out for this cycle. Recovery debit blocked.")
+            elif subscription.amount >= getattr(policy, "mandate_afa_threshold", 15000.0) or subscription.afa_required:
+                # 24-hour pre-debit notification window check
+                notified_at = subscription.pre_debit_notification_sent_at
+                has_24h_window = notified_at and (now - notified_at) >= datetime.timedelta(hours=24)
+                checklist.append({
+                    "rule": "rbi_emandate_pre_debit_notification_window",
+                    "description": "24-hour pre-debit alert window must be honored before automated retry (RBI e-Mandate Framework)",
+                    "passed": bool(has_24h_window),
+                    "details": "24-hour pre-debit window satisfied" if has_24h_window else "Pre-debit notification window (<24h or missing) has not elapsed. Automated retry blocked until window matures."
+                })
+                if not has_24h_window and proposed_action == "retry_payment":
+                    status = "BLOCKED"
+                    reasons.append("RBI e-Mandate Framework: 24-hour pre-debit notification window not satisfied. Retry blocked until window matures.")
 
         overall_reason = "; ".join(reasons) if reasons else "All deterministic policy and safety rules passed successfully."
         return status, checklist, overall_reason

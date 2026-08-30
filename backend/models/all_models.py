@@ -157,6 +157,11 @@ class RecoveryCase(Base):
     outcome_verified = Column(Boolean, default=False)
     recovered_amount = Column(Float, default=0.0)
     
+    # RBI TAT & Customer Compensation Framework (RBI/2019-20/67)
+    tat_deadline = Column(DateTime, nullable=True)
+    tat_status = Column(String(50), default="ON_TRACK") # ON_TRACK, DUE_TODAY, BREACHED
+    accrued_compensation_inr = Column(Float, default=0.0)
+    
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     resolved_at = Column(DateTime, nullable=True)
@@ -341,6 +346,10 @@ class PolicyConfig(Base):
     allow_customer_contact = Column(Boolean, default=True)
     recovery_time_window_hours = Column(Integer, default=72)
     
+    # RBI Guideline Policy Settings
+    mandate_afa_threshold = Column(Float, default=15000.0) # Configurable RBI e-Mandate AFA limit
+    tat_auto_escalate = Column(Boolean, default=True)      # Auto-escalate cases breaching TAT deadline
+    
     allowed_actions = Column(JSON, default=lambda: [
         "retry_payment",
         "create_payment_link",
@@ -373,6 +382,13 @@ class Subscription(Base):
     max_retries = Column(Integer, default=3)
     failure_reason = Column(String(255), nullable=True)
     next_retry_at = Column(DateTime, nullable=True)
+    
+    # RBI e-Mandate Compliance Policy Fields
+    afa_required = Column(Boolean, default=False)
+    pre_debit_notification_sent_at = Column(DateTime, nullable=True)
+    opt_out_status = Column(Boolean, default=False)
+    opt_out_at = Column(DateTime, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 

@@ -1,19 +1,26 @@
 # ⚡ RevivePay AI — Autonomous Payment Failure Recovery Platform
 
+[![RevivePay CI Suite](https://github.com/harshchavan009/Revivepay-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/harshchavan009/Revivepay-ai/actions)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![React 19](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-emerald.svg)](https://fastapi.tiangolo.com/)
+[![Tests](https://img.shields.io/badge/tests-51%20passing-success.svg)](backend/tests/)
+
 > **Recover Revenue Before It's Lost.**  
-> Production-grade, policy-governed autonomous revenue recovery engine with cryptographic hash-chained audit trails, real-time telemetry streaming, and genuine Razorpay test mode integration.
+> Production-grade, policy-governed autonomous revenue recovery engine with cryptographic hash-chained audit trails, real-time telemetry streaming, reference implementations of published RBI guidelines, and genuine Razorpay test mode integration.
 
 ---
 
 ## 🌟 Executive Overview
 
-**RevivePay AI** is a revenue operations operating system built for modern fintechs, SaaS providers, and e-commerce merchants. Instead of treating payment declines with naive, blind retries or static chatbots, RevivePay implements an intelligent, policy-governed autonomous recovery lifecycle:
+**RevivePay AI** is an open-source engineering project by **Harsh Chavan** exploring autonomous financial recovery architectures. Instead of treating payment declines with naive, blind retries, RevivePay implements an intelligent, policy-governed autonomous recovery lifecycle:
 
 $$\textbf{DETECT} \longrightarrow \textbf{DIAGNOSE} \longrightarrow \textbf{DECIDE} \longrightarrow \textbf{ACT} \longrightarrow \textbf{VERIFY} \longrightarrow \textbf{MEASURE}$$
 
 ### 🎯 Key Design Principles
 - **Bank-Grade Credibility**: Real database persistence, real JWT auth with role enforcement, and cryptographic block verification.
 - **Deterministic Policy Guardrails**: Bounded retries, amount thresholds, and mandatory Human-in-the-Loop review queues for high-risk actions.
+- **RBI Guidance Reference Implementation**: Working models of RBI Turn Around Time (RBI/2019-20/67) ₹100/day compensation framework and e-Mandate 24-hour pre-debit notifications.
 - **Single Source of Truth**: Unified domain models across payments, recovery cases, subscriptions, and audit logs.
 
 ---

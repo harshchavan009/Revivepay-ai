@@ -4,7 +4,7 @@ import { ShieldAlert, Search, RefreshCw, ChevronLeft, ChevronRight, Zap, FlaskCo
 import { recoveryService, dashboardService } from "../services";
 import { RecoveryCase } from "../types";
 import { RiskBadge } from "../components/RiskBadge";
-import { StatusBadge } from "../components/StatusBadge";
+import { StatusBadge, TatBadge } from "../components/StatusBadge";
 import { ActionBadge } from "../components/ActionBadge";
 import { EventSourceBadge } from "../components/EventSourceBadge";
 import { formatINR } from "../data/mockData";
@@ -195,6 +195,7 @@ export const RecoveryCasesPage: React.FC = () => {
                 <th className="p-4">Failure Diagnosis</th>
                 <th className="p-4">Recommended Action</th>
                 <th className="p-4">Policy Gate</th>
+                <th className="p-4">TAT Status (RBI T+5)</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 pr-6 text-right">Action</th>
               </tr>
@@ -211,13 +212,14 @@ export const RecoveryCasesPage: React.FC = () => {
                     <td className="p-4"><div className="h-4 bg-[var(--color-bg-surface-hover)] rounded w-24"></div></td>
                     <td className="p-4"><div className="h-4 bg-[var(--color-bg-surface-hover)] rounded w-20"></div></td>
                     <td className="p-4"><div className="h-4 bg-[var(--color-bg-surface-hover)] rounded w-16"></div></td>
+                    <td className="p-4"><div className="h-4 bg-[var(--color-bg-surface-hover)] rounded w-24"></div></td>
                     <td className="p-4"><div className="h-4 bg-[var(--color-bg-surface-hover)] rounded w-16"></div></td>
                     <td className="p-4 pr-6 text-right"><div className="h-6 bg-[var(--color-bg-surface-hover)] rounded w-20 ml-auto"></div></td>
                   </tr>
                 ))
               ) : paginatedCases.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-12 text-center text-[var(--color-text-muted)] font-sans">
+                  <td colSpan={11} className="p-12 text-center text-[var(--color-text-muted)] font-sans">
                     <div className="max-w-sm mx-auto space-y-3">
                       <div className="w-10 h-10 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
                         <ShieldAlert className="w-5 h-5" />
@@ -277,6 +279,9 @@ export const RecoveryCasesPage: React.FC = () => {
                       <StatusBadge status={c.policy_status} type="policy" />
                     </td>
                     <td className="p-4">
+                      <TatBadge status={c.tat_status} deadline={c.tat_deadline} accruedCompensation={c.accrued_compensation_inr} />
+                    </td>
+                    <td className="p-4">
                       <StatusBadge status={c.recovery_status} />
                     </td>
                     <td className="p-4 pr-6 text-right">
@@ -333,6 +338,7 @@ export const RecoveryCasesPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <ActionBadge action={c.recommended_action} />
                   <StatusBadge status={c.policy_status} type="policy" />
+                  <TatBadge status={c.tat_status} deadline={c.tat_deadline} accruedCompensation={c.accrued_compensation_inr} />
                   <StatusBadge status={c.recovery_status} />
                 </div>
 

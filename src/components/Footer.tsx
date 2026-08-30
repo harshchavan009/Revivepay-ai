@@ -216,15 +216,25 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
+      {/* Minimal Privacy & Terms Legal Disclosure */}
+      <div className="max-w-7xl mx-auto px-6 py-4 border-t border-[var(--color-border-subtle)] text-[10px] text-[var(--color-text-muted)] space-y-1">
+        <p>
+          <strong className="text-[var(--color-text-secondary)]">Privacy Note:</strong> This is an engineering portfolio demo. No real payment credentials, card numbers, or sensitive personal data should ever be entered. All mock data is reset periodically.
+        </p>
+        <p>
+          <strong className="text-[var(--color-text-secondary)]">Terms of Demonstration:</strong> Provided solely for research and portfolio demonstration purposes exploring autonomous multi-agent payment recovery pipelines, deterministic safety invariants, and cryptographic audit ledgers in Razorpay test mode.
+        </p>
+      </div>
+
       {/* Bottom Sub-footer */}
-      <div className="max-w-7xl mx-auto px-6 py-6 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[var(--color-text-secondary)]">
+      <div className="max-w-7xl mx-auto px-6 py-5 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[var(--color-text-secondary)]">
         <div>
           RevivePay AI — an open-source engineering project by <strong className="text-[var(--color-text-primary)]">Harsh Chavan</strong>. Built for Razorpay test mode exploration.
         </div>
         <div className="flex items-center gap-4 font-mono text-[10px]">
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]"></span>
-            <span>v2.4 Production</span>
+            <span>v2.5 Architecture</span>
           </span>
           <span>•</span>
           <span>SHA-256 HMAC Verified</span>

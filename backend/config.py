@@ -15,6 +15,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_WEBHOOK_PER_MINUTE: int = 120
     HIGH_VALUE_THRESHOLD: float = 50000.0
     
+    # RBI Guideline Reference Framework Settings (RBI/2019-20/67 & e-Mandates)
+    TAT_UPI_DAYS: int = 1                     # UPI auto-reversal deadline T+1
+    TAT_CARD_DAYS: int = 5                    # Card/NEFT/Netbanking auto-reversal deadline T+5 working days
+    TAT_COMPENSATION_DAILY_INR: float = 100.0 # Statutory ₹100/day penalty for overdue reversals
+    MANDATE_AFA_THRESHOLD: float = 15000.0    # RBI e-Mandate AFA setup threshold (₹15,000)
+    
+    # LLM Quota & Cost Guardrails
+    DAILY_LLM_CALL_BUDGET: int = 100          # Daily LLM call cap before deterministic fallback
+    
     # Database
     DATABASE_URL: str = "sqlite:///./revivepay.db"
     

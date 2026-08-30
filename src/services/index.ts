@@ -418,13 +418,17 @@ export const subscriptionService = {
       return SHARED_SUBSCRIPTIONS;
     }
   },
+  sendPreDebitNotification: async (subId: string): Promise<any> => {
+    const res = await apiClient.post(`/subscriptions/${subId}/send-pre-debit-notification`);
+    return res.data;
+  },
+  optOutSubscription: async (subId: string): Promise<any> => {
+    const res = await apiClient.post(`/subscriptions/${subId}/opt-out`);
+    return res.data;
+  },
   retrySubscription: async (subId: string): Promise<any> => {
-    try {
-      const res = await apiClient.post(`/subscriptions/${subId}/retry`);
-      return res.data;
-    } catch {
-      return { status: "SCHEDULED", message: `Smart retry scheduled for subscription ${subId}.` };
-    }
+    const res = await apiClient.post(`/subscriptions/${subId}/retry`);
+    return res.data;
   }
 };
 
@@ -624,5 +628,9 @@ export const simulationService = {
         ]
       };
     }
+  },
+  resetDemoData: async (): Promise<{ success: boolean; message: string }> => {
+    const res = await apiClient.post<{ success: boolean; message: string }>("/simulation/reset-demo");
+    return res.data;
   }
 };

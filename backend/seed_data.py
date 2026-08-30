@@ -243,6 +243,9 @@ def seed_database(force_reseed: bool = False):
         recovery_status="AWAITING_APPROVAL",
         outcome_verified=False,
         recovered_amount=0.0,
+        tat_deadline=datetime.datetime.utcnow() + datetime.timedelta(days=7),
+        tat_status="ON_TRACK",
+        accrued_compensation_inr=0.0,
         created_at=datetime.datetime.utcnow() - datetime.timedelta(minutes=18),
         updated_at=datetime.datetime.utcnow() - datetime.timedelta(minutes=18)
     )
@@ -479,6 +482,31 @@ def seed_database(force_reseed: bool = False):
                 evidence_list.append("Issuer network switch reported transient timeout (504).")
                 reasoning_txt = f"Transient gateway switch disconnect detected for {c.name}. Automated retry approved under policy threshold for ₹{amt:,.2f}."
 
+            # Compute RBI TAT deadline
+            is_upi = (p.payment_method or "card").lower() == "upi"
+            tat_dl = created_time + (datetime.timedelta(days=1) if is_upi else datetime.timedelta(days=7))
+            now_dt = datetime.datetime.utcnow()
+            
+            if (case_counter % 7 == 0) and rec_status not in ["RECOVERED", "STOPPED"]:
+                # Seed a breached TAT case
+                tat_dl = now_dt - datetime.timedelta(days=random.randint(2, 5))
+                days_over = (now_dt - tat_dl).days
+                tat_stat = "BREACHED"
+                accrued_comp = round(days_over * 100.0, 2)
+                pol_stat = "REVIEW_REQUIRED"
+                rec_status = "AWAITING_APPROVAL"
+                app_req = True
+                app_stat = "PENDING"
+                exec_stat = "IDLE"
+            elif (tat_dl - now_dt) <= datetime.timedelta(hours=24) and (tat_dl >= now_dt):
+                tat_stat = "DUE_TODAY"
+                accrued_comp = 0.0
+                pol_stat = "PASSED" if amt <= 50000 else "REVIEW_REQUIRED"
+            else:
+                tat_stat = "ON_TRACK"
+                accrued_comp = 0.0
+                pol_stat = "PASSED" if amt <= 50000 else "REVIEW_REQUIRED"
+
             rc = RecoveryCase(
                 case_id=f"RV-{case_counter}",
                 payment_id=p.payment_id,
@@ -495,10 +523,11 @@ def seed_database(force_reseed: bool = False):
                 evidence=evidence_list,
                 recommended_action=action_choice,
                 reasoning_summary=reasoning_txt,
-                policy_status="PASSED" if amt <= 50000 else "REVIEW_REQUIRED",
+                policy_status=pol_stat,
                 policy_checklist=[
                     {"rule": "action_whitelisted", "description": "Action permitted by policy", "passed": True, "details": "Allowed"},
-                    {"rule": "auto_action_amount_limit", "description": "Amount limit check", "passed": amt <= 50000, "details": "Verified"}
+                    {"rule": "auto_action_amount_limit", "description": "Amount limit check", "passed": amt <= 50000, "details": "Verified"},
+                    {"rule": "rbi_tat_guideline_compliance", "description": "RBI Turn Around Time check (RBI/2019-20/67)", "passed": tat_stat != "BREACHED", "details": f"Status: {tat_stat}"}
                 ],
                 approval_required=app_req,
                 approval_status=app_stat,
@@ -506,6 +535,9 @@ def seed_database(force_reseed: bool = False):
                 recovery_status=rec_status,
                 outcome_verified=outcome_ver,
                 recovered_amount=recovered_amt,
+                tat_deadline=tat_dl,
+                tat_status=tat_stat,
+                accrued_compensation_inr=accrued_comp,
                 created_at=created_time,
                 updated_at=created_time + datetime.timedelta(minutes=random.randint(2, 6), seconds=random.randint(10, 50)),
                 resolved_at=resolved_time
@@ -603,6 +635,10 @@ def seed_database(force_reseed: bool = False):
         c = random.choice(customers)
         plan, cost = random.choice(sub_plans)
         status = random.choice(["ACTIVE", "PAST_DUE", "RECOVERED"])
+        afa_req = (cost >= 15000.0)
+        has_notified = afa_req and (i % 2 == 0)
+        opt_out = (i == 4) # One customer opted out
+        
         sub = Subscription(
             subscription_id=f"sub_{80000 + i}",
             customer_id=c.customer_id,
@@ -612,11 +648,15 @@ def seed_database(force_reseed: bool = False):
             amount=cost,
             currency="INR",
             billing_interval="monthly",
-            current_status=status,
+            current_status="HALTED" if opt_out else status,
             retry_count=random.randint(0, 2),
             max_retries=3,
-            failure_reason="Transient insufficient funds" if status == "PAST_DUE" else None,
-            next_retry_at=datetime.datetime.utcnow() + datetime.timedelta(days=1) if status == "PAST_DUE" else None
+            failure_reason="Customer exercised e-mandate opt-out" if opt_out else ("Transient insufficient funds" if status == "PAST_DUE" else None),
+            next_retry_at=datetime.datetime.utcnow() + datetime.timedelta(days=1) if status == "PAST_DUE" and not opt_out else None,
+            afa_required=afa_req,
+            pre_debit_notification_sent_at=datetime.datetime.utcnow() - datetime.timedelta(hours=26) if has_notified else None,
+            opt_out_status=opt_out,
+            opt_out_at=datetime.datetime.utcnow() - datetime.timedelta(hours=5) if opt_out else None
         )
         db.add(sub)
 

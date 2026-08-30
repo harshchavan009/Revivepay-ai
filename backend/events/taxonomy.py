@@ -30,6 +30,7 @@ class RecoveryEventType(str, Enum):
     ACTION_FAILED = "recovery.action.failed"
     VERIFIED = "recovery.verified"
     STEPUP_VERIFIED = "recovery.approval.stepup_verified"
+    TAT_BREACHED = "recovery.case.tat_breached"
     ESCALATED = "recovery.escalated"
     STOPPED = "recovery.stopped"
 
@@ -42,6 +43,8 @@ class SubscriptionEventType(str, Enum):
     SUBSCRIPTION_PENDING = "subscription.pending"
     SUBSCRIPTION_CHARGED = "subscription.charged"
     SUBSCRIPTION_HALTED = "subscription.halted"
+    MANDATE_NOTIFIED = "subscription.mandate.pre_debit_notified"
+    MANDATE_OPT_OUT = "subscription.mandate.customer_opt_out"
 
 
 # ==========================================
@@ -87,6 +90,7 @@ ALL_CANONICAL_EVENTS: Set[str] = {
     RecoveryEventType.ACTION_FAILED.value,
     RecoveryEventType.VERIFIED.value,
     RecoveryEventType.STEPUP_VERIFIED.value,
+    RecoveryEventType.TAT_BREACHED.value,
     RecoveryEventType.ESCALATED.value,
     RecoveryEventType.STOPPED.value,
 
@@ -95,6 +99,8 @@ ALL_CANONICAL_EVENTS: Set[str] = {
     SubscriptionEventType.SUBSCRIPTION_PENDING.value,
     SubscriptionEventType.SUBSCRIPTION_CHARGED.value,
     SubscriptionEventType.SUBSCRIPTION_HALTED.value,
+    SubscriptionEventType.MANDATE_NOTIFIED.value,
+    SubscriptionEventType.MANDATE_OPT_OUT.value,
 
     # Checkout events
     CheckoutEventType.CHECKOUT_STARTED.value,
@@ -106,17 +112,13 @@ ALL_CANONICAL_EVENTS: Set[str] = {
     ChatEventType.CHAT_INQUIRY_RESOLVED.value,
 }
 
+
 def is_canonical_event(event_type: str) -> bool:
-    """Validates if a given event string strictly belongs to the canonical taxonomy."""
+    """Validates if an event type belongs to the canonical system taxonomy."""
     return event_type in ALL_CANONICAL_EVENTS
 
 def validate_event_type(event_type: str) -> str:
-    """
-    Validates the event type and raises ValueError if it is not in the canonical taxonomy.
-    """
+    """Validates and returns the canonical event type or raises ValueError."""
     if not is_canonical_event(event_type):
-        raise ValueError(
-            f"Invalid non-canonical event '{event_type}'. "
-            f"Must be one of the defined taxonomy events in ALL_CANONICAL_EVENTS."
-        )
+        raise ValueError(f"Event type '{event_type}' is not a valid canonical event in the taxonomy.")
     return event_type

@@ -104,13 +104,17 @@ def generate_synthetic_telemetry_tick(db: Session) -> Dict[str, Any]:
 
 async def periodic_telemetry_loop(interval_seconds: int = 1800):
     """
-    Background asynchronous loop generating synthetic telemetry ticks periodically.
+    Background asynchronous loop generating synthetic telemetry ticks periodically
+    and evaluating statutory RBI TAT deadlines.
     """
     while True:
         try:
             await asyncio.sleep(interval_seconds)
             db = SessionLocal()
             try:
+                # 1. Evaluate TAT deadlines & statutory compensation
+                RecoveryEngine.check_and_update_tat_statuses(db)
+                # 2. Ingest synthetic telemetry tick
                 generate_synthetic_telemetry_tick(db)
             finally:
                 db.close()
