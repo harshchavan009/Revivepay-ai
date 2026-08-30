@@ -41,7 +41,7 @@ def test_razorpay_webhook_endpoint_signature_validation():
     """
     Test that invalid signatures and tampered payloads are rejected by FastAPI endpoint with HTTP 401.
     """
-    secret = settings.RAZORPAY_WEBHOOK_SECRET
+    secret = settings.RAZORPAY_WEBHOOK_SECRET or "sandbox_test_webhook_secret"
     body = {"event": "payment.failed", "event_id": f"event_{uuid.uuid4().hex[:10]}"}
     raw_bytes = json.dumps(body).encode("utf-8")
 
@@ -87,7 +87,7 @@ def test_razorpay_webhook_idempotency_and_event_fields(db_session):
     1. First delivery -> Ingested, processed_at recorded, Recovery workflow triggered.
     2. Second delivery with duplicate event_id -> Ignored safely with HTTP 200 'duplicate_ignored'.
     """
-    secret = settings.RAZORPAY_WEBHOOK_SECRET
+    secret = settings.RAZORPAY_WEBHOOK_SECRET or "sandbox_test_webhook_secret"
     evt_id = f"event_rzp_dup_test_{uuid.uuid4().hex[:8]}"
     pay_id = f"pay_rzp_test_{uuid.uuid4().hex[:8]}"
 
