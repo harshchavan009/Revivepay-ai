@@ -237,7 +237,7 @@ The platform includes 4 pre-configured personas with secure server-side bcrypt p
 | **Support Operator** | `support@revivepay.ai` | `SUPPORT_OPERATOR` | Read-only investigation, customer communications |
 | **Admin** | `admin@revivepay.ai` | `ADMIN` | Platform administration, webhook key management |
 
-> **Note on Authentication**: Demo accounts use standard sandbox evaluation passwords seeded via environment configuration (`.env`). In production deployments, Revive AI delegates authentication to enterprise SAML 2.0 / OIDC identity providers with enforced Multi-Factor Authentication (MFA).
+> **Demo Environment**: Credentials are configured through environment variables. No production credentials are included in this repository. 1-Click login presets are provided in the UI for local sandbox evaluation.
 
 ---
 
@@ -332,8 +332,8 @@ PYTHONPATH=. pytest backend/tests/ -v -W ignore
 
 ## ⚖️ Operational Scope & Disclaimers
 
-1. **Sandbox Environment**: All Razorpay gateway interactions run against **Razorpay Test Mode** (`rzp_test_...`). No real fiat currency or bank debiting occurs.
-2. **Synthetic ML Evaluation Data**: The calibrated gradient boosting recovery classifier was trained and evaluated on 1,000 synthetic transaction records modeling representative banking and card-network failure patterns in the Indian payments ecosystem.
+1. **Sandbox Environment**: All Razorpay gateway interactions run against **Razorpay Test Mode**. No real fiat currency or bank debiting occurs.
+2. **Synthetic ML Evaluation Data**: The calibrated gradient boosting recovery classifier was trained and evaluated on synthetic transaction records modeling representative banking and card-network failure patterns in the Indian payments ecosystem.
 3. **Educational Reference Implementation**: References to published Reserve Bank of India (RBI) Turn Around Time (TAT) framework (RBI/2019-20/67) and e-Mandate circulars are educational reference implementations of public guidelines and do not constitute official regulatory certification.
 4. **Engineering Prototype**: Revive AI is an open-source fintech engineering prototype created by **Harsh Chavan** to demonstrate enterprise-grade revenue recovery architecture.
 
