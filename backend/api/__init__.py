@@ -32,3 +32,19 @@ api_router.include_router(events_stream_router)
 api_router.include_router(chat_router)
 api_router.include_router(status_router)
 api_router.include_router(analytics_router)
+
+@api_router.get("/health")
+def api_health():
+    from backend.config import settings
+    return {
+        "status": "ok",
+        "service": "revivepay-api",
+        "version": "1.0.0",
+        "security_controls": {
+            "jwt_access_token_expire_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+            "refresh_token_cookie_enabled": True,
+            "step_up_auth_threshold_inr": settings.HIGH_VALUE_THRESHOLD,
+            "rate_limiting_enabled": True,
+            "security_headers_enforced": True
+        }
+    }
