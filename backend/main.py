@@ -107,10 +107,10 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com data:; "
-        "img-src 'self' data: https:; "
+        "img-src 'self' data: https: https://fastapi.tiangolo.com; "
         "connect-src 'self' http: https: ws: wss:; "
         "frame-ancestors 'none';"
     )
@@ -198,8 +198,15 @@ if os.path.exists(dist_dir):
     async def serve_spa(full_path: str):
         clean_path = full_path.strip("/")
 
-        # Never intercept API or FastAPI system routes
-        if clean_path in RESERVED_FASTAPI_PATHS or clean_path.startswith("api"):
+        # Never intercept API, Swagger, ReDoc, or FastAPI system routes
+        if (
+            clean_path in RESERVED_FASTAPI_PATHS
+            or clean_path.startswith("api")
+            or clean_path.startswith("docs")
+            or clean_path.startswith("redoc")
+            or clean_path == "openapi.json"
+            or clean_path == "health"
+        ):
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
         # Check if requesting a direct static file from dist
