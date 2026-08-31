@@ -15,19 +15,27 @@ from backend.services.auth_service import get_password_hash
 from backend.services.risk_engine import RevenueRiskEngine
 
 def seed_database(force_reseed: bool = False):
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    if not force_reseed and db.query(Payment).count() > 50:
+    try:
+        if not force_reseed and db.query(Payment).count() > 50:
+            db.close()
+            return
+    except Exception:
+        # If tables are not initialized yet, let caller/migration handle it
         db.close()
         return
 
     print("🌱 Seeding RevivePay AI with Canonical Event Taxonomy...")
 
-    # Clear existing tables if force reseeding
+    # Clear existing data if force reseeding
     if force_reseed:
-        Base.metadata.drop_all(bind=engine)
-        Base.metadata.create_all(bind=engine)
+        try:
+            for tbl in reversed(Base.metadata.sorted_tables):
+                db.execute(tbl.delete())
+            db.commit()
+        except Exception:
+            db.rollback()
 
     # ==========================================
     # 1. MERCHANT ENTITY

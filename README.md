@@ -290,6 +290,21 @@ npm run dev
 docker compose up --build -d
 ```
 
+### Production Deployment & Migration Lifecycle:
+RevivePay AI enforces an enterprise-grade, migration-first startup lifecycle:
+
+```
+PostgreSQL (Container Healthcheck Passed)
+   ↓
+Alembic migration (`alembic upgrade head`)
+   ↓
+FastAPI starts (`uvicorn backend.main:app`)
+```
+
+- **Zero Runtime DDL Injections**: Production dependence on `Base.metadata.create_all(...)` is completely removed.
+- **Explicit Versioned Schemas**: All table definitions, indexes, foreign keys, and unique constraints are strictly version-controlled in `alembic/versions/`.
+- **Automated Container Startup**: Handled seamlessly by `scripts/entrypoint.sh` prior to binding the ASGI port.
+
 ### Application URLs:
 - **Frontend Command Center**: `http://localhost:5173` (or `http://localhost` via Docker)
 - **System Evaluation & ML Diagnostics**: `http://localhost:5173/evaluation`

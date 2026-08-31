@@ -8,18 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from backend.config import settings
-from backend.database import engine, Base
+from backend.database import engine
 from backend.api import api_router
 from backend.seed_data import seed_database
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("revivepay")
 
-# Database schema initialization
-# In production, schema migrations are explicitly managed via Alembic (`alembic upgrade head`).
-# In local development / test environments with SQLite, create schema if not present.
-if settings.ENVIRONMENT != "production" or "sqlite" in settings.DATABASE_URL:
-    Base.metadata.create_all(bind=engine)
+# Database schema management:
+# Schema migrations are strictly managed via Alembic (`alembic upgrade head`)
+# before the application starts. FastAPI never runs runtime create_all() DDL commands.
 
 app = FastAPI(
     title="RevivePay AI",
