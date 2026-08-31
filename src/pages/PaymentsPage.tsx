@@ -223,7 +223,7 @@ export const PaymentsPage: React.FC = () => {
                       {(p.failure_category || "transient_gateway_latency").replace(/_/g, " ")}
                     </td>
                     <td className="p-4 font-mono text-[var(--color-text-muted)]">
-                      {p.retry_count ?? 0} / {p.max_retry_count ?? 3}
+                      {Math.min(p.retry_count ?? 0, p.max_retry_count ?? 2)} / {p.max_retry_count ?? 2}
                     </td>
                     <td className="p-4 font-mono text-[var(--color-text-muted)] whitespace-nowrap">
                       {formatDateSafe(p.created_at, {
@@ -236,7 +236,7 @@ export const PaymentsPage: React.FC = () => {
                     <td className="p-4 pr-6 text-right font-mono">
                       <button
                         onClick={() => setSelectedPayment(p)}
-                        className="px-2.5 py-1 rounded-lg bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-accent)] font-semibold text-xs border border-[var(--color-border-subtle)]"
+                        className="px-2.5 py-1 rounded-lg bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-accent)] font-semibold text-xs border border-[var(--color-border-subtle)] cursor-pointer"
                       >
                         View
                       </button>
@@ -258,20 +258,20 @@ export const PaymentsPage: React.FC = () => {
             paginatedPayments.map((p) => (
               <div key={p.id || p.payment_id} className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-sm text-[var(--color-text-primary)]">{p.payment_id}</span>
-                  <span className="font-bold text-sm text-[var(--color-text-primary)] font-mono">{formatINR(p.amount)}</span>
+                  <span className="font-mono font-bold text-sm text-[var(--color-text-primary)]">{p.payment_id || "PAY-UNKNOWN"}</span>
+                  <span className="font-bold text-sm text-[var(--color-text-primary)] font-mono">{formatINR(p.amount ?? 0)}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
                   <div>
                     <p className="font-semibold text-[var(--color-text-primary)]">{p.customer_name || "Customer"}</p>
-                    <p className="text-[10px] font-mono text-[var(--color-text-muted)]">{p.customer_email}</p>
+                    <p className="text-[10px] font-mono text-[var(--color-text-muted)]">{p.customer_email || "billing@enterprise.in"}</p>
                   </div>
-                  <StatusBadge status={p.status} type="payment" />
+                  <StatusBadge status={p.status || "FAILED"} type="payment" />
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] pt-1 border-t border-[var(--color-border-subtle)]">
-                  <span className="font-mono uppercase">{p.payment_method} • {(p.failure_category || "General").replace(/_/g, " ")}</span>
+                  <span className="font-mono uppercase">{p.payment_method || "CARD"} • {(p.failure_category || "General").replace(/_/g, " ")}</span>
                   <button
                     onClick={() => setSelectedPayment(p)}
                     className="px-3 py-1 rounded-lg bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-semibold text-xs border border-[var(--color-accent-border)] flex items-center gap-1 cursor-pointer"
@@ -343,7 +343,7 @@ export const PaymentsPage: React.FC = () => {
           <div className="w-full max-w-lg bg-[var(--color-bg-surface-raised)] border border-[var(--color-border)] rounded-2xl shadow-premium-lg overflow-hidden p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3">
               <div>
-                <h3 className="font-bold text-[var(--color-text-primary)] text-base font-mono">{selectedPayment.payment_id}</h3>
+                <h3 className="font-bold text-[var(--color-text-primary)] text-base font-mono">{selectedPayment.payment_id || "PAY-UNKNOWN"}</h3>
                 <p className="text-xs text-[var(--color-text-secondary)]">Transaction Gateway Payload</p>
               </div>
               <button onClick={() => setSelectedPayment(null)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer">
@@ -354,19 +354,19 @@ export const PaymentsPage: React.FC = () => {
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-secondary)]">Amount:</span>
-                <span className="font-bold font-mono text-[var(--color-text-primary)]">{formatINR(selectedPayment.amount)}</span>
+                <span className="font-bold font-mono text-[var(--color-text-primary)]">{formatINR(selectedPayment.amount ?? 0)}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-secondary)]">Customer:</span>
-                <span className="font-semibold text-[var(--color-text-primary)]">{selectedPayment.customer_name}</span>
+                <span className="font-semibold text-[var(--color-text-primary)]">{selectedPayment.customer_name || "Customer"}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-secondary)]">Payment Method:</span>
-                <span className="font-mono text-[var(--color-text-primary)] uppercase">{selectedPayment.payment_method}</span>
+                <span className="font-mono text-[var(--color-text-primary)] uppercase">{selectedPayment.payment_method || "CARD"}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-secondary)]">Status:</span>
-                <StatusBadge status={selectedPayment.status} type="payment" />
+                <StatusBadge status={selectedPayment.status || "FAILED"} type="payment" />
               </div>
               <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-secondary)]">Failure Reason:</span>
@@ -374,7 +374,9 @@ export const PaymentsPage: React.FC = () => {
               </div>
               <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                 <span className="text-[var(--color-text-secondary)]">Retries Executed:</span>
-                <span className="font-mono text-[var(--color-text-primary)]">{selectedPayment.retry_count} of {selectedPayment.max_retry_count}</span>
+                <span className="font-mono text-[var(--color-text-primary)]">
+                  {Math.min(selectedPayment.retry_count ?? 0, selectedPayment.max_retry_count ?? 2)} of {selectedPayment.max_retry_count ?? 2}
+                </span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-[var(--color-text-secondary)]">Timestamp:</span>

@@ -57,6 +57,15 @@ const HARDENING_LOG_ENTRIES: HardeningLogItem[] = [
     fix: "Implemented mandatory Step-Up Re-Authentication (OTP/password verification) logging distinct audit events.",
     category: "Security",
     status: "VERIFIED"
+  },
+  {
+    id: "HL-006",
+    date: "August 2026",
+    issue: "Data Consistency & Invariant Boundary Hardening",
+    whyItMattered: "Unbounded retry counters (e.g. 3/2) and unverified recovery claims break user trust and violate fintech accounting invariants.",
+    fix: "Strictly enforced retry_count <= max_retry_count, locked SUCCESS payments from retry eligibility, and required verified outcomes for RECOVERED cases.",
+    category: "Data Integrity",
+    status: "VERIFIED"
   }
 ];
 

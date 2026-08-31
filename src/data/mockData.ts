@@ -1,20 +1,24 @@
 import { RecoveryCase, SubscriptionItem, Payment, AbandonedCart, DashboardMetrics } from "../types";
 
-export const formatINR = (amount: number): string => {
+export const formatINR = (amount?: number | string | null): string => {
+  const num = typeof amount === "number" ? amount : Number(amount);
+  const validAmount = isNaN(num) || num === null || num === undefined ? 0 : num;
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(validAmount);
 };
 
-export const formatINRWithDecimals = (amount: number): string => {
+export const formatINRWithDecimals = (amount?: number | string | null): string => {
+  const num = typeof amount === "number" ? amount : Number(amount);
+  const validAmount = isNaN(num) || num === null || num === undefined ? 0 : num;
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(validAmount);
 };
 
 /**
