@@ -7,3 +7,4 @@ from backend.services.razorpay_service import RazorpayService
 from backend.services.simulation_service import SimulationService
 from backend.services.metrics_service import MetricsService
 from backend.services.audit_service import AuditService
+from backend.services.state_machine import RecoveryStateMachine, RecoveryState
