@@ -18,12 +18,20 @@ def db_session():
 def get_token_for_role(role_name: str, email: str = None) -> str:
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.role == role_name).first()
+        user_email = email or f"{role_name.lower()}@revivepay.ai"
+        user = db.query(User).filter((User.email == user_email) | (User.role == role_name)).first()
         if not user:
-            user_email = email or f"{role_name.lower()}@revivepay.ai"
-        else:
-            user_email = user.email
-        return create_access_token({"sub": user_email, "role": role_name})
+            user = User(
+                email=user_email,
+                name=f"Test {role_name.replace('_', ' ').title()}",
+                role=role_name,
+                hashed_password="dev-non-secret-hashed-placeholder",
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        return create_access_token({"sub": user.email, "role": user.role, "name": user.name})
     finally:
         db.close()
 

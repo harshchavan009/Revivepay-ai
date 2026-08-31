@@ -1,14 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.main import app
-from backend.database import SessionLocal, Base, engine
+from backend.database import SessionLocal
 from backend.services.scheduler import generate_synthetic_telemetry_tick
 
 client = TestClient(app)
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
 
 def test_generate_synthetic_telemetry_tick():
     """Validates that scheduled telemetry generation creates realistic cases."""

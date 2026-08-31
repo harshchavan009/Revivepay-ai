@@ -31,6 +31,10 @@ jobs:
           PYTHONPATH=. python3 ml/train.py
           PYTHONPATH=. python3 ml/evaluate.py
 
+      - name: Run Alembic Database Migrations
+        run: |
+          PYTHONPATH=. alembic upgrade head
+
       - name: Run Backend Pytest Suite & Domain Invariant Verifications
         run: |
           PYTHONPATH=. pytest backend/tests/ -v -W ignore
