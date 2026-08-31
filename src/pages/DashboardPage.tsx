@@ -63,9 +63,12 @@ export const DashboardPage: React.FC = () => {
     metrics,
     recoveredRevenue,
     recoveryRate,
+    revenueAtRisk,
     totalCasesCount,
     activeRecoveryCount,
+    escalatedCasesCount,
     awaitingApprovalCount,
+    failedPaymentsCount,
     environmentLabel,
     refreshMetrics
   } = useMetrics();
@@ -241,20 +244,20 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI 3: Involuntary Churn Prevented */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-purple-500/50 transition-all shadow-premium-sm">
+        {/* KPI 3: Total Revenue At Risk */}
+        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-premium-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Prevented MRR Churn</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Revenue At Risk</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <Lock className="w-4 h-4" />
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
-            {formatINR(48200)}<span className="text-sm font-normal text-[var(--color-text-muted)] font-sans">/mo</span>
+            {formatINR(revenueAtRisk)}
           </p>
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="text-purple-600 dark:text-purple-400 font-bold">142 subscribers saved</span>
-            <span className="text-[var(--color-text-muted)]">zero churn friction</span>
+            <span className="text-amber-600 dark:text-amber-400 font-bold">{failedPaymentsCount} failed payments</span>
+            <span className="text-[var(--color-text-muted)] font-mono">{escalatedCasesCount} escalated</span>
           </div>
         </div>
 
