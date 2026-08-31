@@ -4,7 +4,7 @@ import datetime
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from backend.main import app, rate_limiter
-from backend.database import get_db, Base, engine, SessionLocal
+from backend.database import get_db, SessionLocal
 from backend.models.all_models import User, Merchant, RecoveryCase, Payment, Customer, AuditLog
 from backend.services.auth_service import (
     create_access_token, create_refresh_token, verify_refresh_token,
@@ -16,7 +16,6 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_test_db():
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         merchant = db.query(Merchant).first()
