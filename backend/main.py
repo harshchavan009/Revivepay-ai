@@ -8,18 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from backend.config import settings
-from backend.database import engine, Base
+from backend.database import engine
 from backend.api import api_router
 from backend.seed_data import seed_database
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("revivepay")
 
-# Database schema initialization
-# In production, schema migrations are explicitly managed via Alembic (`alembic upgrade head`).
-# In local development / test environments with SQLite, create schema if not present.
-if settings.ENVIRONMENT != "production" or "sqlite" in settings.DATABASE_URL:
-    Base.metadata.create_all(bind=engine)
+# Database schema management:
+# Schema migrations are strictly managed via Alembic (`alembic upgrade head`)
+# before the application starts. FastAPI never runs runtime create_all() DDL commands.
 
 app = FastAPI(
     title="RevivePay AI",
@@ -150,6 +148,20 @@ def on_startup():
     except Exception as e:
         logger.error(f"Error seeding database: {e}")
 
+@app.get("/")
+def root():
+    return {
+        "service": "revivepay-api",
+        "name": "RevivePay AI",
+        "tagline": "Autonomous Revenue Recovery Engine",
+        "status": "online",
+        "version": "1.0.0",
+        "docs_url": "/docs",
+        "redoc_url": "/redoc",
+        "openapi_url": "/openapi.json",
+        "health_url": "/health"
+    }
+
 @app.get("/health")
 @app.get("/api/health")
 def health():
@@ -180,10 +192,14 @@ if os.path.exists(dist_dir):
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
+    RESERVED_FASTAPI_PATHS = {"", "health", "docs", "redoc", "openapi.json"}
+
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str):
-        # Allow FastAPI API and Swagger routes to pass through
-        if full_path.startswith("api/") or full_path in ["api", "docs", "openapi.json", "redoc", "health"]:
+        clean_path = full_path.strip("/")
+
+        # Never intercept API or FastAPI system routes
+        if clean_path in RESERVED_FASTAPI_PATHS or clean_path.startswith("api"):
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
         # Check if requesting a direct static file from dist
@@ -191,19 +207,9 @@ if os.path.exists(dist_dir):
         if full_path and os.path.isfile(requested_file):
             return FileResponse(requested_file)
 
-        # Fallback to SPA index.html
+        # Fallback to SPA index.html for frontend client routes (e.g. /dashboard, /cases)
         index_file = os.path.join(dist_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
-        
-        return JSONResponse(status_code=404, content={"detail": "dist/index.html not found"})
-else:
-    @app.get("/")
-    def root():
-        return {
-            "service": "revivepay-api",
-            "name": "RevivePay AI",
-            "tagline": "Recover Revenue Before It's Lost.",
-            "status": "online",
-            "note": "Run npm run build to serve the unified frontend directly from this port."
-        }
+
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})

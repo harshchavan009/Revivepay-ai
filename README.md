@@ -237,7 +237,7 @@ The platform includes 4 pre-configured personas with secure server-side bcrypt p
 | **Support Operator** | `support@revivepay.ai` | `SUPPORT_OPERATOR` | Read-only investigation, customer communications |
 | **Admin** | `admin@revivepay.ai` | `ADMIN` | Platform administration, webhook key management |
 
-> **Note on Authentication**: Demo accounts use standard sandbox evaluation passwords seeded via environment configuration (`.env`). In production deployments, Revive AI delegates authentication to enterprise SAML 2.0 / OIDC identity providers with enforced Multi-Factor Authentication (MFA).
+> **Demo Environment**: Credentials are configured through environment variables. No production credentials are included in this repository. 1-Click login presets are provided in the UI for local sandbox evaluation.
 
 ---
 
@@ -270,16 +270,19 @@ PYTHONPATH=. python3 ml/evaluate.py
 # 5. Run Database Migrations
 PYTHONPATH=. alembic upgrade head
 
-# 6. Run Test Suite (60 tests)
+# 6. Run Test Suite (67 tests)
 PYTHONPATH=. pytest backend/tests -v
 
-# 7. Start FastAPI Backend
+# 7. Run Secrets Hygiene CI Audit
+python scripts/audit_secrets.py
+
+# 8. Start FastAPI Backend
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 In a new terminal window:
 ```bash
-# 8. Install and Start Frontend
+# 9. Install and Start Frontend
 npm install
 npm run dev
 ```
@@ -289,6 +292,21 @@ npm run dev
 ```bash
 docker compose up --build -d
 ```
+
+### Production Deployment & Migration Lifecycle:
+RevivePay AI enforces an enterprise-grade, migration-first startup lifecycle:
+
+```
+PostgreSQL (Container Healthcheck Passed)
+   ↓
+Alembic migration (`alembic upgrade head`)
+   ↓
+FastAPI starts (`uvicorn backend.main:app`)
+```
+
+- **Zero Runtime DDL Injections**: Production dependence on `Base.metadata.create_all(...)` is completely removed.
+- **Explicit Versioned Schemas**: All table definitions, indexes, foreign keys, and unique constraints are strictly version-controlled in `alembic/versions/`.
+- **Automated Container Startup**: Handled seamlessly by `scripts/entrypoint.sh` prior to binding the ASGI port.
 
 ### Application URLs:
 - **Frontend Command Center**: `http://localhost:5173` (or `http://localhost` via Docker)
@@ -321,7 +339,8 @@ PYTHONPATH=. pytest backend/tests/ -v -W ignore
 
 ## 🔒 Security & Secrets Hygiene
 
-- **Zero Plaintext Credentials in Source**: All secrets loaded from environment variables (`.env`).
+- **Recursive Secrets Hygiene CI Audit**: Automated security scanner (`scripts/audit_secrets.py`) recursively scanning `backend/`, `src/`, `ml/`, `scripts/`, `alembic/`, `Dockerfiles`, and configuration files to guarantee zero hardcoded API keys, private keys, or credentials in source control.
+- **Zero Plaintext Credentials in Source**: All production secrets strictly loaded from environment variables (`.env`).
 - **Cryptographic Hashing**: User authentication verified via `bcrypt` ($12$ rounds).
 - **Session Protection**: Short-lived JWTs ($15$ min) + httpOnly, Secure, SameSite=Strict refresh cookies.
 - **CSRF Defense**: State-changing operations validate cryptographic double-submit cookies.
@@ -332,8 +351,8 @@ PYTHONPATH=. pytest backend/tests/ -v -W ignore
 
 ## ⚖️ Operational Scope & Disclaimers
 
-1. **Sandbox Environment**: All Razorpay gateway interactions run against **Razorpay Test Mode** (`rzp_test_...`). No real fiat currency or bank debiting occurs.
-2. **Synthetic ML Evaluation Data**: The calibrated gradient boosting recovery classifier was trained and evaluated on 1,000 synthetic transaction records modeling representative banking and card-network failure patterns in the Indian payments ecosystem.
+1. **Sandbox Environment**: All Razorpay gateway interactions run against **Razorpay Test Mode**. No real fiat currency or bank debiting occurs.
+2. **Synthetic ML Evaluation Data**: The calibrated gradient boosting recovery classifier was trained and evaluated on synthetic transaction records modeling representative banking and card-network failure patterns in the Indian payments ecosystem.
 3. **Educational Reference Implementation**: References to published Reserve Bank of India (RBI) Turn Around Time (TAT) framework (RBI/2019-20/67) and e-Mandate circulars are educational reference implementations of public guidelines and do not constitute official regulatory certification.
 4. **Engineering Prototype**: Revive AI is an open-source fintech engineering prototype created by **Harsh Chavan** to demonstrate enterprise-grade revenue recovery architecture.
 

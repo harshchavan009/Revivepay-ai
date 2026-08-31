@@ -6,11 +6,14 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "RevivePay AI"
     API_V1_STR: str = "/api"
     # Core Cryptographic & Database Secrets (strictly loaded from environment)
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "insecure-dev-secret-key-change-in-production")
-    CSRF_SECRET: str = os.getenv("CSRF_SECRET", "insecure-dev-csrf-salt-change-in-production")
+    # Development fallbacks are clearly marked non-secret placeholders and rejected in production mode.
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-non-secret-jwt-placeholder-key")
+    CSRF_SECRET: str = os.getenv("CSRF_SECRET", "dev-non-secret-csrf-placeholder-salt")
+    DEMO_USER_PASSWORD: str = os.getenv("DEMO_USER_PASSWORD", "dev-non-secret-demo-user-password")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./revivepay.db")
     
-    # Razorpay Gateway Test Mode (Configured strictly via Environment)
+    # Razorpay Gateway Integration (Configured strictly via Environment)
+    RAZORPAY_ENABLED: bool = os.getenv("RAZORPAY_ENABLED", "false").lower() in ("true", "1", "yes")
     RAZORPAY_KEY_ID: Optional[str] = os.getenv("RAZORPAY_KEY_ID", None)
     RAZORPAY_KEY_SECRET: Optional[str] = os.getenv("RAZORPAY_KEY_SECRET", None)
     RAZORPAY_WEBHOOK_SECRET: Optional[str] = os.getenv("RAZORPAY_WEBHOOK_SECRET", None)
@@ -64,12 +67,25 @@ class Settings(BaseSettings):
         if self.ENVIRONMENT.lower() == "production":
             insecure_defaults = [
                 "insecure-dev-secret-key-change-in-production",
-                "insecure-dev-csrf-salt-change-in-production"
+                "insecure-dev-csrf-salt-change-in-production",
+                "dev-non-secret-jwt-placeholder-key",
+                "dev-non-secret-csrf-placeholder-salt",
+                "dev-non-secret-demo-user-password",
+                ""
             ]
-            if self.SECRET_KEY in insecure_defaults:
+            if not self.SECRET_KEY or self.SECRET_KEY in insecure_defaults:
                 raise ValueError("CRITICAL SECURITY CONFIGURATION ERROR: SECRET_KEY must be set in environment variables in production mode.")
-            if self.CSRF_SECRET in insecure_defaults:
+            if not self.CSRF_SECRET or self.CSRF_SECRET in insecure_defaults:
                 raise ValueError("CRITICAL SECURITY CONFIGURATION ERROR: CSRF_SECRET must be set in environment variables in production mode.")
+
+            # If Razorpay integration is enabled in production, enforce all Razorpay credentials
+            if self.RAZORPAY_ENABLED or self.RAZORPAY_KEY_ID or self.RAZORPAY_KEY_SECRET or self.RAZORPAY_WEBHOOK_SECRET:
+                if not self.RAZORPAY_KEY_ID:
+                    raise ValueError("CRITICAL SECURITY CONFIGURATION ERROR: RAZORPAY_KEY_ID is required in production when Razorpay is enabled.")
+                if not self.RAZORPAY_KEY_SECRET:
+                    raise ValueError("CRITICAL SECURITY CONFIGURATION ERROR: RAZORPAY_KEY_SECRET is required in production when Razorpay is enabled.")
+                if not self.RAZORPAY_WEBHOOK_SECRET:
+                    raise ValueError("CRITICAL SECURITY CONFIGURATION ERROR: RAZORPAY_WEBHOOK_SECRET is required in production when Razorpay is enabled.")
         return True
 
     class Config:
