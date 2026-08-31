@@ -124,8 +124,8 @@ interface ReviveLiveDecisionTerminalProps {
 }
 
 export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProps> = ({
-  recoveredRevenue = 596534.34,
-  recoveryRate = 53.6
+  recoveredRevenue = 0,
+  recoveryRate = 0
 }) => {
   const [decisions, setDecisions] = useState<RetryDecisionItem[]>(INITIAL_DECISIONS);
   const [isLive, setIsLive] = useState(true);

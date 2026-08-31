@@ -52,7 +52,7 @@ const VOLUME_DATA_BY_RANGE: Record<DateRange, Array<{ day: string; current: numb
 export const AnalyticsPage: React.FC = () => {
   const { effectiveTheme } = useTheme();
   const isDark = effectiveTheme === "dark";
-  const { recoveredRevenue, recoveryRate } = useMetrics();
+  const { recoveredRevenue, recoveryRate, revenueAtRisk, failedPaymentsCount } = useMetrics();
   const [selectedRange, setSelectedRange] = useState<DateRange>("30D");
 
   const chartData = VOLUME_DATA_BY_RANGE[selectedRange];
@@ -168,17 +168,17 @@ export const AnalyticsPage: React.FC = () => {
         {/* Metric 2 */}
         <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Protected MRR Mandates</span>
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Revenue At Risk</span>
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
           <h3 className="text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
-            {formatINR(48200)}<span className="text-sm font-normal text-[var(--color-text-muted)] font-sans">/mo</span>
+            {formatINR(revenueAtRisk)}
           </h3>
-          <div className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 font-bold">
+          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-bold">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>142 Active Subscribers Protected</span>
+            <span>{failedPaymentsCount} Failed Payment Records</span>
           </div>
         </div>
 
@@ -191,7 +191,7 @@ export const AnalyticsPage: React.FC = () => {
             </div>
           </div>
           <h3 className="text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
-            {recoveryRate}%
+            {recoveryRate.toFixed(1)}%
           </h3>
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
             <TrendingUp className="w-3.5 h-3.5" />

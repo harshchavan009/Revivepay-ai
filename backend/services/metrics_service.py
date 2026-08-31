@@ -41,7 +41,7 @@ class MetricsService:
 
         # Calculate dynamic Recovery Rate %
         total_impact = risk_sum + recovered_sum
-        recovery_rate = round((recovered_sum / max(1.0, total_impact)) * 100.0, 1) if total_impact > 0 else 45.0
+        recovery_rate = round((recovered_sum / max(1.0, total_impact)) * 100.0, 1) if total_impact > 0 else 0.0
 
         return {
             "revenue_at_risk": round(risk_sum, 2),

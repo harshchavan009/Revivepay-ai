@@ -10,7 +10,9 @@ interface MetricsContextType {
   recoveryRate: number;
   totalCasesCount: number;
   activeRecoveryCount: number;
+  escalatedCasesCount: number;
   awaitingApprovalCount: number;
+  failedPaymentsCount: number;
   revenueAtRisk: number;
   environmentLabel: string;
   refreshMetrics: () => Promise<void>;
@@ -53,7 +55,9 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const recoveryRate = metrics.recovery_rate ?? 0;
   const totalCasesCount = metrics.total_cases_count ?? metrics.failed_payments_count ?? 0;
   const activeRecoveryCount = metrics.active_recovery_count ?? 0;
+  const escalatedCasesCount = metrics.escalated_cases_count ?? 0;
   const awaitingApprovalCount = metrics.awaiting_approval_count ?? 0;
+  const failedPaymentsCount = metrics.failed_payments_count ?? 0;
   const revenueAtRisk = metrics.revenue_at_risk ?? 0;
 
   return (
@@ -65,7 +69,9 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         recoveryRate,
         totalCasesCount,
         activeRecoveryCount,
+        escalatedCasesCount,
         awaitingApprovalCount,
+        failedPaymentsCount,
         revenueAtRisk,
         environmentLabel,
         refreshMetrics: fetchMetrics,
