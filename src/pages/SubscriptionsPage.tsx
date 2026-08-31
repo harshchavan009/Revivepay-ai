@@ -246,7 +246,7 @@ export const SubscriptionsPage: React.FC = () => {
                         <StatusBadge status={s.current_status || "ACTIVE"} type="recovery" />
                       </td>
                       <td className="p-4 font-mono text-[var(--color-text-secondary)]">
-                        {s.retry_count ?? 0} / {s.max_retries ?? 3}
+                        {Math.min(s.retry_count ?? 0, s.max_retries ?? 2)} / {s.max_retries ?? 2}
                       </td>
                       <td className="p-4 pr-6 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -255,23 +255,29 @@ export const SubscriptionsPage: React.FC = () => {
                               Cancelled (Opt-Out)
                             </span>
                           ) : s.current_status === "PAST_DUE" ? (
-                            <>
-                              <button
-                                onClick={() => handleRetry(s.id || s.subscription_id)}
-                                disabled={actionInProgress === (s.id || s.subscription_id)}
-                                className="px-3 py-1.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
-                              >
-                                <Zap className="w-3 h-3" />
-                                <span>Smart Retry</span>
-                              </button>
-                              <button
-                                onClick={() => handleOptOut(s.id || s.subscription_id)}
-                                title="Simulate customer opting out of this recurring charge"
-                                className="p-1.5 rounded-lg border border-[var(--color-border)] hover:bg-rose-500/10 hover:border-rose-500/30 text-[var(--color-text-muted)] hover:text-rose-600 transition-colors cursor-pointer"
-                              >
-                                <UserX className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            (s.retry_count ?? 0) >= (s.max_retries ?? 2) ? (
+                              <span className="text-amber-600 dark:text-amber-400 font-mono text-[11px] font-semibold">
+                                Max Retries Reached
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleRetry(s.id || s.subscription_id)}
+                                  disabled={actionInProgress === (s.id || s.subscription_id)}
+                                  className="px-3 py-1.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Zap className="w-3 h-3" />
+                                  <span>Smart Retry</span>
+                                </button>
+                                <button
+                                  onClick={() => handleOptOut(s.id || s.subscription_id)}
+                                  title="Simulate customer opting out of this recurring charge"
+                                  className="p-1.5 rounded-lg border border-[var(--color-border)] hover:bg-rose-500/10 hover:border-rose-500/30 text-[var(--color-text-muted)] hover:text-rose-600 transition-colors cursor-pointer"
+                                >
+                                  <UserX className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )
                           ) : (
                             <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-semibold flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -306,6 +312,7 @@ export const SubscriptionsPage: React.FC = () => {
           const isAfa = Boolean(s.afa_required || (s.amount ?? 0) >= 15000);
           const isNotified = Boolean(s.pre_debit_notification_sent_at);
           const isOptedOut = Boolean(s.opt_out_status);
+          const isMaxRetried = (s.retry_count ?? 0) >= (s.max_retries ?? 2);
 
           return (
             <div key={s.id || s.subscription_id} className="p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-3">
@@ -313,13 +320,13 @@ export const SubscriptionsPage: React.FC = () => {
                 <div>
                   <span className="font-mono font-bold text-xs text-[var(--color-accent)]">{s.subscription_id}</span>
                   <p className="text-xs font-semibold text-[var(--color-text-primary)]">{s.customer_name || "Enterprise Client"}</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] font-mono">{s.plan_name}</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] font-mono">{s.plan_name || "Enterprise Plan"}</p>
                 </div>
-                <span className="font-bold text-sm text-[var(--color-text-primary)] font-mono">{formatINR(s.amount)}</span>
+                <span className="font-bold text-sm text-[var(--color-text-primary)] font-mono">{formatINR(s.amount ?? 0)}</span>
               </div>
               
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--color-border-subtle)] text-xs">
-                <StatusBadge status={s.current_status} type="recovery" />
+                <StatusBadge status={s.current_status || "ACTIVE"} type="recovery" />
                 {isAfa && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
                     AFA Tier
@@ -330,9 +337,14 @@ export const SubscriptionsPage: React.FC = () => {
                     Opted Out
                   </span>
                 )}
+                {isMaxRetried && s.current_status === "PAST_DUE" && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    Max Retries
+                  </span>
+                )}
               </div>
 
-              {s.current_status === "PAST_DUE" && !isOptedOut && (
+              {s.current_status === "PAST_DUE" && !isOptedOut && !isMaxRetried && (
                 <div className="pt-2 flex items-center gap-2 justify-end">
                   {!isNotified && isAfa && (
                     <button
@@ -344,7 +356,7 @@ export const SubscriptionsPage: React.FC = () => {
                   )}
                   <button
                     onClick={() => handleRetry(s.id || s.subscription_id)}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm cursor-pointer"
                   >
                     Smart Retry
                   </button>
