@@ -42,8 +42,8 @@ def test_ai_agent_service_graceful_fallback():
     """Test that AIAgentService falls back safely to deterministic rules engine when LLM keys fail or are absent."""
     service = AIAgentService()
     # Force fake/failing credentials
-    service.claude = ClaudeLLMProvider(api_key="fake_invalid_claude_key")
-    service.gemini = GeminiLLMProvider(api_key="fake_invalid_gemini_key")
+    service.claude = ClaudeLLMProvider(api_key="mock_invalid_claude_key")
+    service.gemini = GeminiLLMProvider(api_key="mock_invalid_gemini_key")
 
     context = {
         "case_id": "RV-FALLBACK-99",

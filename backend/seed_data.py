@@ -11,6 +11,7 @@ from backend.models.all_models import (
 from backend.events.taxonomy import (
     PaymentEventType, RecoveryEventType, SubscriptionEventType, CheckoutEventType
 )
+from backend.config import settings
 from backend.services.auth_service import get_password_hash
 from backend.services.risk_engine import RevenueRiskEngine
 
@@ -47,15 +48,15 @@ def seed_database(force_reseed: bool = False):
         currency="INR",
         timezone="Asia/Kolkata",
         auto_recovery_enabled=True,
-        razorpay_key_id="rzp_test_revivepay2026",
-        razorpay_key_secret="secret_revivepay_fintech_test",
+        razorpay_key_id=settings.RAZORPAY_KEY_ID,
+        razorpay_key_secret=None,
         created_at=datetime.datetime.utcnow() - datetime.timedelta(days=180)
     )
     db.add(merchant)
     db.commit()
     db.refresh(merchant)
 
-    # Auxiliary Admin Users & Policy Config
+    # Auxiliary Admin Users & Policy Config (Safe environment-configured demo credentials)
     users_data = [
         {"email": "owner@revivepay.ai", "name": "Aditya Sengupta", "role": "MERCHANT_OWNER"},
         {"email": "operator@revivepay.ai", "name": "Rohan Deshmukh", "role": "REVENUE_OPERATOR"},
@@ -67,7 +68,7 @@ def seed_database(force_reseed: bool = False):
             email=u["email"],
             name=u["name"],
             role=u["role"],
-            hashed_password=get_password_hash("password123"),
+            hashed_password=get_password_hash(settings.DEMO_USER_PASSWORD),
             merchant_id=merchant.merchant_id,
             is_active=True
         ))

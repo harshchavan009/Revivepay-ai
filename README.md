@@ -270,16 +270,19 @@ PYTHONPATH=. python3 ml/evaluate.py
 # 5. Run Database Migrations
 PYTHONPATH=. alembic upgrade head
 
-# 6. Run Test Suite (60 tests)
+# 6. Run Test Suite (67 tests)
 PYTHONPATH=. pytest backend/tests -v
 
-# 7. Start FastAPI Backend
+# 7. Run Secrets Hygiene CI Audit
+python scripts/audit_secrets.py
+
+# 8. Start FastAPI Backend
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 In a new terminal window:
 ```bash
-# 8. Install and Start Frontend
+# 9. Install and Start Frontend
 npm install
 npm run dev
 ```
@@ -336,7 +339,8 @@ PYTHONPATH=. pytest backend/tests/ -v -W ignore
 
 ## 🔒 Security & Secrets Hygiene
 
-- **Zero Plaintext Credentials in Source**: All secrets loaded from environment variables (`.env`).
+- **Recursive Secrets Hygiene CI Audit**: Automated security scanner (`scripts/audit_secrets.py`) recursively scanning `backend/`, `src/`, `ml/`, `scripts/`, `alembic/`, `Dockerfiles`, and configuration files to guarantee zero hardcoded API keys, private keys, or credentials in source control.
+- **Zero Plaintext Credentials in Source**: All production secrets strictly loaded from environment variables (`.env`).
 - **Cryptographic Hashing**: User authentication verified via `bcrypt` ($12$ rounds).
 - **Session Protection**: Short-lived JWTs ($15$ min) + httpOnly, Secure, SameSite=Strict refresh cookies.
 - **CSRF Defense**: State-changing operations validate cryptographic double-submit cookies.
