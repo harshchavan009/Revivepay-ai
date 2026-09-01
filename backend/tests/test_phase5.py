@@ -4,6 +4,8 @@ from backend.main import app
 from backend.database import SessionLocal
 from backend.services.scheduler import generate_synthetic_telemetry_tick
 
+from backend.models.all_models import AuditLog
+
 client = TestClient(app)
 
 def test_generate_synthetic_telemetry_tick():
@@ -33,13 +35,37 @@ def test_status_health_checks_endpoint():
     assert "audit_ledger" in component_ids
 
 def test_manual_telemetry_tick_endpoint():
-    """Validates that POST /api/status/telemetry-tick generates a transaction."""
-    res = client.post("/api/status/telemetry-tick")
-    assert res.status_code == 200
-    data = res.json()
-    assert data["success"] is True
-    assert "details" in data
-    assert data["details"]["status"] == "success"
+    """Validates that POST /api/status/telemetry-tick completes through a valid state sequence with full audit trail."""
+    db = SessionLocal()
+    try:
+        case_ids = set()
+        for _ in range(5):
+            res = client.post("/api/status/telemetry-tick")
+            assert res.status_code == 200
+            data = res.json()
+            assert data["success"] is True
+            assert "details" in data
+            details = data["details"]
+            assert details["status"] == "success"
+            assert details["amount"] > 0
+            assert details["case_id"].startswith("RV-")
+            assert details["case_id"] not in case_ids, "Each tick must produce a distinct recovery case"
+            case_ids.add(details["case_id"])
+
+            # Valid canonical state sequence
+            assert details["recovery_status"] in [
+                "RECOVERED", "AWAITING_APPROVAL", "VERIFYING", "EXECUTING", "ACTION_RECOMMENDED", "ESCALATED"
+            ]
+
+            # Audit events verification
+            logs = db.query(AuditLog).filter(AuditLog.case_id == details["case_id"]).order_by(AuditLog.timestamp.asc()).all()
+            actions = [log.action for log in logs]
+            assert "recovery.case.created" in actions, f"Missing CASE_CREATED in {actions}"
+            assert "recovery.risk.scored" in actions, f"Missing RISK_SCORED in {actions}"
+            assert "recovery.ai.diagnosed" in actions, f"Missing AI_DIAGNOSED in {actions}"
+            assert "recovery.action.recommended" in actions, f"Missing ACTION_RECOMMENDED in {actions}"
+    finally:
+        db.close()
 
 def test_privacy_friendly_analytics_tracking():
     """Validates zero-PII telemetry tracking and summary reporting."""
