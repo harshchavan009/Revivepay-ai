@@ -37,6 +37,20 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
           label: norm.replace(/_/g, " ")
         };
 
+      case "VERIFYING":
+        return {
+          icon: <RefreshCw className="w-3 h-3 text-cyan-600 dark:text-cyan-400 shrink-0 animate-spin" />,
+          style: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30",
+          label: "VERIFYING"
+        };
+
+      case "REASSESS":
+        return {
+          icon: <RefreshCw className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />,
+          style: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
+          label: "REASSESSING"
+        };
+
       case "EXECUTING":
       case "QUEUED":
         return {

@@ -1,11 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { DashboardMetrics } from "../types";
 import { dashboardService, authService } from "../services";
-import { SHARED_METRICS } from "../data/mockData";
+
+const ZERO_METRICS: DashboardMetrics = {
+  revenue_at_risk: 0,
+  recovered_revenue: 0,
+  recovery_rate: 0,
+  failed_payments_count: 0,
+  active_recovery_count: 0,
+  escalated_cases_count: 0,
+  awaiting_approval_count: 0,
+  total_cases_count: 0,
+  average_recovery_time_minutes: 0,
+  retry_success_rate: 0,
+  autonomous_recovery_rate: 0,
+};
 
 interface MetricsContextType {
   metrics: DashboardMetrics;
   isLoading: boolean;
+  isLiveSynced: boolean;
+  lastSyncedAt: Date | null;
   recoveredRevenue: number;
   recoveryRate: number;
   totalCasesCount: number;
@@ -21,9 +36,11 @@ interface MetricsContextType {
 const MetricsContext = createContext<MetricsContextType | undefined>(undefined);
 
 export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [metrics, setMetrics] = useState<DashboardMetrics>(SHARED_METRICS);
+  const [metrics, setMetrics] = useState<DashboardMetrics>(ZERO_METRICS);
   const [environmentLabel, setEnvironmentLabel] = useState<string>("Sandbox Environment — Razorpay Test Mode");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLiveSynced, setIsLiveSynced] = useState<boolean>(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -33,12 +50,14 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       ]);
       if (data && typeof data.recovered_revenue === "number") {
         setMetrics(data);
+        setIsLiveSynced(true);
+        setLastSyncedAt(new Date());
       }
       if (env?.environment_label) {
         setEnvironmentLabel(env.environment_label);
       }
     } catch {
-      // Keep existing metrics on network jitter
+      // Retain existing state on transient network interruption
     } finally {
       setIsLoading(false);
     }
@@ -46,8 +65,8 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     fetchMetrics();
-    // Periodic refresh every 8 seconds for live dashboard synchronization
-    const interval = setInterval(fetchMetrics, 8000);
+    // Periodic refresh every 6 seconds for continuous database synchronization
+    const interval = setInterval(fetchMetrics, 6000);
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
@@ -65,6 +84,8 @@ export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         metrics,
         isLoading,
+        isLiveSynced,
+        lastSyncedAt,
         recoveredRevenue,
         recoveryRate,
         totalCasesCount,
@@ -89,3 +110,4 @@ export const useMetrics = (): MetricsContextType => {
   }
   return context;
 };
+

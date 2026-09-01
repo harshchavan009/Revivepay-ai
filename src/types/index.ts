@@ -17,10 +17,13 @@ export type RecoveryStatus =
   | "ACTION_RECOMMENDED" 
   | "AWAITING_APPROVAL" 
   | "APPROVED" 
+  | "AUTO_APPROVED"
   | "REJECTED" 
   | "EXECUTING" 
+  | "VERIFYING"
   | "RECOVERED" 
   | "FAILED" 
+  | "REASSESS"
   | "ESCALATED" 
   | "STOPPED";
 
@@ -408,3 +411,29 @@ export interface SimulationResult {
   message: string;
   audit_events: Array<{ actor: string; action: string; timestamp: string; notes?: string }>;
 }
+
+export interface RevenueRiskTrendItem {
+  date: string;
+  full_date?: string;
+  revenue_at_risk: number;
+  recovered_revenue: number;
+  rate: number;
+}
+
+export interface FailureReasonItem {
+  category: string;
+  label: string;
+  name: string;
+  count: number;
+  amount: number;
+  percentage: number;
+  value: number;
+  color?: string;
+}
+
+export interface RecoveryFunnelStage {
+  stage: string;
+  count: number;
+  dropoff: string;
+}
+

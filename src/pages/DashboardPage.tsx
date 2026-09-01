@@ -16,7 +16,9 @@ import {
   Layers,
   Clock,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Database,
+  RefreshCw
 } from "lucide-react";
 import {
   AreaChart,
@@ -34,26 +36,8 @@ import { useTheme } from "../context/ThemeContext";
 import { useMetrics } from "../context/MetricsContext";
 import { ReviveLiveDecisionTerminal } from "../components/ReviveLiveDecisionTerminal";
 import { formatINR } from "../data/mockData";
-import { recoveryService } from "../services";
-import { RecoveryCase } from "../types";
-
-const RECOVERY_CHART_DATA = [
-  { day: "Mon", recovered: 18400, lost: 4200, rate: 64 },
-  { day: "Tue", recovered: 22100, lost: 5100, rate: 66 },
-  { day: "Wed", recovered: 19800, lost: 4800, rate: 63 },
-  { day: "Thu", recovered: 28400, lost: 6200, rate: 69 },
-  { day: "Fri", recovered: 34200, lost: 7100, rate: 72 },
-  { day: "Sat", recovered: 16500, lost: 3900, rate: 62 },
-  { day: "Sun", recovered: 14200, lost: 3400, rate: 61 }
-];
-
-const FAILURE_REASON_DATA = [
-  { name: "Insufficient Funds", value: 38, color: "#4F5FF0" },
-  { name: "Expired Card / Mandate", value: 24, color: "#8B5CF6" },
-  { name: "Bank Switch Outage", value: 18, color: "#34B37E" },
-  { name: "3DS Auth Failure", value: 12, color: "#E0A030" },
-  { name: "Velocity Cap", value: 8, color: "#E5484D" }
-];
+import { recoveryService, dashboardService } from "../services";
+import { RecoveryCase, RevenueRiskTrendItem, FailureReasonItem } from "../types";
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -61,6 +45,9 @@ export const DashboardPage: React.FC = () => {
   const isDark = effectiveTheme === "dark";
   const {
     metrics,
+    isLoading,
+    isLiveSynced,
+    lastSyncedAt,
     recoveredRevenue,
     recoveryRate,
     revenueAtRisk,
@@ -77,6 +64,9 @@ export const DashboardPage: React.FC = () => {
   const [gatewayFilter, setGatewayFilter] = useState("All Gateways");
   const [pendingApprovals, setPendingApprovals] = useState<RecoveryCase[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [trendData, setTrendData] = useState<RevenueRiskTrendItem[]>([]);
+  const [failureReasons, setFailureReasons] = useState<FailureReasonItem[]>([]);
+  const [isRefreshingManual, setIsRefreshingManual] = useState(false);
 
   const loadPending = async () => {
     try {
@@ -87,11 +77,42 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const loadChartTelemetry = async () => {
+    try {
+      const [trend, reasons] = await Promise.all([
+        dashboardService.getRevenueRiskTrend().catch(() => []),
+        dashboardService.getFailureReasons().catch(() => [])
+      ]);
+      setTrendData(trend);
+      setFailureReasons(reasons);
+    } catch {
+      // Network jitter fallback
+    }
+  };
+
   useEffect(() => {
     loadPending();
-    const interval = setInterval(loadPending, 12000);
+    loadChartTelemetry();
+    const interval = setInterval(() => {
+      loadPending();
+      loadChartTelemetry();
+    }, 12000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshingManual(true);
+    try {
+      await Promise.all([
+        refreshMetrics(),
+        loadPending(),
+        loadChartTelemetry()
+      ]);
+      showToast("Synchronized live metrics with PostgreSQL database");
+    } finally {
+      setIsRefreshingManual(false);
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -194,87 +215,174 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Header with Sandbox Dataset Disclosure */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[var(--color-text-muted)] font-mono">
-        <span className="font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">AUTONOMOUS REVENUE RECOVERY METRICS</span>
-        <span className="px-2.5 py-0.5 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[10px] w-fit">
-          Sandbox dataset metrics · Derived from live seeded test cases
-        </span>
+      {/* KPI Header with Single Source of Truth & Database Lineage Disclosure */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[var(--color-text-muted)] font-mono">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+            EXECUTIVE REVENUE RECOVERY TELEMETRY
+          </span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+            Database Single Source of Truth
+          </span>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <span className="px-2.5 py-0.5 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[10px]">
+            GET /api/dashboard/summary · {lastSyncedAt ? `Synced ${lastSyncedAt.toLocaleTimeString()}` : "Live Sync"}
+          </span>
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshingManual}
+            title="Refresh metrics directly from PostgreSQL database"
+            className="p-1 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingManual ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
-      {/* TOP 4 EXECUTIVE KPI CARDS (Spacious +20% padding, Real Elevation) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* KPI 1: Total Recovered Revenue (Hero Metric) */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-[var(--color-accent)] transition-all shadow-premium-sm">
+      {/* 6 EXECUTIVE KPI CARDS (Database as Single Source of Truth) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* KPI 1: Revenue at Risk */}
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-amber-500/60 transition-all shadow-premium-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Total Recovered Revenue</span>
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Revenue at Risk</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
+              <Lock className="w-4 h-4" />
+            </div>
+          </div>
+          {isLoading ? (
+            <div className="h-8 w-28 bg-[var(--color-bg-surface-raised)] animate-pulse rounded-lg mt-3" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
+              {formatINR(revenueAtRisk)}
+            </p>
+          )}
+          <div className="mt-3 flex items-center justify-between text-[11px]">
+            <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+              <span>Unrecovered</span>
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold">
+              Live DB
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 2: Recovered Revenue */}
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-[var(--color-accent)] transition-all shadow-premium-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Recovered Revenue</span>
             <div className="w-8 h-8 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] flex items-center justify-center text-[var(--color-accent)]">
               <Zap className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
-            {formatINR(recoveredRevenue)}
-          </p>
+          {isLoading ? (
+            <div className="h-8 w-28 bg-[var(--color-bg-surface-raised)] animate-pulse rounded-lg mt-3" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
+              {formatINR(recoveredRevenue)}
+            </p>
+          )}
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>+4.8% topline boost</span>
+              <span>Topline Boost</span>
             </span>
-            <span className="text-[var(--color-text-muted)] font-mono">INR ₹</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+              Verified
+            </span>
           </div>
         </div>
 
-        {/* KPI 2: Autonomous Recovery Rate */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-emerald-500/50 transition-all shadow-premium-sm">
+        {/* KPI 3: Recovery Rate */}
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-emerald-500/60 transition-all shadow-premium-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">AI Recovery Rate</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Recovery Rate</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
-            {recoveryRate.toFixed(1)}%
-          </p>
+          {isLoading ? (
+            <div className="h-8 w-20 bg-[var(--color-bg-surface-raised)] animate-pulse rounded-lg mt-3" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
+              {recoveryRate.toFixed(1)}%
+            </p>
+          )}
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+14.2% vs. fixed retries</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Autonomous Yield</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+              Dynamic %
             </span>
-            <span className="text-[var(--color-text-muted)] font-mono">{totalCasesCount} cases</span>
           </div>
         </div>
 
-        {/* KPI 3: Total Revenue At Risk */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-premium-sm">
+        {/* KPI 4: Failed Payments */}
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-rose-500/60 transition-all shadow-premium-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Revenue At Risk</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
-              <Lock className="w-4 h-4" />
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Failed Payments</span>
+            <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-500">
+              <Layers className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
-            {formatINR(revenueAtRisk)}
-          </p>
+          {isLoading ? (
+            <div className="h-8 w-16 bg-[var(--color-bg-surface-raised)] animate-pulse rounded-lg mt-3" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
+              {failedPaymentsCount}
+            </p>
+          )}
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="text-amber-600 dark:text-amber-400 font-bold">{failedPaymentsCount} failed payments</span>
-            <span className="text-[var(--color-text-muted)] font-mono">{escalatedCasesCount} escalated</span>
+            <span className="text-rose-600 dark:text-rose-400 font-semibold">Gateway Failures</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 font-mono font-bold">
+              Ingressed
+            </span>
           </div>
         </div>
 
-        {/* KPI 4: Active Recovery Cases (SYNCHRONIZED WITH REGISTRY COUNT) */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-[var(--color-accent)] transition-all shadow-premium-sm">
+        {/* KPI 5: Active Recovery */}
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-sky-500/60 transition-all shadow-premium-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Cases In Registry</span>
-            <div className="w-8 h-8 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] flex items-center justify-center text-[var(--color-accent)]">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Active Recovery</span>
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-500">
               <Activity className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
-            {totalCasesCount} Total
-          </p>
+          {isLoading ? (
+            <div className="h-8 w-16 bg-[var(--color-bg-surface-raised)] animate-pulse rounded-lg mt-3" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
+              {activeRecoveryCount}
+            </p>
+          )}
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="text-[var(--color-accent)] font-bold">{activeRecoveryCount} in-flight</span>
-            <span className="text-amber-600 dark:text-amber-400 font-bold">{awaitingApprovalCount} pending review</span>
+            <span className="text-sky-600 dark:text-sky-400 font-semibold">Cases In-Flight</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 font-mono font-bold">
+              Live Retries
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 6: Escalated Cases */}
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-amber-500/60 transition-all shadow-premium-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Escalated Cases</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+          </div>
+          {isLoading ? (
+            <div className="h-8 w-16 bg-[var(--color-bg-surface-raised)] animate-pulse rounded-lg mt-3" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-extrabold text-[var(--color-text-primary)] mt-3 tracking-tight font-mono">
+              {escalatedCasesCount}
+            </p>
+          )}
+          <div className="mt-3 flex items-center justify-between text-[11px]">
+            <span className="text-amber-600 dark:text-amber-400 font-semibold">{awaitingApprovalCount} Pending</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold">
+              Review
+            </span>
           </div>
         </div>
       </div>
@@ -329,7 +437,26 @@ export const DashboardPage: React.FC = () => {
 
             <div className="h-64 w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={RECOVERY_CHART_DATA}>
+                <AreaChart
+                  data={
+                    trendData.length > 0
+                      ? trendData.map((item) => ({
+                          day: item.date,
+                          recovered: item.recovered_revenue,
+                          lost: item.revenue_at_risk,
+                          rate: item.rate
+                        }))
+                      : [
+                          { day: "Mon", recovered: 0, lost: 0, rate: 0 },
+                          { day: "Tue", recovered: 0, lost: 0, rate: 0 },
+                          { day: "Wed", recovered: 0, lost: 0, rate: 0 },
+                          { day: "Thu", recovered: 0, lost: 0, rate: 0 },
+                          { day: "Fri", recovered: 0, lost: 0, rate: 0 },
+                          { day: "Sat", recovered: 0, lost: 0, rate: 0 },
+                          { day: "Sun", recovered: 0, lost: 0, rate: 0 }
+                        ]
+                  }
+                >
                   <defs>
                     <linearGradient id="recoveredGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={isDark ? "#4F5FF0" : "#4338CA"} stopOpacity={0.35} />
@@ -380,34 +507,48 @@ export const DashboardPage: React.FC = () => {
                 Root-Cause Failure Taxonomy
               </h3>
               <span className="text-[11px] font-mono text-[var(--color-accent)] bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] px-2.5 py-0.5 rounded-full font-bold">
-                15+ Categories
+                {failureReasons.length || 6} Ingress Clusters
               </span>
             </div>
 
             <div className="space-y-3 pt-2">
-              {FAILURE_REASON_DATA.map((item, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-[var(--color-text-secondary)] flex items-center gap-2">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      ></span>
-                      <span>{item.name}</span>
-                    </span>
-                    <span className="font-bold text-[var(--color-text-primary)] font-mono">{item.value}%</span>
+              {(failureReasons.length > 0
+                ? failureReasons
+                : [
+                    { name: "Bank Gateway Disconnect", value: 38, color: "#4F5FF0", count: 0, amount: 0 },
+                    { name: "Insufficient Balance", value: 24, color: "#8B5CF6", count: 0, amount: 0 },
+                    { name: "Network Timeout", value: 18, color: "#34B37E", count: 0, amount: 0 },
+                    { name: "Card Expired / Void", value: 12, color: "#E0A030", count: 0, amount: 0 },
+                    { name: "Abandoned Checkout", value: 8, color: "#E5484D", count: 0, amount: 0 }
+                  ]
+              ).map((item, idx) => {
+                const colors = ["#4F5FF0", "#8B5CF6", "#34B37E", "#E0A030", "#06B6D4", "#E5484D"];
+                const itemColor = (item as any).color || colors[idx % colors.length];
+                const pct = (item as any).percentage ?? (item as any).value ?? 0;
+                return (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-semibold text-[var(--color-text-secondary)] flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: itemColor }}
+                        ></span>
+                        <span className="truncate max-w-[200px]">{(item as any).label || item.name}</span>
+                      </span>
+                      <span className="font-bold text-[var(--color-text-primary)] font-mono">{pct}%</span>
+                    </div>
+                    <div className="w-full bg-[var(--color-bg-canvas)] h-2 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor: itemColor
+                        }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-[var(--color-bg-canvas)] h-2 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${item.value}%`,
-                        backgroundColor: item.color
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="pt-2">

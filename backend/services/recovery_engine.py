@@ -18,6 +18,7 @@ from backend.services.razorpay_service import RazorpayService
 from backend.services.audit_service import AuditService
 from backend.services.outcome_verification_service import OutcomeVerificationService
 from backend.services.broadcaster import notify_live_event
+from backend.services.state_machine import RecoveryStateMachine, RecoveryState
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +122,28 @@ class RecoveryEngine:
 
         # INVARIANT GUARD: If payment already succeeded, mark case recovered
         if payment.status == "SUCCESS":
-            case.recovery_status = "RECOVERED"
             case.recovered_amount = payment.amount
             case.outcome_verified = True
             case.resolved_at = case.resolved_at or datetime.datetime.utcnow()
             case.approval_required = False
             case.approval_status = "AUTO_APPROVED"
-            db.commit()
+            RecoveryStateMachine.transition(
+                db=db,
+                case=case,
+                to_state="RECOVERED",
+                actor="RevivePay Invariant Supervisor",
+                notes="Payment was already in SUCCESS state upon ingestion."
+            )
             return case
+
+        # State Machine Progression 1: NEW -> ANALYZING
+        RecoveryStateMachine.transition(
+            db=db,
+            case=case,
+            to_state="ANALYZING",
+            actor="RevivePay Telemetry Node",
+            notes="Ingesting failure telemetry and executing AI root-cause diagnostics."
+        )
 
         # 2. Deterministic Risk Engine (recovery.risk.scored)
         risk_score, risk_level, risk_factors = RevenueRiskEngine.calculate_risk(
@@ -218,6 +233,15 @@ class RecoveryEngine:
             notes=f"AI Root-Cause Diagnosis via [{ai_analysis.model_provider or 'deterministic_rules_engine'}]: {ai_analysis.root_cause} ({int(ai_analysis.confidence*100)}% confidence)"
         )
 
+        # State Machine Progression 2: ANALYZING -> ACTION_RECOMMENDED
+        RecoveryStateMachine.transition(
+            db=db,
+            case=case,
+            to_state="ACTION_RECOMMENDED",
+            actor="RevivePay Root-Cause AI Agent",
+            notes=f"AI diagnostic completed with {int(ai_analysis.confidence*100)}% confidence. Recommended: {ai_analysis.recommended_action}."
+        )
+
         # 4. Deterministic Policy Gateway (recovery.policy.passed or recovery.policy.blocked)
         policy_status, checklist, overall_reason = PolicyGateway.evaluate(
             case=case,
@@ -256,28 +280,24 @@ class RecoveryEngine:
             notes=f"Policy Gateway evaluation: {policy_status}"
         )
 
-        # 5. Invariant Status & Approval Entity Creation
+        # 5. State Machine Progression 3: Invariant Status & Approval Entity Creation
         if policy_status == "BLOCKED":
             case.approval_required = False
             case.approval_status = "REJECTED"
-            case.recovery_status = "ESCALATED"
             case.execution_status = "BLOCKED"
             case.rejection_reason = overall_reason
             case.outcome_verified = False
             case.recovered_amount = 0.0
-            AuditService.log_event(
+            RecoveryStateMachine.transition(
                 db=db,
-                case_id=case.case_id,
+                case=case,
+                to_state="ESCALATED",
                 actor="RevivePay Policy Gateway",
-                action=RecoveryEventType.ESCALATED.value,
-                actor_type="SUPERVISOR",
-                policy_result="BLOCKED",
                 notes=f"Action blocked by safety policy: {overall_reason}"
             )
         elif policy_status == "REVIEW_REQUIRED":
             case.approval_required = True
             case.approval_status = "PENDING"
-            case.recovery_status = "AWAITING_APPROVAL"
             case.execution_status = "IDLE"
             case.outcome_verified = False
             case.recovered_amount = 0.0
@@ -295,26 +315,28 @@ class RecoveryEngine:
             )
             db.add(approval_entity)
 
-            # Canonical Event: recovery.approval.requested
-            AuditService.log_event(
+            RecoveryStateMachine.transition(
                 db=db,
-                case_id=case.case_id,
+                case=case,
+                to_state="AWAITING_APPROVAL",
                 actor="RevivePay Policy Gateway",
-                action=RecoveryEventType.APPROVAL_REQUESTED.value,
-                actor_type="SYSTEM",
-                decision={"requested_action": ai_analysis.recommended_action, "reason": overall_reason},
-                notes="Approval requested for operator review."
+                notes="Policy evaluation requires operator sign-off before action execution."
             )
         else:  # PASSED
             if risk_level == "LOW":
                 case.approval_required = False
                 case.approval_status = "AUTO_APPROVED"
-                case.recovery_status = "APPROVED"
+                RecoveryStateMachine.transition(
+                    db=db,
+                    case=case,
+                    to_state="AUTO_APPROVED",
+                    actor="RevivePay Policy Gateway",
+                    notes="Autonomous policy gate passed without human approval required."
+                )
                 cls.execute_recovery_action(db=db, case=case, actor="RevivePay Autonomous Engine")
             else:
                 case.approval_required = True
                 case.approval_status = "PENDING"
-                case.recovery_status = "AWAITING_APPROVAL"
                 case.execution_status = "IDLE"
                 case.outcome_verified = False
                 case.recovered_amount = 0.0
@@ -331,15 +353,12 @@ class RecoveryEngine:
                 )
                 db.add(approval_entity)
 
-                # Canonical Event: recovery.approval.requested
-                AuditService.log_event(
+                RecoveryStateMachine.transition(
                     db=db,
-                    case_id=case.case_id,
+                    case=case,
+                    to_state="AWAITING_APPROVAL",
                     actor="RevivePay Policy Gateway",
-                    action=RecoveryEventType.APPROVAL_REQUESTED.value,
-                    actor_type="SYSTEM",
-                    decision={"requested_action": ai_analysis.recommended_action, "reason": "High-risk review threshold triggered."},
-                    notes="Routed to Human-in-the-Loop review queue."
+                    notes="Standard high-risk review required prior to execution. Routed to Human-in-the-Loop review queue."
                 )
 
         case.updated_at = datetime.datetime.utcnow()
@@ -381,9 +400,77 @@ class RecoveryEngine:
         action_id = f"act_{uuid.uuid4().hex[:12]}"
         now = datetime.datetime.utcnow()
 
+        # Invariant 1: If case is already RECOVERED or payment already succeeded, lock
+        if case.recovery_status == "RECOVERED" or (payment and payment.status == "SUCCESS"):
+            case.execution_status = "COMPLETED"
+            case.recovered_amount = payment.amount if payment else case.recovered_amount
+            case.outcome_verified = True
+            case.resolved_at = case.resolved_at or now
+            if case.recovery_status != "RECOVERED":
+                RecoveryStateMachine.transition(
+                    db=db,
+                    case=case,
+                    to_state="RECOVERED",
+                    actor="Settlement Verifier",
+                    notes="Payment was already settled. Invariant enforced."
+                )
+            return {
+                "success": True,
+                "status": "RECOVERED",
+                "action_id": action_id,
+                "recovered_amount": case.recovered_amount,
+                "message": "Payment was already settled. Invariant enforced."
+            }
+
+        # Invariant 2: Max retries guard
+        max_allowed = payment.max_retry_count or 2 if payment else 2
+        if action == "retry_payment" and payment and payment.retry_count >= max_allowed:
+            case.execution_status = "BLOCKED"
+            case.outcome_verified = False
+            case.recovered_amount = 0.0
+            case.resolved_at = now
+            
+            # Domain Entity: RecoveryAction
+            rec_action = RecoveryAction(
+                action_id=action_id,
+                case_id=case.case_id,
+                action_type=action,
+                requested_by=actor,
+                policy_decision=case.policy_status,
+                execution_status="BLOCKED",
+                attempt_number=payment.retry_count,
+                started_at=now,
+                completed_at=now,
+                error_code="MAX_RETRIES_EXCEEDED",
+                error_message=f"Attempt limit of {max_allowed} exhausted."
+            )
+            db.add(rec_action)
+            db.commit()
+
+            RecoveryStateMachine.transition(
+                db=db,
+                case=case,
+                to_state="ESCALATED",
+                actor="RevivePay Invariant Supervisor",
+                notes=f"Invariant enforced: retry_count ({payment.retry_count}) >= max_retries ({max_allowed}). Escalated."
+            )
+            return {
+                "success": False,
+                "status": "ESCALATED",
+                "action_id": action_id,
+                "recovered_amount": 0.0,
+                "message": f"Maximum allowed retries ({max_allowed}) reached. Safely escalated."
+            }
+
+        # Commencing valid execution
         case.execution_status = "EXECUTING"
-        case.recovery_status = "EXECUTING"
-        db.commit()
+        RecoveryStateMachine.transition(
+            db=db,
+            case=case,
+            to_state="EXECUTING",
+            actor=actor,
+            notes=f"Commencing dispatch of recovery action: {action}"
+        )
 
         # Domain Entity: RecoveryAction
         rec_action = RecoveryAction(
@@ -398,57 +485,6 @@ class RecoveryEngine:
         )
         db.add(rec_action)
         db.commit()
-
-        # Invariant 1: If payment already succeeded, lock
-        if payment.status == "SUCCESS":
-            case.execution_status = "COMPLETED"
-            case.recovery_status = "RECOVERED"
-            case.recovered_amount = payment.amount
-            case.outcome_verified = True
-            case.resolved_at = case.resolved_at or now
-            rec_action.execution_status = "COMPLETED"
-            rec_action.completed_at = now
-            db.commit()
-            return {
-                "success": True,
-                "status": "RECOVERED",
-                "action_id": action_id,
-                "recovered_amount": payment.amount,
-                "message": "Payment was already settled. Invariant enforced."
-            }
-
-        # Invariant 2: Max retries guard
-        max_allowed = payment.max_retry_count or 2
-        if action == "retry_payment" and payment.retry_count >= max_allowed:
-            case.execution_status = "BLOCKED"
-            case.recovery_status = "ESCALATED"
-            case.outcome_verified = False
-            case.recovered_amount = 0.0
-            case.resolved_at = now
-            rec_action.execution_status = "BLOCKED"
-            rec_action.completed_at = now
-            rec_action.error_code = "MAX_RETRIES_EXCEEDED"
-            rec_action.error_message = f"Attempt limit of {max_allowed} exhausted."
-            
-            # Canonical Event: recovery.escalated
-            AuditService.log_event(
-                db=db,
-                case_id=case.case_id,
-                actor="RevivePay Invariant Supervisor",
-                action=RecoveryEventType.ESCALATED.value,
-                actor_type="SUPERVISOR",
-                policy_result="BLOCKED",
-                execution_result="BLOCKED",
-                notes=f"Invariant enforced: retry_count ({payment.retry_count}) >= max_retries ({max_allowed}). Escalated."
-            )
-            db.commit()
-            return {
-                "success": False,
-                "status": "ESCALATED",
-                "action_id": action_id,
-                "recovered_amount": 0.0,
-                "message": f"Maximum allowed retries ({max_allowed}) reached. Safely escalated."
-            }
 
         # Dispatch action
         if action == "retry_payment":
@@ -477,7 +513,6 @@ class RecoveryEngine:
                 payment.provider_payment_id = rzp_pay_id
                 
                 case.execution_status = "COMPLETED"
-                case.recovery_status = "RECOVERED"
                 case.recovered_amount = payment.amount
                 case.outcome_verified = True
                 case.resolved_at = datetime.datetime.utcnow()
@@ -490,17 +525,21 @@ class RecoveryEngine:
                 rec_action.provider_reference = rzp_pay_id
                 rec_action.completed_at = datetime.datetime.utcnow()
 
-                # Canonical Event: recovery.verified
-                AuditService.log_event(
+                # Progression: EXECUTING -> VERIFYING -> RECOVERED
+                RecoveryStateMachine.transition(
                     db=db,
-                    case_id=case.case_id,
+                    case=case,
+                    to_state="VERIFYING",
                     actor="Razorpay Test Gateway",
-                    action=RecoveryEventType.VERIFIED.value,
-                    actor_type="GATEWAY",
-                    execution_result="SUCCESS",
-                    notes=f"Payment of ₹{payment.amount:,.2f} successfully captured and settled (Ref: {rzp_pay_id})."
+                    notes=f"Payment captured (Ref: {rzp_pay_id}). Verifying settlement and ledger."
                 )
-                db.commit()
+                RecoveryStateMachine.transition(
+                    db=db,
+                    case=case,
+                    to_state="RECOVERED",
+                    actor="RevivePay Outcome Verifier",
+                    notes=f"Payment of ₹{payment.amount:,.2f} successfully verified, settled, and ledger recorded."
+                )
 
                 # Broadcast live telemetry event
                 notify_live_event("payment_recovered", {
@@ -525,40 +564,45 @@ class RecoveryEngine:
                 rec_action.error_code = "GATEWAY_DECLINE"
                 rec_action.error_message = "Retry request declined by issuer gateway."
 
-                # Canonical Event: recovery.action.failed
-                AuditService.log_event(
+                # Failure Progression: EXECUTING -> FAILED -> REASSESS -> STOPPED / ESCALATED
+                RecoveryStateMachine.transition(
                     db=db,
-                    case_id=case.case_id,
+                    case=case,
+                    to_state="FAILED",
                     actor="Razorpay Gateway Client",
-                    action=RecoveryEventType.ACTION_FAILED.value,
-                    actor_type="GATEWAY",
-                    execution_result="FAILED",
-                    policy_result=case.policy_status,
-                    notes="Payment retry was declined by the issuer gateway."
+                    notes="Payment retry declined by issuer gateway."
+                )
+                RecoveryStateMachine.transition(
+                    db=db,
+                    case=case,
+                    to_state="REASSESS",
+                    actor="RevivePay Autonomous Supervisor",
+                    notes="Reassessing failure telemetry, customer liquidity windows, and retry limits."
                 )
 
                 if payment.retry_count >= max_allowed:
-                    case.recovery_status = "ESCALATED"
                     case.execution_status = "FAILED"
                     case.outcome_verified = False
                     case.recovered_amount = 0.0
                     case.resolved_at = datetime.datetime.utcnow()
 
-                    # Canonical Event: recovery.escalated
-                    AuditService.log_event(
+                    final_state = "ESCALATED" if (payment.amount >= 20000 or (customer and customer.account_tier in ["VIP", "ENTERPRISE"])) else "STOPPED"
+                    RecoveryStateMachine.transition(
                         db=db,
-                        case_id=case.case_id,
+                        case=case,
+                        to_state=final_state,
                         actor="RevivePay Safety Supervisor",
-                        action=RecoveryEventType.ESCALATED.value,
-                        actor_type="SUPERVISOR",
-                        execution_result="FAILED",
-                        policy_result=case.policy_status,
-                        notes=f"Max retries ({max_allowed}) exhausted. Case escalated."
+                        notes=f"Max retries ({max_allowed}) exhausted. Case transitioned to {final_state}."
                     )
                 else:
-                    case.recovery_status = "FAILED"
-                    case.execution_status = "FAILED"
-                db.commit()
+                    RecoveryStateMachine.transition(
+                        db=db,
+                        case=case,
+                        to_state="ACTION_RECOMMENDED",
+                        actor="RevivePay Autonomous Supervisor",
+                        notes=f"Alternative retry window recommended (attempt {payment.retry_count}/{max_allowed})."
+                    )
+
                 return {
                     "success": False,
                     "status": case.recovery_status,
@@ -577,7 +621,6 @@ class RecoveryEngine:
                 description=f"Recovery link for {payment.payment_id}"
             )
             case.execution_status = "COMPLETED"
-            case.recovery_status = "ACTION_RECOMMENDED"
             rec_action.execution_status = "COMPLETED"
             rec_action.provider_reference = link_data.get("id")
             rec_action.completed_at = datetime.datetime.utcnow()
@@ -596,18 +639,13 @@ class RecoveryEngine:
             )
             db.add(notif)
 
-            # Canonical Event: recovery.action.executed
-            AuditService.log_event(
+            RecoveryStateMachine.transition(
                 db=db,
-                case_id=case.case_id,
+                case=case,
+                to_state="ACTION_RECOMMENDED",
                 actor="RevivePay Payment Link Service",
-                action=RecoveryEventType.ACTION_EXECUTED.value,
-                actor_type="SYSTEM",
-                execution_result="SUCCESS",
-                decision={"action_id": action_id, "url": link_data.get("short_url")},
                 notes=f"Generated recovery link: {link_data.get('short_url')}"
             )
-            db.commit()
             return {
                 "success": True,
                 "status": "ACTION_RECOMMENDED",
@@ -618,7 +656,6 @@ class RecoveryEngine:
 
         elif action in ["send_customer_notification", "trigger_checkout_reminder", "request_payment_method_update"]:
             case.execution_status = "COMPLETED"
-            case.recovery_status = "ACTION_RECOMMENDED"
             rec_action.execution_status = "COMPLETED"
             rec_action.completed_at = datetime.datetime.utcnow()
 
@@ -634,18 +671,13 @@ class RecoveryEngine:
             )
             db.add(notif)
 
-            # Canonical Event: recovery.action.executed
-            AuditService.log_event(
+            RecoveryStateMachine.transition(
                 db=db,
-                case_id=case.case_id,
+                case=case,
+                to_state="ACTION_RECOMMENDED",
                 actor="RevivePay Notification Engine",
-                action=RecoveryEventType.ACTION_EXECUTED.value,
-                actor_type="SYSTEM",
-                execution_result="SUCCESS",
-                decision={"action_id": action_id, "action": action},
                 notes=f"Customer dispatched '{action}' communication."
             )
-            db.commit()
             return {
                 "success": True,
                 "status": "ACTION_RECOMMENDED",
@@ -656,21 +688,16 @@ class RecoveryEngine:
 
         elif action == "stop_recovery":
             case.execution_status = "COMPLETED"
-            case.recovery_status = "STOPPED"
             rec_action.execution_status = "COMPLETED"
             rec_action.completed_at = datetime.datetime.utcnow()
 
-            # Canonical Event: recovery.stopped
-            AuditService.log_event(
+            RecoveryStateMachine.transition(
                 db=db,
-                case_id=case.case_id,
+                case=case,
+                to_state="STOPPED",
                 actor=actor,
-                action=RecoveryEventType.STOPPED.value,
-                actor_type="OPERATOR",
-                execution_result="COMPLETED",
                 notes=f"Recovery process terminated by {actor}."
             )
-            db.commit()
             return {
                 "success": True,
                 "status": "STOPPED",
@@ -681,21 +708,16 @@ class RecoveryEngine:
 
         else:
             case.execution_status = "COMPLETED"
-            case.recovery_status = "ESCALATED"
             rec_action.execution_status = "COMPLETED"
             rec_action.completed_at = datetime.datetime.utcnow()
 
-            # Canonical Event: recovery.escalated
-            AuditService.log_event(
+            RecoveryStateMachine.transition(
                 db=db,
-                case_id=case.case_id,
+                case=case,
+                to_state="ESCALATED",
                 actor=actor,
-                action=RecoveryEventType.ESCALATED.value,
-                actor_type="OPERATOR",
-                execution_result="COMPLETED",
                 notes=f"Case escalated to merchant operations by {actor}."
             )
-            db.commit()
             return {
                 "success": True,
                 "status": "ESCALATED",
@@ -706,9 +728,11 @@ class RecoveryEngine:
 
     @classmethod
     def approve_case(cls, db: Session, case: RecoveryCase, user_name: str, notes: Optional[str] = None) -> RecoveryCase:
+        if case.recovery_status == "RECOVERED":
+            return case
+
         case.approval_status = "APPROVED"
         case.approved_by = user_name
-        case.recovery_status = "APPROVED"
         case.updated_at = datetime.datetime.utcnow()
 
         # Update Approval domain entity
@@ -719,19 +743,17 @@ class RecoveryEngine:
             approval.decision_reason = notes or "Approved by operator"
             approval.decided_at = datetime.datetime.utcnow()
 
-        # Canonical Event: recovery.approved
-        AuditService.log_event(
+        # State Machine Progression: AWAITING_APPROVAL -> APPROVED
+        RecoveryStateMachine.transition(
             db=db,
-            case_id=case.case_id,
+            case=case,
+            to_state="APPROVED",
             actor=f"Operator ({user_name})",
-            action=RecoveryEventType.APPROVED.value,
             actor_type="OPERATOR",
-            decision={"decision": "APPROVED", "notes": notes},
-            notes=f"Human operator {user_name} approved recovery action: {case.recommended_action}"
+            notes=notes or f"Human operator {user_name} approved recovery action: {case.recommended_action}"
         )
-        db.commit()
 
-        # Execute approved action
+        # Execute approved action (which transitions APPROVED -> EXECUTING -> VERIFYING -> RECOVERED)
         cls.execute_recovery_action(db=db, case=case, actor=f"Operator ({user_name})")
         db.refresh(case)
 
@@ -749,7 +771,6 @@ class RecoveryEngine:
     def reject_case(cls, db: Session, case: RecoveryCase, user_name: str, rejection_reason: str, notes: Optional[str] = None) -> RecoveryCase:
         case.approval_status = "REJECTED"
         case.rejection_reason = rejection_reason
-        case.recovery_status = "REJECTED"
         case.execution_status = "COMPLETED"
         case.outcome_verified = False
         case.recovered_amount = 0.0
@@ -764,17 +785,15 @@ class RecoveryEngine:
             approval.decision_reason = rejection_reason
             approval.decided_at = datetime.datetime.utcnow()
 
-        # Canonical Event: recovery.rejected
-        AuditService.log_event(
+        # State Machine Progression: AWAITING_APPROVAL -> REJECTED
+        RecoveryStateMachine.transition(
             db=db,
-            case_id=case.case_id,
+            case=case,
+            to_state="REJECTED",
             actor=f"Operator ({user_name})",
-            action=RecoveryEventType.REJECTED.value,
             actor_type="OPERATOR",
-            decision={"decision": "REJECTED", "reason": rejection_reason, "notes": notes},
-            notes=f"Human operator {user_name} rejected action with reason: {rejection_reason}"
+            notes=notes or f"Human operator {user_name} rejected action with reason: {rejection_reason}"
         )
-        db.commit()
         db.refresh(case)
 
         notify_live_event("approval_actioned", {
@@ -782,7 +801,7 @@ class RecoveryEngine:
             "decision": "REJECTED",
             "actor": user_name,
             "customer_name": case.customer.name if case.customer else "Customer",
-            "rejection_reason": rejection_reason
+            "amount": case.amount_at_risk
         })
 
         return case

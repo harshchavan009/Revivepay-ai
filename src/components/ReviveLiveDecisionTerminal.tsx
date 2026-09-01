@@ -14,6 +14,7 @@ import {
   Activity
 } from "lucide-react";
 import { formatINR } from "../data/mockData";
+import { useMetrics } from "../context/MetricsContext";
 
 interface RetryDecisionItem {
   id: string;
@@ -124,17 +125,16 @@ interface ReviveLiveDecisionTerminalProps {
 }
 
 export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProps> = ({
-  recoveredRevenue = 0,
-  recoveryRate = 0
+  recoveredRevenue: propRecoveredRevenue,
+  recoveryRate: propRecoveryRate
 }) => {
+  const { recoveredRevenue: ctxRecoveredRevenue, recoveryRate: ctxRecoveryRate, refreshMetrics } = useMetrics();
+  const recoveredRevenue = propRecoveredRevenue !== undefined ? propRecoveredRevenue : ctxRecoveredRevenue;
+  const recoveryRate = propRecoveryRate !== undefined ? propRecoveryRate : ctxRecoveryRate;
+
   const [decisions, setDecisions] = useState<RetryDecisionItem[]>(INITIAL_DECISIONS);
   const [isLive, setIsLive] = useState(true);
-  const [recoveredAmount, setRecoveredAmount] = useState(recoveredRevenue);
   const [analyzingItem, setAnalyzingItem] = useState<string | null>(null);
-
-  useEffect(() => {
-    setRecoveredAmount(recoveredRevenue);
-  }, [recoveredRevenue]);
 
   useEffect(() => {
     if (!isLive) return;
@@ -177,13 +177,14 @@ export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProp
         );
         setAnalyzingItem(null);
         if (randomTemplate.status === "recovered") {
-          setRecoveredAmount((prev) => prev + 4999);
+          // Re-synchronize with database backend state rather than faking local math
+          refreshMetrics().catch(() => {});
         }
       }, 1200);
     }, 9000);
 
     return () => clearInterval(interval);
-  }, [isLive]);
+  }, [isLive, refreshMetrics]);
 
   const triggerManualSimulation = () => {
     const randomTemplate =
@@ -222,7 +223,7 @@ export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProp
       );
       setAnalyzingItem(null);
       if (randomTemplate.status === "recovered") {
-        setRecoveredAmount((prev) => prev + 4999);
+        refreshMetrics().catch(() => {});
       }
     }, 1200);
   };
@@ -267,7 +268,7 @@ export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProp
             Total Recovered
           </p>
           <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
-            {formatINR(recoveredAmount)}
+            {formatINR(recoveredRevenue)}
           </p>
           <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
             <TrendingUp className="w-3 h-3" />
@@ -295,7 +296,7 @@ export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProp
             Recovery Rate
           </p>
           <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
-            {recoveryRate}%
+            {recoveryRate.toFixed(1)}%
           </p>
           <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
             <TrendingUp className="w-3 h-3" />
