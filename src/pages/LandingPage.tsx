@@ -144,11 +144,11 @@ export const LandingPage: React.FC = () => {
           </Link>
 
           <Link
-            to="/cases/RV-10291"
+            to="/demo"
             className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-border-hover)] bg-[var(--color-bg-canvas)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-sm"
           >
             <PlayCircle className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-            <span>Interactive Demo Case</span>
+            <span>Start Demo</span>
           </Link>
 
           <Link
@@ -172,35 +172,34 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.12]">
-              Stop Losing Revenue <br />
-              You've{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-text-primary)] to-[var(--color-accent)]">
-                Already
-              </span>
-              <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent)] to-violet-500">
-                Earned
-              </span>
-            </h1>
+            <div className="space-y-1">
+              <p className="text-xs font-mono font-bold tracking-[0.25em] text-[var(--color-text-muted)] uppercase">REVIVE AI</p>
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.1]">
+                Recover Revenue{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent)] to-violet-500">
+                  Before It's Lost.
+                </span>
+              </h1>
+            </div>
 
             {/* Subheadline & Description */}
-            <div className="space-y-4 text-[var(--color-text-secondary)] text-sm sm:text-base leading-relaxed max-w-xl">
-              <p className="font-medium text-[var(--color-text-primary)]">
-                A failed payment usually isn't a lost customer — just money that didn't go through. Revive recovers that revenue through bounded, intelligent retries.
+            <div className="space-y-3 text-[var(--color-text-secondary)] text-sm sm:text-base leading-relaxed max-w-xl">
+              <p className="font-medium text-[var(--color-text-primary)] text-base">
+                AI-assisted revenue recovery with policy-governed automation and verified financial outcomes.
               </p>
               <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
-                Integrated with Razorpay's billing engine and webhook stream, Revive makes context-aware retry decisions rather than dumb cron loops. It analyzes 200+ signals per failure to time every retry safely — with strict merchant limits, human approvals for high-value cases, and an immutable audit trail.
+                Integrated with Razorpay's billing engine and webhook stream, Revive makes context-aware retry decisions rather than dumb cron loops — with strict merchant limits, human approvals for high-value cases, and an immutable cryptographic audit trail.
               </p>
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link
-                to="/cases/RV-10291"
+                to="/demo"
                 className="flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-md transition-all hover:scale-102 active:scale-98 group"
               >
-                <span>Launch Interactive Demo Case</span>
+                <PlayCircle className="w-4 h-4" />
+                <span>Start Demo</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
 
@@ -208,7 +207,7 @@ export const LandingPage: React.FC = () => {
                 to="/architecture"
                 className="flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-semibold text-sm transition-all shadow-premium-sm group"
               >
-                <span>Architecture & Spec</span>
+                <span>Explore Architecture</span>
                 <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>

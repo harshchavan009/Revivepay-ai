@@ -356,6 +356,24 @@ export const recoveryService = {
   stopRecovery: async (caseId: string): Promise<RecoveryCase> => {
     const res = await apiClient.post<RecoveryCase>(`/recovery/${caseId}/stop`);
     return res.data;
+  },
+  pollCaseUntilStatus: async (
+    caseId: string,
+    targetStatuses: string[],
+    maxPolls = 15,
+    intervalMs = 2000
+  ): Promise<RecoveryCase | null> => {
+    for (let i = 0; i < maxPolls; i++) {
+      await new Promise((r) => setTimeout(r, intervalMs));
+      try {
+        const res = await apiClient.get<RecoveryCase>(`/recovery/cases/${caseId}`);
+        const c = res.data;
+        if (targetStatuses.includes(c.recovery_status || "")) return c;
+      } catch {
+        // tolerate transient network jitter during polling
+      }
+    }
+    return null;
   }
 };
 
