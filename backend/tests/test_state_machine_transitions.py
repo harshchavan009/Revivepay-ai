@@ -156,6 +156,76 @@ def test_state_machine_failure_and_reassessment_progression(db):
     RecoveryStateMachine.transition(db, case_fail_esc, "ESCALATED", notes="Escalated to senior merchant account manager")
     assert case_fail_esc.recovery_status == "ESCALATED"
 
+def test_state_machine_auto_approved_success_progression(db):
+    """
+    Direct State Machine verification for the autonomous low-risk path:
+    NEW -> ANALYZING -> ACTION_RECOMMENDED -> AUTO_APPROVED -> EXECUTING -> VERIFYING -> RECOVERED
+    """
+    payment, customer, _ = _create_unique_payment(db, amount=2000.0)
+
+    case = RecoveryCase(
+        case_id=f"RV-SM-AUTO-{uuid.uuid4().hex[:6]}",
+        payment_id=payment.payment_id,
+        customer_id=customer.customer_id,
+        case_type="PAYMENT_FAILURE",
+        amount_at_risk=2000.0,
+        recovery_status="NEW",
+        tat_deadline=datetime.datetime.utcnow() + datetime.timedelta(days=7)
+    )
+    db.add(case)
+    db.commit()
+
+    seq = [
+        RecoveryState.ANALYZING,
+        RecoveryState.ACTION_RECOMMENDED,
+        RecoveryState.AUTO_APPROVED,
+        RecoveryState.EXECUTING,
+        RecoveryState.VERIFYING,
+        RecoveryState.RECOVERED
+    ]
+
+    for next_st in seq:
+        assert RecoveryStateMachine.is_valid_transition(case.recovery_status, next_st.value) is True
+        case = RecoveryStateMachine.transition(
+            db=db,
+            case=case,
+            to_state=next_st.value,
+            actor="Autonomous Engine",
+            notes=f"Autonomous step {next_st.value}"
+        )
+        assert case.recovery_status == next_st.value
+
+def test_state_machine_rejection_path(db):
+    """
+    Verifies human operator rejection path and terminal state invariants:
+    NEW -> ANALYZING -> ACTION_RECOMMENDED -> AWAITING_APPROVAL -> REJECTED
+    """
+    payment, customer, _ = _create_unique_payment(db, amount=15000.0)
+
+    case = RecoveryCase(
+        case_id=f"RV-SM-REJ-{uuid.uuid4().hex[:6]}",
+        payment_id=payment.payment_id,
+        customer_id=customer.customer_id,
+        case_type="PAYMENT_FAILURE",
+        amount_at_risk=15000.0,
+        recovery_status="NEW",
+        tat_deadline=datetime.datetime.utcnow() + datetime.timedelta(days=7)
+    )
+    db.add(case)
+    db.commit()
+
+    RecoveryStateMachine.transition(db, case, "ANALYZING")
+    RecoveryStateMachine.transition(db, case, "ACTION_RECOMMENDED")
+    RecoveryStateMachine.transition(db, case, "AWAITING_APPROVAL")
+    RecoveryStateMachine.transition(db, case, "REJECTED", notes="Operator declined action due to customer request")
+    assert case.recovery_status == "REJECTED"
+
+    # REJECTED is terminal
+    assert RecoveryStateMachine.is_valid_transition("REJECTED", "EXECUTING") is False
+    assert RecoveryStateMachine.is_valid_transition("REJECTED", "RECOVERED") is False
+    with pytest.raises(ValueError):
+        RecoveryStateMachine.transition(db, case, "EXECUTING")
+
 def test_state_machine_illegal_transition_rejections(db):
     """
     Verifies that invalid or out-of-order transitions are strictly rejected by the supervisor.

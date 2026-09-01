@@ -13,10 +13,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useMetrics } from "../context/MetricsContext";
 import { GlobalSearchModal } from "./GlobalSearchModal";
 import { notificationService, OperationalNotification } from "../services/notificationService";
-import { dashboardService, agentService } from "../services";
-import { DashboardMetrics, AIBudgetStatus } from "../types";
+import { agentService } from "../services";
+import { AIBudgetStatus } from "../types";
 
 interface HeaderProps {
   onOpenMobileMenu?: () => void;
@@ -25,17 +26,16 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
   const navigate = useNavigate();
   const { effectiveTheme, toggleTheme } = useTheme();
+  const { recoveryRate, isLoading } = useMetrics();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<OperationalNotification[]>([]);
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [budget, setBudget] = useState<AIBudgetStatus | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     notificationService.getNotifications().then(setNotifications);
     const unsubscribe = notificationService.subscribe(setNotifications);
-    dashboardService.getSummary().then(setMetrics).catch(() => {});
     agentService.getBudget().then(setBudget).catch(() => {});
     return () => unsubscribe();
   }, []);
@@ -119,7 +119,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-[var(--color-text-secondary)]">Autonomous Retries:</span>
-            <span className="text-[var(--color-accent)] font-bold">{metrics?.recovery_rate ?? 65.4}% Rate</span>
+            <span className="text-[var(--color-accent)] font-bold">
+              {isLoading ? "--.-%" : `${recoveryRate.toFixed(1)}%`} Rate
+            </span>
           </div>
 
           {/* Quick Simulation Trigger Button */}

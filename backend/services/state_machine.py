@@ -19,6 +19,7 @@ class RecoveryState(str, Enum):
     REASSESS = "REASSESS"
     STOPPED = "STOPPED"
     ESCALATED = "ESCALATED"
+    REJECTED = "REJECTED"
 
 # Explicit Finite State Machine Transition Graph
 VALID_TRANSITIONS: Dict[RecoveryState, Set[RecoveryState]] = {
@@ -26,6 +27,9 @@ VALID_TRANSITIONS: Dict[RecoveryState, Set[RecoveryState]] = {
         RecoveryState.ANALYZING,
         RecoveryState.ACTION_RECOMMENDED,
         RecoveryState.AWAITING_APPROVAL,
+        RecoveryState.APPROVED,
+        RecoveryState.AUTO_APPROVED,
+        RecoveryState.EXECUTING,
         RecoveryState.ESCALATED,
         RecoveryState.RECOVERED
     },
@@ -47,15 +51,20 @@ VALID_TRANSITIONS: Dict[RecoveryState, Set[RecoveryState]] = {
         RecoveryState.AUTO_APPROVED,
         RecoveryState.EXECUTING,
         RecoveryState.STOPPED,
-        RecoveryState.ESCALATED
+        RecoveryState.ESCALATED,
+        RecoveryState.REJECTED
     },
     RecoveryState.APPROVED: {
         RecoveryState.EXECUTING,
+        RecoveryState.VERIFYING,
+        RecoveryState.RECOVERED,
         RecoveryState.STOPPED,
         RecoveryState.ESCALATED
     },
     RecoveryState.AUTO_APPROVED: {
         RecoveryState.EXECUTING,
+        RecoveryState.VERIFYING,
+        RecoveryState.RECOVERED,
         RecoveryState.STOPPED,
         RecoveryState.ESCALATED
     },
@@ -72,20 +81,28 @@ VALID_TRANSITIONS: Dict[RecoveryState, Set[RecoveryState]] = {
     },
     RecoveryState.FAILED: {
         RecoveryState.REASSESS,
+        RecoveryState.ACTION_RECOMMENDED,
+        RecoveryState.AWAITING_APPROVAL,
+        RecoveryState.APPROVED,
+        RecoveryState.EXECUTING,
         RecoveryState.ESCALATED,
         RecoveryState.STOPPED
     },
     RecoveryState.REASSESS: {
         RecoveryState.ACTION_RECOMMENDED,
         RecoveryState.AWAITING_APPROVAL,
+        RecoveryState.APPROVED,
+        RecoveryState.EXECUTING,
         RecoveryState.STOPPED,
         RecoveryState.ESCALATED
     },
     RecoveryState.RECOVERED: set(),  # Terminal state
     RecoveryState.STOPPED: set(),    # Terminal state
+    RecoveryState.REJECTED: set(),   # Terminal state
     RecoveryState.ESCALATED: {       # Can be reassessed by senior human operator
         RecoveryState.REASSESS,
         RecoveryState.AWAITING_APPROVAL,
+        RecoveryState.APPROVED,
         RecoveryState.ACTION_RECOMMENDED,
         RecoveryState.STOPPED
     }
@@ -145,6 +162,7 @@ class RecoveryStateMachine:
             RecoveryState.REASSESS: RecoveryEventType.ACTION_RECOMMENDED.value,
             RecoveryState.STOPPED: RecoveryEventType.STOPPED.value,
             RecoveryState.ESCALATED: RecoveryEventType.ESCALATED.value,
+            RecoveryState.REJECTED: RecoveryEventType.REJECTED.value,
         }
         action_event = state_event_map.get(RecoveryState(to_state), RecoveryEventType.ACTION_EXECUTED.value)
 

@@ -3,6 +3,9 @@ import {
   RecoveryCase,
   PolicyConfig,
   DashboardMetrics,
+  RevenueRiskTrendItem,
+  FailureReasonItem,
+  RecoveryFunnelStage,
   SubscriptionItem,
   AbandonedCart,
   Payment,
@@ -11,7 +14,7 @@ import {
   SimulationResult,
   User
 } from "../types";
-import { SHARED_CASES, SHARED_METRICS, SHARED_SUBSCRIPTIONS, SHARED_PAYMENTS, SHARED_ABANDONED_CARTS } from "../data/mockData";
+import { SHARED_CASES, SHARED_SUBSCRIPTIONS, SHARED_PAYMENTS, SHARED_ABANDONED_CARTS } from "../data/mockData";
 import { safeStorage } from "../utils/storage";
 
 const API_BASE_URL = "/api";
@@ -60,9 +63,7 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes("/auth/login") &&
-      !originalRequest.url?.includes("/auth/demo-login") &&
-      !originalRequest.url?.includes("/auth/refresh") &&
-      !originalRequest.url?.includes("/auth/step-up-verify")
+      !originalRequest.url?.includes("/auth/refresh")
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -79,22 +80,20 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshRes = await axios.post<{ access_token: string; csrf_token?: string; user: User }>(
-          "/api/auth/refresh",
-          {},
-          { withCredentials: true }
-        );
+        const refreshRes = await apiClient.post("/auth/refresh");
         const newToken = refreshRes.data.access_token;
         safeStorage.setItem("auth_token", newToken);
         safeStorage.setItem("revivepay_token", newToken);
-        if (refreshRes.data.csrf_token) {
-          safeStorage.setItem("csrf_token", refreshRes.data.csrf_token);
-        }
+        apiClient.defaults.headers.common.Authorization = `Bearer ${newToken}`;
         processQueue(null, newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshErr) {
         processQueue(refreshErr, null);
+        safeStorage.removeItem("auth_token");
+        safeStorage.removeItem("revivepay_token");
+        safeStorage.removeItem("revivepay_user");
+        safeStorage.removeItem("csrf_token");
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
@@ -105,10 +104,38 @@ apiClient.interceptors.response.use(
 );
 
 export const authService = {
-  login: async (email?: string, password?: string, role: string = "REVENUE_OPERATOR"): Promise<{ token: string; user: User }> => {
+  getEnvironment: async (): Promise<{
+    environment: string;
+    environment_label: string;
+    rbi_framework_active: boolean;
+    tat_framework: string;
+    max_retries_allowed: number;
+    audit_chain_length: number;
+    database_provider?: string;
+  }> => {
     try {
-      const res = await apiClient.post<{ access_token: string; csrf_token?: string; user: User }>("/auth/login", { email, password, role });
-      const token = res.data.access_token || "mock_token";
+      const res = await apiClient.get("/auth/environment");
+      return res.data;
+    } catch {
+      return {
+        environment: "sandbox",
+        environment_label: "Sandbox Environment — Razorpay Test Mode",
+        rbi_framework_active: true,
+        tat_framework: "RBI/2019-20/67 Harmonisation of TAT",
+        max_retries_allowed: 2,
+        audit_chain_length: 512,
+        database_provider: "PostgreSQL / SQLite Live Engine"
+      };
+    }
+  },
+  login: async (role: string, email?: string, password?: string): Promise<{ token: string; user: User }> => {
+    try {
+      const res = await apiClient.post("/auth/login", {
+        username: email || `${role.toLowerCase()}@revivepay.ai`,
+        password: password || "password123",
+        role: role
+      });
+      const token = res.data.access_token || res.data.token || "mock_jwt_token";
       safeStorage.setItem("auth_token", token);
       safeStorage.setItem("revivepay_token", token);
       if (res.data.csrf_token) {
@@ -178,20 +205,6 @@ export const authService = {
     });
     return res.data;
   },
-  getEnvironment: async (): Promise<{ environment: string; environment_label: string; project_name: string; access_token_expire_minutes?: number; high_value_threshold?: number }> => {
-    try {
-      const res = await apiClient.get<{ environment: string; environment_label: string; project_name: string; access_token_expire_minutes?: number; high_value_threshold?: number }>("/auth/environment");
-      return res.data;
-    } catch {
-      return {
-        environment: "sandbox",
-        environment_label: "Sandbox Environment — Razorpay Test Mode",
-        project_name: "RevivePay AI",
-        access_token_expire_minutes: 15,
-        high_value_threshold: 50000.0
-      };
-    }
-  },
   switchPersona: async (role: string, email?: string): Promise<{ token: string; user: User }> => {
     try {
       const res = await apiClient.post<{ access_token: string; user: User }>("/auth/switch-persona", { role, email });
@@ -225,12 +238,20 @@ export const authService = {
 
 export const dashboardService = {
   getSummary: async (): Promise<DashboardMetrics> => {
-    try {
-      const res = await apiClient.get<DashboardMetrics>("/dashboard/summary");
-      return res.data;
-    } catch {
-      return SHARED_METRICS;
-    }
+    const res = await apiClient.get<DashboardMetrics>("/dashboard/summary");
+    return res.data;
+  },
+  getRevenueRiskTrend: async (): Promise<RevenueRiskTrendItem[]> => {
+    const res = await apiClient.get<RevenueRiskTrendItem[]>("/dashboard/revenue-risk");
+    return res.data;
+  },
+  getFailureReasons: async (): Promise<FailureReasonItem[]> => {
+    const res = await apiClient.get<FailureReasonItem[]>("/dashboard/failure-reasons");
+    return res.data;
+  },
+  getRecoveryFunnel: async (): Promise<RecoveryFunnelStage[]> => {
+    const res = await apiClient.get<RecoveryFunnelStage[]>("/dashboard/funnel");
+    return res.data;
   }
 };
 
@@ -314,41 +335,27 @@ export const recoveryService = {
       if (e.response?.status === 400 && e.response?.data?.detail) {
         throw new Error(e.response.data.detail);
       }
-      const found = SHARED_CASES.find(c => c.id === caseId || c.case_id === caseId) || SHARED_CASES[0];
-      found.approval_status = "APPROVED";
-      found.recovery_status = "RECOVERED";
-      found.recovered_amount = found.amount;
-      return found;
+      throw e;
     }
   },
   rejectCase: async (caseId: string, rejection_reason: string, notes?: string): Promise<RecoveryCase> => {
     try {
       const res = await apiClient.post<RecoveryCase>(`/recovery/${caseId}/reject`, { action: "REJECT", rejection_reason, notes });
       return res.data;
-    } catch {
-      const found = SHARED_CASES.find(c => c.id === caseId || c.case_id === caseId) || SHARED_CASES[0];
-      found.approval_status = "REJECTED";
-      found.recovery_status = "ESCALATED";
-      return found;
+    } catch (e: any) {
+      if (e.response?.status === 400 && e.response?.data?.detail) {
+        throw new Error(e.response.data.detail);
+      }
+      throw e;
     }
   },
   executeAction: async (caseId: string): Promise<any> => {
-    try {
-      const res = await apiClient.post(`/recovery/${caseId}/execute`);
-      return res.data;
-    } catch {
-      return { status: "SUCCESS", message: "Autonomous recovery executed successfully." };
-    }
+    const res = await apiClient.post(`/recovery/${caseId}/execute`);
+    return res.data;
   },
   stopRecovery: async (caseId: string): Promise<RecoveryCase> => {
-    try {
-      const res = await apiClient.post<RecoveryCase>(`/recovery/${caseId}/stop`);
-      return res.data;
-    } catch {
-      const found = SHARED_CASES.find(c => c.id === caseId || c.case_id === caseId) || SHARED_CASES[0];
-      found.recovery_status = "STOPPED";
-      return found;
-    }
+    const res = await apiClient.post<RecoveryCase>(`/recovery/${caseId}/stop`);
+    return res.data;
   }
 };
 
