@@ -6,7 +6,7 @@
 [![React 19](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-emerald.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.0-336791.svg)](https://www.postgresql.org/)
-[![Tests](https://img.shields.io/badge/tests-88%20passing-success.svg)](backend/tests/)
+[![Tests](https://img.shields.io/badge/tests-90%20passing-success.svg)](tests/)
 [![ML Model](https://img.shields.io/badge/ML%20Evaluation-Synthetic%20Held--Out%20(ROC--AUC%200.81)-indigo.svg)](ml/MODEL_CARD.md)
 [![Environment](https://img.shields.io/badge/Environment-Sandbox%20%2F%20Razorpay%20Test%20Mode-orange.svg)](#-operational-scope--disclaimers)
 [![Audit Chain](https://img.shields.io/badge/Audit%20Ledger-SHA--256%20Hash--Chained-emerald.svg)](backend/services/audit_service.py)
@@ -289,8 +289,8 @@ PYTHONPATH=. python3 ml/train.py
 # 5. Run Database Migrations
 PYTHONPATH=. alembic upgrade head
 
-# 6. Run Full Test Suite (88 tests)
-PYTHONPATH=. pytest backend/tests -v
+# 6. Run Full Test Suite (90 tests)
+PYTHONPATH=. pytest tests -v
 
 # 7. Start FastAPI Backend
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
@@ -320,10 +320,10 @@ docker compose up --build -d
 
 ## 🧪 Testing & Quality Invariants
 
-Revive AI enforces 88 automated tests covering all domain invariants:
+Revive AI enforces 90 automated tests covering all domain invariants:
 
 ```bash
-PYTHONPATH=. pytest backend/tests/ -v -W ignore
+PYTHONPATH=. pytest tests/ -v -W ignore
 ```
 
 ### Critical Invariants Verified:
@@ -350,6 +350,29 @@ PYTHONPATH=. pytest backend/tests/ -v -W ignore
 
 ---
 
+## 📁 Repository Structure
+
+```text
+Revivepay-ai/
+│
+├── backend/            # FastAPI REST API, SQL models, finite state machine & services
+├── src/                # React 19 + TypeScript + Vite executive command center
+├── ml/                 # Calibrated gradient boosting ML pipeline, model card & training scripts
+├── tests/              # 90 Pytest test suites (domain invariants, RBI guidelines, webhook idempotency)
+├── docs/               # System architecture diagrams, RBI compliance guides, and API specs
+├── scripts/            # Secrets audit scanner, database seeding, and killer workflow verifications
+├── .github/            # GitHub Actions CI/CD workflows
+├── .env.example        # Environment variable template for local sandbox and production
+├── .gitignore          # Production git ignore rules (zero credentials, logs, or db dumps)
+├── Dockerfile.backend  # Multi-stage production container build for Python FastAPI backend
+├── Dockerfile.frontend # Multi-stage Nginx container build for React Vite frontend
+├── docker-compose.yml  # Full-stack composition (PostgreSQL 16, backend, frontend)
+├── README.md           # Engineering documentation and runbooks
+└── LICENSE             # MIT Open-Source License
+```
+
+---
+
 ## 👨‍💻 Author
 
 **Harsh Chavan**  
@@ -360,4 +383,4 @@ PYTHONPATH=. pytest backend/tests/ -v -W ignore
 ---
 
 ## 📄 License
-This project is open-sourced under the **MIT License**.
+This project is open-sourced under the **MIT License**. See [LICENSE](LICENSE) for details.

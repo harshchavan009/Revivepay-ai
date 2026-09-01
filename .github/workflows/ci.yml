@@ -37,7 +37,7 @@ jobs:
 
       - name: Run Backend Pytest Suite & Domain Invariant Verifications
         run: |
-          PYTHONPATH=. pytest backend/tests/ -v -W ignore
+          PYTHONPATH=. pytest tests/ -v -W ignore
 
       - name: Run Secrets Hygiene Scanner
         run: |

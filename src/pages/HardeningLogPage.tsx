@@ -161,7 +161,7 @@ export const HardeningLogPage: React.FC = () => {
           <span>Verifiable Hardening Guarantee</span>
         </p>
         <p className="leading-relaxed text-[11px]">
-          Every fix listed above is guarded by automated Pytest unit and regression tests in <code className="font-mono text-[var(--color-accent)]">backend/tests/</code> and verified on every commit in CI.
+          Every fix listed above is guarded by automated Pytest unit and regression tests in <code className="font-mono text-[var(--color-accent)]">tests/</code> and verified on every commit in CI.
         </p>
       </div>
     </div>

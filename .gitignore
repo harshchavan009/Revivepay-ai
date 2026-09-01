@@ -48,9 +48,22 @@ htmlcov/
 *.swp
 *.swo
 
-# Logs
+# Logs & Debugging
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+debug*
+debug/
+*.debug
+
+# Temporary Exports & Artifacts
+exports/
+*.export
+*.dump
+tmp/
+temp/
+*.tmp
+*.bak
