@@ -173,6 +173,8 @@ class RecoveryStateMachine:
             actor=actor,
             action=action_event,
             actor_type=actor_type,
+            source=getattr(case, "source", "RAZORPAY_TEST") or "RAZORPAY_TEST",
+            source_description=getattr(case, "source_description", None),
             before_state={"recovery_status": from_state},
             after_state={"recovery_status": to_state},
             metadata=metadata or {},

@@ -56,6 +56,44 @@ export const SimulationCenterPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Dual Ingress Pipeline Architectural Clarity Card */}
+      <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] shadow-premium-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-mono font-bold text-[var(--color-text-primary)] uppercase tracking-wider flex items-center gap-2">
+            <span>Dual Ingress Architecture: Razorpay Test vs. Simulation</span>
+          </h2>
+          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold">
+            Unified Recovery Pipeline
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 space-y-2">
+            <div className="flex items-center gap-2 font-mono font-bold text-indigo-700 dark:text-indigo-300">
+              <Zap className="w-4 h-4 text-indigo-500" />
+              <span>Razorpay Test Mode (RAZORPAY_TEST)</span>
+            </div>
+            <p className="text-[11px] text-[var(--color-text-secondary)] font-mono leading-relaxed">
+              Razorpay Test Mode ➔ HTTPS Webhook (<code>/api/webhooks/razorpay</code>) ➔ HMAC-SHA256 Signature Verification ➔ Idempotency Check ➔ Event Storage ➔ Recovery Pipeline
+            </p>
+            <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
+              Provenance: Verified cryptographic webhook from Razorpay test environment.
+            </div>
+          </div>
+          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+            <div className="flex items-center gap-2 font-mono font-bold text-amber-800 dark:text-amber-300">
+              <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Simulation Lab (SIMULATION)</span>
+            </div>
+            <p className="text-[11px] text-[var(--color-text-secondary)] font-mono leading-relaxed">
+              Simulation Button ➔ Backend Simulation Endpoint (<code>/api/simulation/trigger</code>) ➔ Synthetic Provenance Tagging ➔ Same Recovery Pipeline
+            </p>
+            <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
+              Provenance: Synthetic failure scenario for training, chaos testing, and policy stress tests.
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Live Simulation Result Display Box */}
       {activeSimulation && (
         <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-accent)] shadow-premium-md space-y-4 animate-in fade-in duration-200">
