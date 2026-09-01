@@ -251,3 +251,30 @@ def test_state_machine_illegal_transition_rejections(db):
 
     with pytest.raises(ValueError, match="Invalid state transition"):
         RecoveryStateMachine.transition(db, case, "NEW")
+
+
+def test_state_machine_executing_cannot_transition_to_action_recommended(db):
+    """
+    Regression Test: Ensures that EXECUTING cannot transition directly to ACTION_RECOMMENDED.
+    Valid lifecycle from EXECUTING must only lead to VERIFYING, RECOVERED, FAILED, or ESCALATED.
+    A failed retry must follow: EXECUTING -> FAILED -> REASSESS -> ACTION_RECOMMENDED.
+    """
+    # 1. State machine graph check
+    assert RecoveryStateMachine.is_valid_transition("EXECUTING", "ACTION_RECOMMENDED") is False
+
+    # 2. Database entity transition check
+    payment, customer, _ = _create_unique_payment(db, amount=3000.0)
+    case = RecoveryCase(
+        case_id=f"RV-SM-NO-EXEC-AR-{uuid.uuid4().hex[:6]}",
+        payment_id=payment.payment_id,
+        customer_id=customer.customer_id,
+        case_type="PAYMENT_FAILURE",
+        amount_at_risk=3000.0,
+        recovery_status="EXECUTING",
+        tat_deadline=datetime.datetime.utcnow() + datetime.timedelta(days=7)
+    )
+    db.add(case)
+    db.commit()
+
+    with pytest.raises(ValueError, match="Invalid state transition: Cannot transition recovery case from 'EXECUTING' to 'ACTION_RECOMMENDED'"):
+        RecoveryStateMachine.transition(db, case, "ACTION_RECOMMENDED")

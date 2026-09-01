@@ -255,7 +255,11 @@ class DeterministicFallbackAgent(LLMProvider):
         explanation = ""
         customer_message = ""
 
-        if failure_category in ["temporary_bank_failure", "BANK_SWITCH_OUTAGE", "GATEWAY_TIMEOUT", "network_timeout", "BANK_DECLINE"]:
+        if failure_category in [
+            "temporary_bank_failure", "BANK_SWITCH_OUTAGE", "GATEWAY_TIMEOUT",
+            "gateway_switch_timeout", "network_timeout", "card_network_congestion",
+            "BANK_DECLINE"
+        ]:
             if "insufficient" in str(failure_reason).lower() or failure_code in ["51", "INSUFFICIENT_FUNDS"]:
                 root_cause = "pre_salary_liquidity_dip"
                 confidence = 0.92 if successful_payments >= 3 else 0.87
@@ -305,7 +309,7 @@ class DeterministicFallbackAgent(LLMProvider):
                     customer_message = f"Dear {customer_name}, our merchant operations desk is finalizing your ₹{amount:,.2f} payment. You will receive an update shortly."
                     risk_level = "HIGH" if risk_score < 80 else "CRITICAL"
 
-        elif failure_category in ["insufficient_funds", "INSUFFICIENT_FUNDS"]:
+        elif failure_category in ["insufficient_funds", "INSUFFICIENT_FUNDS", "insufficient_funds_transient"]:
             root_cause = "account_balance_depletion"
             confidence = 0.93
             evidence.append(f"Account Balance: Issuer returned code 51 on {customer_name}'s primary funding source.")

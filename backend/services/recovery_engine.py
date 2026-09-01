@@ -81,7 +81,7 @@ class RecoveryEngine:
         # Check if recovery case already exists for this payment
         case = db.query(RecoveryCase).filter(RecoveryCase.payment_id == payment.payment_id).first()
         if not case:
-            case_number = f"RV-{datetime.datetime.utcnow().strftime('%m%d')}{uuid.uuid4().hex[:4].upper()}"
+            case_number = f"RV-{datetime.datetime.utcnow().strftime('%m%d')}{uuid.uuid4().hex[:6].upper()}"
             
             # Compute RBI Turn Around Time (TAT) deadline based on payment method
             now = datetime.datetime.utcnow()
@@ -681,13 +681,13 @@ class RecoveryEngine:
             RecoveryStateMachine.transition(
                 db=db,
                 case=case,
-                to_state="ACTION_RECOMMENDED",
+                to_state="VERIFYING",
                 actor="RevivePay Payment Link Service",
-                notes=f"Generated recovery link: {link_data.get('short_url')}"
+                notes=f"Generated recovery link: {link_data.get('short_url')}. Awaiting payment verification."
             )
             return {
                 "success": True,
-                "status": "ACTION_RECOMMENDED",
+                "status": "VERIFYING",
                 "action_id": action_id,
                 "recovered_amount": 0.0,
                 "message": f"Payment recovery link created: {link_data.get('short_url')}"
@@ -713,13 +713,13 @@ class RecoveryEngine:
             RecoveryStateMachine.transition(
                 db=db,
                 case=case,
-                to_state="ACTION_RECOMMENDED",
+                to_state="VERIFYING",
                 actor="RevivePay Notification Engine",
-                notes=f"Customer dispatched '{action}' communication."
+                notes=f"Customer dispatched '{action}' communication. Awaiting customer payment response."
             )
             return {
                 "success": True,
-                "status": "ACTION_RECOMMENDED",
+                "status": "VERIFYING",
                 "action_id": action_id,
                 "recovered_amount": 0.0,
                 "message": f"Customer recovery action '{action}' dispatched."
