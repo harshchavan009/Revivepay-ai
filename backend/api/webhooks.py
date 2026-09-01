@@ -5,6 +5,7 @@ import hashlib
 import uuid
 from fastapi import APIRouter, Request, Header, HTTPException, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from backend.database import get_db
 from backend.models.all_models import PaymentEvent, Payment, Customer, Merchant, RecoveryCase
 from backend.events.taxonomy import PaymentEventType, RecoveryEventType
@@ -97,17 +98,25 @@ async def handle_razorpay_webhook(
     event_type = payload.get("event", PaymentEventType.PAYMENT_FAILED.value)
 
     # 2. Idempotency Check: UNIQUE(provider, provider_event_id)
+    provider_name = "razorpay"
     existing_event = db.query(PaymentEvent).filter(
-        PaymentEvent.provider == "razorpay",
+        PaymentEvent.provider == provider_name,
         PaymentEvent.provider_event_id == provider_event_id
     ).first()
 
     if existing_event:
-        logger.info(f"Duplicate Razorpay webhook ignored (idempotent): {provider_event_id}")
+        logger.info(f"Duplicate Razorpay webhook ignored (idempotent): provider={provider_name}, provider_event_id={provider_event_id}")
+        existing_case = db.query(RecoveryCase).filter(
+            RecoveryCase.payment_id == existing_event.payment_id
+        ).first()
         return {
             "status": "duplicate_ignored",
-            "message": "Duplicate event already processed",
+            "message": "Duplicate event already processed (idempotent)",
+            "provider": provider_name,
             "provider_event_id": provider_event_id,
+            "payment_id": existing_event.payment_id,
+            "case_id": existing_case.case_id if existing_case else None,
+            "recovery_status": existing_case.recovery_status if existing_case else None,
             "processed_at": existing_event.processed_at
         }
 
@@ -199,9 +208,30 @@ async def handle_razorpay_webhook(
         processed_at=datetime.datetime.utcnow(),
         processing_status="PROCESSED"
     )
-    db.add(payment_event)
-    db.commit()
-    db.refresh(payment_event)
+    try:
+        db.add(payment_event)
+        db.commit()
+        db.refresh(payment_event)
+    except IntegrityError:
+        db.rollback()
+        logger.warning(f"Concurrent duplicate Razorpay webhook caught by DB UNIQUE constraint: provider={provider_name}, provider_event_id={provider_event_id}")
+        existing_event = db.query(PaymentEvent).filter(
+            PaymentEvent.provider == provider_name,
+            PaymentEvent.provider_event_id == provider_event_id
+        ).first()
+        existing_case = db.query(RecoveryCase).filter(
+            RecoveryCase.payment_id == payment.payment_id
+        ).first()
+        return {
+            "status": "duplicate_ignored",
+            "message": "Duplicate event already processed (caught by database unique constraint)",
+            "provider": provider_name,
+            "provider_event_id": provider_event_id,
+            "payment_id": payment.payment_id,
+            "case_id": existing_case.case_id if existing_case else None,
+            "recovery_status": existing_case.recovery_status if existing_case else None,
+            "processed_at": existing_event.processed_at if existing_event else received_at
+        }
 
     # 5. Route to Autonomous Recovery Workflow if payment failed
     if event_type in [PaymentEventType.PAYMENT_FAILED.value, "payment.failed", "payment.declined"]:

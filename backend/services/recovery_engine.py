@@ -126,7 +126,17 @@ class RecoveryEngine:
                 notes=f"Recovery case created from {'Razorpay Test Mode event' if src == 'RAZORPAY_TEST' else 'Synthetic simulation event'}."
             )
 
-        # INVARIANT GUARD: If payment already succeeded, mark case recovered
+        # IDEMPOTENCY / INVARIANT GUARD 0: If case is already terminal, return immediately (zero double-counting)
+        if case.recovery_status in ["RECOVERED", "STOPPED", "REJECTED"]:
+            logger.info(f"Payment {payment.payment_id} has existing terminal recovery case {case.case_id} ({case.recovery_status}). Skipping duplicate pipeline execution.")
+            return case
+
+        # IDEMPOTENCY GUARD 1: If case is already in progress beyond NEW, return existing case without duplicate pipeline re-run
+        if case.recovery_status != "NEW":
+            logger.info(f"Payment {payment.payment_id} already has active recovery case {case.case_id} ({case.recovery_status}). Skipping duplicate pipeline invocation.")
+            return case
+
+        # INVARIANT GUARD 2: If payment already succeeded, mark case recovered
         if payment.status == "SUCCESS":
             case.recovered_amount = payment.amount
             case.outcome_verified = True
