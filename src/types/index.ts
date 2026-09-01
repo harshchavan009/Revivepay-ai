@@ -170,6 +170,8 @@ export interface RecoveryCase {
   evidence: string[];
   recommended_action: RecoveryToolAction | string;
   reasoning_summary?: string;
+  explanation?: string;
+  customer_message?: string;
   policy_status: PolicyStatus;
   policy_checklist: PolicyCheckItem[];
   approval_required?: boolean;

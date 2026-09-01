@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Sparkles, BrainCircuit, CheckCircle2, ShieldAlert, Code2, ChevronDown, ChevronUp, Terminal, Cpu } from "lucide-react";
+import { Sparkles, BrainCircuit, CheckCircle2, ShieldAlert, Code2, ChevronDown, ChevronUp, Terminal, Cpu, MessageSquare, FileText, CheckCheck, Layers } from "lucide-react";
 import { ConfidenceGauge } from "../ConfidenceGauge";
 import { ActionBadge } from "../ActionBadge";
 
@@ -9,6 +9,8 @@ interface AiDiagnosisCardProps {
   evidence: string[];
   recommendedAction: string;
   reasoningSummary?: string;
+  explanation?: string;
+  customerMessage?: string;
   modelProvider?: string;
   modelName?: string;
   rawPrompt?: string;
@@ -21,12 +23,15 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
   evidence,
   recommendedAction,
   reasoningSummary,
+  explanation,
+  customerMessage,
   modelProvider = "deterministic_rules_engine",
   modelName = "rules-engine-v2.1",
   rawPrompt,
   rawResponse,
 }) => {
   const [showInspector, setShowInspector] = useState(false);
+  const [showDivisionDetails, setShowDivisionDetails] = useState(false);
 
   const getProviderBadge = () => {
     if (modelProvider === "anthropic" || modelName?.includes("claude")) {
@@ -62,23 +67,73 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">AI Root-Cause & Recovery Agent</h3>
+              <h3 className="font-bold text-[var(--color-text-primary)] text-sm">AI Autonomous Recovery Intelligence</h3>
               {getProviderBadge()}
             </div>
-            <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">Structured Multi-Tier Inference · Zero Black-Box Audit Trail</p>
+            <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">Strict Division of Labor · AI Reasoning + Deterministic Safety Guardrails</p>
           </div>
         </div>
         <ConfidenceGauge confidence={confidence} />
       </div>
 
-      {/* Root Cause & Recommendation Badges */}
+      {/* Architectural Division of Labor Banner */}
+      <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500/5 via-[var(--color-accent-subtle)] to-emerald-500/5 border border-[var(--color-border-subtle)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-primary)]">
+            <Layers className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            <span>Architectural Boundary: AI vs. Deterministic Code</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDivisionDetails(!showDivisionDetails)}
+            className="text-[11px] text-[var(--color-accent)] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+          >
+            <span>{showDivisionDetails ? "Hide Spheres" : "View Spheres"}</span>
+            {showDivisionDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        </div>
+
+        {showDivisionDetails && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-[var(--color-border-subtle)] text-xs animate-in fade-in">
+            <div className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-purple-500/20 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-bold text-[11px] uppercase tracking-wider font-mono">
+                <Sparkles className="w-3 h-3" />
+                <span>AI Domain (Diagnostic & Creative)</span>
+              </div>
+              <ul className="text-[11px] text-[var(--color-text-secondary)] space-y-1 list-disc list-inside">
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Root-Cause Diagnosis:</span> Telemetry code semantics</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Reasoning:</span> Multi-factor context narrative</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Recovery Recommendation:</span> Optimal action proposal</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Explanation:</span> Executive operator summary</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Customer-Message Generation:</span> Empathetic channel copy</li>
+              </ul>
+            </div>
+
+            <div className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-emerald-500/20 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[11px] uppercase tracking-wider font-mono">
+                <Cpu className="w-3 h-3" />
+                <span>Deterministic Code Domain (Statutory & Safety)</span>
+              </div>
+              <ul className="text-[11px] text-[var(--color-text-secondary)] space-y-1 list-disc list-inside">
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Risk Score:</span> Mathematical risk formula</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Retry Limits:</span> Hard max retry ceilings (max 2)</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Amount Limits:</span> ₹10k auto / ₹50k enterprise rules</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Consent & Permissions:</span> DPDP Act & RBAC verification</li>
+                <li><span className="font-semibold text-[var(--color-text-primary)]">Rules, FSM, Audit & Outcomes:</span> State machine & bank capture</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 1 & 2: Root Cause & Recommendation Badges */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
         <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
-          <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">Diagnosed Root Cause</p>
+          <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">1. Diagnosed Root Cause</p>
           <p className="font-bold text-[var(--color-text-primary)] text-sm">{rootCause || "Temporary Bank Gateway Disconnect"}</p>
         </div>
         <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
-          <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">Recommended Tool Action</p>
+          <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">2. Recommended Recovery Action</p>
           <div className="pt-0.5">
             <ActionBadge action={recommendedAction} />
           </div>
@@ -107,11 +162,42 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
         </div>
       </div>
 
-      {/* Contextual Reasoning Summary */}
+      {/* 3. Contextual Reasoning Summary */}
       {reasoningSummary && (
-        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] leading-relaxed">
-          <span className="font-bold text-[var(--color-text-primary)]">AI Reasoning: </span>
-          {reasoningSummary}
+        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-1">
+          <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">3. AI Reasoning</p>
+          <p className="leading-relaxed">{reasoningSummary}</p>
+        </div>
+      )}
+
+      {/* 4. Operator Explanation */}
+      {explanation && (
+        <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/20 text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-1">
+          <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wider font-mono">
+            <FileText className="w-3.5 h-3.5" />
+            <span>4. Operator Explanation (Financial Review Context)</span>
+          </div>
+          <p className="leading-relaxed text-[var(--color-text-primary)]">{explanation}</p>
+        </div>
+      )}
+
+      {/* 5. Generated Customer Message */}
+      {customerMessage && (
+        <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20 text-xs leading-relaxed space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-bold text-[10px] uppercase tracking-wider font-mono">
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>5. AI-Generated Customer Communication (Personalized Copy)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">WhatsApp</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-blue-500/10 text-blue-600 border border-blue-500/20">SMS</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-purple-500/10 text-purple-600 border border-purple-500/20">Email</span>
+            </div>
+          </div>
+          <div className="p-3 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[12px] font-sans text-[var(--color-text-primary)] italic">
+            "{customerMessage}"
+          </div>
         </div>
       )}
 
@@ -147,7 +233,7 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
                 <span className="text-emerald-500">Validated JSON</span>
               </div>
               <pre className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] text-[11px] text-emerald-600 dark:text-emerald-400 overflow-x-auto whitespace-pre-wrap max-h-40">
-                {rawResponse || JSON.stringify({ root_cause: rootCause, confidence, recommended_action: recommendedAction, reasoning: reasoningSummary }, null, 2)}
+                {rawResponse || JSON.stringify({ root_cause: rootCause, confidence, recommended_action: recommendedAction, reasoning: reasoningSummary, explanation, customer_message: customerMessage }, null, 2)}
               </pre>
             </div>
           </div>

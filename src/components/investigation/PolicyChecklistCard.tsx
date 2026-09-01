@@ -24,6 +24,20 @@ export const PolicyChecklistCard: React.FC<PolicyChecklistCardProps> = ({ status
         <StatusBadge status={status} type="policy" />
       </div>
 
+      {/* Deterministic Responsibilities Badge Row */}
+      <div className="p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-[11px] text-[var(--color-text-secondary)] flex flex-wrap gap-1.5 items-center">
+        <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-[10px] uppercase">Deterministic Controls:</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">Risk Formula</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">Max 2 Retries</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">₹10k/₹50k Limits</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">DPDP Consent</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">RBAC</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">Action Whitelist</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">Strict FSM</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">SHA-256 Ledger</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[10px]">Bank Capture</span>
+      </div>
+
       <div className="space-y-2">
         {checklist && checklist.length > 0 ? (
           checklist.map((item, idx) => (

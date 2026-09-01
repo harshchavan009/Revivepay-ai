@@ -134,6 +134,8 @@ class RecoveryCaseResponse(BaseModel):
     evidence: List[str]
     recommended_action: str
     reasoning_summary: Optional[str] = None
+    explanation: Optional[str] = None
+    customer_message: Optional[str] = None
     policy_status: str
     policy_checklist: List[Dict[str, Any]]
     approval_required: bool = False
@@ -357,6 +359,8 @@ class RootCauseAnalysisOutput(BaseModel):
     recommended_action: str = Field(..., description="Recommended tool action")
     reasoning_summary: str = Field(..., description="Clear explanation of the recommendation")
     risk_level: str = Field(..., description="Risk tier: low, medium, high, critical")
+    explanation: Optional[str] = Field(None, description="Operator-facing executive summary explanation")
+    customer_message: Optional[str] = Field(None, description="Personalized customer-facing communication copy")
     model_provider: Optional[str] = Field("deterministic_rules_engine", description="anthropic | google | deterministic_rules_engine")
     model_name: Optional[str] = Field("rule-engine-v2.1", description="Model version")
     raw_prompt: Optional[str] = Field(None, description="Exact prompt sent to LLM")
