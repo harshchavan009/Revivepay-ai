@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
+    <!-- Evict any stale Service Workers or cached shells from previous projects on this origin -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var r of regs) r.unregister();
+        });
+      }
+    </script>
+    
     <!-- Primary Meta Tags -->
     <title>RevivePay AI — Autonomous Payment Failure Recovery Platform</title>
     <meta name="title" content="RevivePay AI — Autonomous Payment Failure Recovery Platform" />

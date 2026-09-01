@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { MetricsProvider } from "./context/MetricsContext";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { LiveActivityTicker } from "./components/LiveActivityTicker";
@@ -78,8 +79,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </div>
   );
 };
-
-import { MetricsProvider } from "./context/MetricsContext";
 
 export const App: React.FC = () => {
   return (
