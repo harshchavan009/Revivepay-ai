@@ -24,12 +24,16 @@ def build_system_prompt() -> str:
     return """You are RevivePay's Senior Payment Failure & Autonomous Recovery AI Agent.
 Analyze payment failure telemetry in India's payment ecosystem (Razorpay, UPI, Cards, NetBanking).
 
-Rules:
-1. Provide 3-4 specific factual evidence points citing the customer name, exact INR value, gateway error code, and payment rail.
-2. Formulate a unique contextual reasoning summary specifically for this customer explaining the diagnosed issue and why the selected tool action is optimal.
-3. Select the best recommended_action strictly from:
-   ["retry_payment", "create_payment_link", "send_customer_notification", "trigger_checkout_reminder", "request_payment_method_update", "escalate_to_merchant", "stop_recovery"]
-4. Return ONLY a valid JSON object matching the requested schema."""
+Your AI responsibilities are strictly bounded to:
+1. Root-cause diagnosis: diagnose the underlying technical or customer friction root cause.
+2. Reasoning: articulate the end-to-end rationale backed by customer history and telemetry evidence.
+3. Recovery recommendation: select the optimal recovery tool action from allowed actions.
+4. Explanation: concise operator-facing executive explanation for merchant review.
+5. Customer-message generation: empathetic, tailored, friction-free copy for customer outreach (SMS/WhatsApp/Email).
+
+Deterministic responsibilities (risk scoring, retry limits, amount ceilings, consent, permissions, allowed action filtering, approval rules, state machine transitions, cryptographic audit, and outcome verification) are governed strictly by deterministic code and must not be hallucinated.
+
+Return ONLY a valid JSON object matching the requested schema."""
 
 def build_case_prompt(context: Dict[str, Any]) -> str:
     case_id = context.get('case_id', 'RV-SIM')
@@ -64,8 +68,10 @@ Return ONLY a valid JSON object matching this schema:
   "root_cause": "short_snake_case_string",
   "confidence": 0.94,
   "evidence": ["Evidence 1 citing {customer_name} and ₹{amount:,.2f}", "Evidence 2 citing [{failure_code}]", "Evidence 3 citing {payment_method}"],
-  "recommended_action": "retry_payment" | "create_payment_link" | "send_customer_notification" | "request_payment_method_update" | "escalate_to_merchant" | "stop_recovery",
+  "recommended_action": "retry_payment" | "create_payment_link" | "send_customer_notification" | "request_payment_method_update" | "trigger_checkout_reminder" | "escalate_to_merchant" | "stop_recovery",
   "reasoning_summary": "Detailed narrative specifically mentioning {customer_name}, the ₹{amount:,.2f} order, and exact mitigation strategy.",
+  "explanation": "Executive operator summary explaining root cause, recommended action, and operational context.",
+  "customer_message": "Personalized, empathetic message for {customer_name} via WhatsApp/SMS to complete their ₹{amount:,.2f} payment.",
   "risk_level": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
 }}"""
 
@@ -124,12 +130,17 @@ class ClaudeLLMProvider(LLMProvider):
                     clean_text = clean_text[:-3]
                 
                 parsed = json.loads(clean_text.strip())
+                customer_name = context.get("customer_name", "Customer")
+                amount = float(context.get("amount", 0.0))
+                rec_action = parsed.get("recommended_action", "retry_payment")
                 return RootCauseAnalysisOutput(
                     root_cause=parsed.get("root_cause", "temporary_bank_failure"),
                     confidence=float(parsed.get("confidence", 0.95)),
                     evidence=parsed.get("evidence", []),
-                    recommended_action=parsed.get("recommended_action", "retry_payment"),
+                    recommended_action=rec_action,
                     reasoning_summary=parsed.get("reasoning_summary", "Live Claude AI diagnosis completed."),
+                    explanation=parsed.get("explanation") or f"Claude analyzed [{context.get('failure_code', 'N/A')}] for {customer_name}. Action: {rec_action}.",
+                    customer_message=parsed.get("customer_message") or f"Hi {customer_name}, your payment of ₹{amount:,.2f} could not be processed. Complete your payment securely via your recovery link.",
                     risk_level=parsed.get("risk_level", "LOW"),
                     model_provider="anthropic",
                     model_name=self.model,
@@ -147,7 +158,7 @@ class ClaudeLLMProvider(LLMProvider):
         return RecoveryDecisionOutput(
             action=action,
             timing_delay_seconds=timing_delay,
-            customer_message=f"Payment recovery action {action} prepared." if action != "stop_recovery" else None,
+            customer_message=analysis.customer_message or (f"Payment recovery action {action} prepared." if action != "stop_recovery" else None),
             policy_overrides_applied=[]
         )
 
@@ -179,12 +190,17 @@ class GeminiLLMProvider(LLMProvider):
                 data = res.json()
                 raw_response = data["candidates"][0]["content"]["parts"][0]["text"]
                 parsed = json.loads(raw_response)
+                customer_name = context.get("customer_name", "Customer")
+                amount = float(context.get("amount", 0.0))
+                rec_action = parsed.get("recommended_action", "retry_payment")
                 return RootCauseAnalysisOutput(
                     root_cause=parsed.get("root_cause", "temporary_bank_failure"),
                     confidence=float(parsed.get("confidence", 0.92)),
                     evidence=parsed.get("evidence", []),
-                    recommended_action=parsed.get("recommended_action", "retry_payment"),
+                    recommended_action=rec_action,
                     reasoning_summary=parsed.get("reasoning_summary", "Live Gemini AI diagnosis completed."),
+                    explanation=parsed.get("explanation") or f"Gemini analyzed [{context.get('failure_code', 'N/A')}] for {customer_name}. Action: {rec_action}.",
+                    customer_message=parsed.get("customer_message") or f"Hi {customer_name}, your payment of ₹{amount:,.2f} could not be processed. Complete your payment securely via your recovery link.",
                     risk_level=parsed.get("risk_level", "LOW"),
                     model_provider="google",
                     model_name=self.model,
@@ -236,6 +252,9 @@ class DeterministicFallbackAgent(LLMProvider):
             f"Gateway Diagnostic: [{failure_code}] {failure_reason} (attempt {retry_count + 1}/3)."
         ]
 
+        explanation = ""
+        customer_message = ""
+
         if failure_category in ["temporary_bank_failure", "BANK_SWITCH_OUTAGE", "GATEWAY_TIMEOUT", "network_timeout", "BANK_DECLINE"]:
             if "insufficient" in str(failure_reason).lower() or failure_code in ["51", "INSUFFICIENT_FUNDS"]:
                 root_cause = "pre_salary_liquidity_dip"
@@ -244,10 +263,14 @@ class DeterministicFallbackAgent(LLMProvider):
                 if amount > 50000:
                     recommended_action = "create_payment_link"
                     reasoning = f"High-ticket invoice of ₹{amount:,.2f} for {customer_name} declined due to balance deficit. Auto-generated frictionless 1-Click WhatsApp payment link to collect funds across alternate UPI/debit channels without issuer decline fees."
+                    explanation = f"Account balance dip on {payment_method.upper()} for {customer_name} (₹{amount:,.2f}). Blind retries suppressed by safety policy; multi-rail recovery link proposed to eliminate repeated decline fees."
+                    customer_message = f"Hi {customer_name}, your payment of ₹{amount:,.2f} could not be processed with your primary account. Complete your payment securely via UPI, NetBanking, or card: https://pay.revive.ai/r/{case_id}"
                     risk_level = "HIGH"
                 else:
                     recommended_action = "retry_payment"
                     reasoning = f"Safe liquidity-aligned retry scheduled for {customer_name} (₹{amount:,.2f}). Historical account behavior shows {successful_payments} successful settlements, making automated capture favorable during the morning liquidity window."
+                    explanation = f"Transient liquidity dip for reliable customer {customer_name} (₹{amount:,.2f}). Automated retry scheduled to capture settled funds without cardholder friction."
+                    customer_message = f"Hi {customer_name}, your payment of ₹{amount:,.2f} was delayed by your bank. We are automatically securing the transaction with zero duplicate charges."
                     risk_level = "LOW" if risk_score < 40 else "MEDIUM"
             elif failure_code in ["NETWORK_TIMEOUT", "GATEWAY_TIMEOUT", "504"]:
                 root_cause = "network_handshake_timeout"
@@ -256,10 +279,14 @@ class DeterministicFallbackAgent(LLMProvider):
                 if retry_count < 2 and amount <= 50000:
                     recommended_action = "retry_payment"
                     reasoning = f"Transient gateway switch timeout on {customer_name}'s ₹{amount:,.2f} {payment_method.upper()} charge. Idempotency hash verified; automated retry dispatched through low-latency direct route."
+                    explanation = f"National payment switch socket timeout [{failure_code}] on {payment_method.upper()} for {customer_name}. Packet dropped prior to ledger debit; safe idempotent retry approved."
+                    customer_message = f"Hi {customer_name}, your ₹{amount:,.2f} payment experienced a brief network timeout with your bank. We are automatically resolving this with zero duplicate deduction."
                     risk_level = "LOW" if risk_score < 40 else "MEDIUM"
                 else:
                     recommended_action = "escalate_to_merchant"
                     reasoning = f"Repeated network timeout for {customer_name} on ₹{amount:,.2f} order. Prior retry limit reached ({retry_count}/2); routing to human operator review queue to prevent cardholder friction."
+                    explanation = f"Repeated network timeout for {customer_name} on ₹{amount:,.2f}. Max automated retries reached ({retry_count}/2); human operator review required."
+                    customer_message = f"Dear {customer_name}, we encountered a network delay processing your order of ₹{amount:,.2f}. Our support team is prioritizing this for you."
                     risk_level = "HIGH"
             else:
                 root_cause = "temporary_bank_switch_latency"
@@ -268,10 +295,14 @@ class DeterministicFallbackAgent(LLMProvider):
                 if retry_count < 2 and amount <= 50000:
                     recommended_action = "retry_payment"
                     reasoning = f"Temporary issuer switch glitch resolved for {customer_name}. Automated policy approved single recovery retry for ₹{amount:,.2f} with zero risk of duplicate charge."
+                    explanation = f"Temporary issuer switch congestion [{failure_code}] on {payment_method.upper()} for {customer_name} (₹{amount:,.2f}). Low-risk automated retry approved per policy."
+                    customer_message = f"Hi {customer_name}, your payment of ₹{amount:,.2f} was momentarily held by the bank switch. We are re-verifying it safely now."
                     risk_level = "LOW" if risk_score < 40 else "MEDIUM"
                 else:
                     recommended_action = "escalate_to_merchant"
                     reasoning = f"Manual operator authorization required for {customer_name}'s ₹{amount:,.2f} order. Transaction exceeds policy auto-capture threshold or maximum retry count ({retry_count}/2)."
+                    explanation = f"Transaction for {customer_name} (₹{amount:,.2f}) flagged: retry limit ({retry_count}/2) or high risk index ({risk_score:.1f}/100) reached. Routed to operator."
+                    customer_message = f"Dear {customer_name}, our merchant operations desk is finalizing your ₹{amount:,.2f} payment. You will receive an update shortly."
                     risk_level = "HIGH" if risk_score < 80 else "CRITICAL"
 
         elif failure_category in ["insufficient_funds", "INSUFFICIENT_FUNDS"]:
@@ -282,10 +313,14 @@ class DeterministicFallbackAgent(LLMProvider):
             if amount < 15000:
                 recommended_action = "retry_payment"
                 reasoning = f"Smart payroll-synchronized retry scheduled for {customer_name} (₹{amount:,.2f}). Timing matches detected account replenishment cycle."
+                explanation = f"Account balance depletion on {payment_method.upper()} for {customer_name} (₹{amount:,.2f}). Small ticket order scheduled for synchronized retry."
+                customer_message = f"Hi {customer_name}, your order of ₹{amount:,.2f} could not be settled. We will re-attempt automatically, or you can complete it instantly via UPI: https://pay.revive.ai/r/{case_id}"
                 risk_level = "LOW"
             else:
                 recommended_action = "create_payment_link"
                 reasoning = f"Dynamic UPI/NetBanking recovery link generated for {customer_name} (₹{amount:,.2f}) to enable alternate payment method selection without repeat bank decline penalties."
+                explanation = f"Significant ticket size (₹{amount:,.2f}) with insufficient funds code. Proposing multi-rail recovery link to avoid repeated issuer decline penalties."
+                customer_message = f"Hi {customer_name}, your payment of ₹{amount:,.2f} could not be completed with your primary account. Choose an alternate payment method like UPI, Google Pay, or NetBanking to complete your order: https://pay.revive.ai/r/{case_id}"
                 risk_level = "MEDIUM" if amount < 50000 else "HIGH"
 
         elif failure_category in ["card_expired", "CARD_EXPIRED", "invalid_card_details", "payment_method_invalid"]:
@@ -295,6 +330,8 @@ class DeterministicFallbackAgent(LLMProvider):
             evidence.append("Safety Guardrail: Blind automated retries blocked by policy to protect customer relationship and avoid network fines.")
             recommended_action = "request_payment_method_update"
             reasoning = f"Permanent card token expiration identified for {customer_name}. Dispatched 1-Click WhatsApp payment method renewal portal to preserve continuous subscription billing."
+            explanation = f"Permanent card token expiration for {customer_name}. Blind retries suppressed by safety policy. Direct payment method updater link dispatched."
+            customer_message = f"Hi {customer_name}, the card on file for your subscription has expired. Please securely update your card or mandate here to prevent service disruption: https://pay.revive.ai/update/{case_id}"
             risk_level = "HIGH"
 
         elif failure_category in ["checkout_drop", "checkout_abandonment"]:
@@ -304,6 +341,8 @@ class DeterministicFallbackAgent(LLMProvider):
             evidence.append(f"Customer Loyalty: {customer_name} ({customer_tier} tier) has {successful_payments} completed purchases.")
             recommended_action = "trigger_checkout_reminder"
             reasoning = f"High intent cart abandonment for {customer_name} (₹{amount:,.2f}). Dispatched personalized recovery notification with restored checkout session and dynamic discount trigger."
+            explanation = f"Cart checkout session abandoned at gateway step by {customer_name} (₹{amount:,.2f}). AI generated personalized checkout reminder with restored session state."
+            customer_message = f"Hi {customer_name}, your cart (₹{amount:,.2f}) is saved and ready! Click here to complete your order in seconds with 1-click UPI checkout: https://pay.revive.ai/cart/{case_id}"
             risk_level = "LOW"
 
         elif failure_category in ["HIGH_VALUE_DECLINE", "high_value_gate"]:
@@ -313,6 +352,8 @@ class DeterministicFallbackAgent(LLMProvider):
             evidence.append(f"Client Classification: {customer_name} evaluated under enterprise compliance checklist.")
             recommended_action = "retry_payment"
             reasoning = f"High-value enterprise order (₹{amount:,.2f}) for {customer_name}. Routed to Senior Revenue Operator approval center prior to downstream payment execution per governance rules."
+            explanation = f"High-value order (₹{amount:,.2f}) for enterprise client {customer_name}. AI recommended retry; routed to operator queue per governance limits."
+            customer_message = f"Dear {customer_name}, our enterprise accounts team is reviewing your transaction of ₹{amount:,.2f}. You will receive a direct confirmation once approved."
             risk_level = "HIGH"
 
         else:
@@ -321,6 +362,8 @@ class DeterministicFallbackAgent(LLMProvider):
             evidence.append(f"Gateway Diagnostic: Encountered unclassified error [{failure_code}] on {payment_method.upper()}.")
             recommended_action = "create_payment_link" if amount < 10000 else "escalate_to_merchant"
             reasoning = f"Non-standard gateway response [{failure_code}] for {customer_name} (₹{amount:,.2f}). Routing to secure multi-rail recovery link to guarantee safe payment completion."
+            explanation = f"Non-standard gateway diagnostic [{failure_code}] for {customer_name} (₹{amount:,.2f}). Recommended action: {recommended_action}."
+            customer_message = f"Hi {customer_name}, an unexpected issue occurred while processing your payment of ₹{amount:,.2f}. You can finish it securely here: https://pay.revive.ai/r/{case_id}"
             risk_level = "HIGH"
 
         raw_prompt_summary = f"[Telemetry Input Context]\nCase: {case_id} | Amount: ₹{amount:,.2f} | Method: {payment_method} | Failure: {failure_category} ({failure_code}) | Customer: {customer_name} ({customer_tier})"
@@ -330,6 +373,8 @@ class DeterministicFallbackAgent(LLMProvider):
             "evidence": evidence,
             "recommended_action": recommended_action,
             "reasoning_summary": reasoning,
+            "explanation": explanation,
+            "customer_message": customer_message,
             "risk_level": risk_level
         }, indent=2)
 
@@ -339,6 +384,8 @@ class DeterministicFallbackAgent(LLMProvider):
             evidence=evidence,
             recommended_action=recommended_action,
             reasoning_summary=reasoning,
+            explanation=explanation,
+            customer_message=customer_message,
             risk_level=risk_level,
             model_provider="deterministic_rules_engine",
             model_name="rules-engine-v2.1",
@@ -352,11 +399,11 @@ class DeterministicFallbackAgent(LLMProvider):
         action = analysis.recommended_action if analysis.recommended_action in ALLOWED_TOOLS else "escalate_to_merchant"
         timing_delay = 30 if action == "retry_payment" else 5
 
-        customer_msg = None
-        if action in ["send_customer_notification", "create_payment_link"]:
-            customer_msg = f"Hello {context.get('customer_name', '')}, your payment of ₹{context.get('amount', 0):,.2f} was interrupted. You can safely complete your transaction using your secure recovery link."
-        elif action == "request_payment_method_update":
-            customer_msg = f"Hello {context.get('customer_name', '')}, your recurring card on file has expired. Please update your payment method to avoid service interruption."
+        customer_msg = analysis.customer_message or (
+            f"Hello {context.get('customer_name', '')}, your payment of ₹{context.get('amount', 0):,.2f} was interrupted. You can safely complete your transaction using your secure recovery link."
+            if action in ["send_customer_notification", "create_payment_link"]
+            else None
+        )
 
         return RecoveryDecisionOutput(
             action=action,

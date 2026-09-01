@@ -213,6 +213,8 @@ export const CaseInvestigationPage: React.FC = () => {
           evidence={caseData.evidence || []}
           recommendedAction={caseData.recommended_action}
           reasoningSummary={caseData.reasoning_summary}
+          explanation={caseData.explanation}
+          customerMessage={caseData.customer_message}
           modelProvider={caseData.model_provider}
           modelName={caseData.model_name}
           rawPrompt={caseData.raw_prompt}

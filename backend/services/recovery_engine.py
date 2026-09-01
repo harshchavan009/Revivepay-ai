@@ -243,8 +243,31 @@ class RecoveryEngine:
                 "confidence": ai_analysis.confidence,
                 "recommended_action": ai_analysis.recommended_action,
                 "reasoning": ai_analysis.reasoning_summary,
+                "explanation": ai_analysis.explanation,
+                "customer_message": ai_analysis.customer_message,
                 "model_provider": ai_analysis.model_provider,
-                "model_name": ai_analysis.model_name
+                "model_name": ai_analysis.model_name,
+                "division_of_labor": {
+                    "ai_scope": [
+                        "root_cause_diagnosis",
+                        "contextual_reasoning",
+                        "recovery_recommendation",
+                        "operator_explanation",
+                        "customer_message_generation"
+                    ],
+                    "deterministic_scope": [
+                        "risk_score",
+                        "retry_limits",
+                        "amount_limits",
+                        "consent",
+                        "permissions",
+                        "allowed_actions",
+                        "approval_rules",
+                        "state_transitions",
+                        "audit",
+                        "outcome_verification"
+                    ]
+                }
             },
             notes=f"AI Root-Cause Diagnosis via [{ai_analysis.model_provider or 'deterministic_rules_engine'}]: {ai_analysis.root_cause} ({int(ai_analysis.confidence*100)}% confidence)"
         )

@@ -42,6 +42,13 @@ def map_case_response(case: RecoveryCase, db: Session) -> dict:
         "evidence": case.evidence or [],
         "recommended_action": case.recommended_action,
         "reasoning_summary": case.reasoning_summary,
+        "explanation": getattr(case, "explanation", None) or (
+            f"AI diagnosed {case.root_cause.replace('_', ' ')} for {cust.name if cust else 'customer'}. Recommends {case.recommended_action.replace('_', ' ')} based on transaction telemetry and historical reliability."
+            if case.root_cause else "Root cause analysis concluded; recommended recovery action proposed."
+        ),
+        "customer_message": getattr(case, "customer_message", None) or (
+            f"Hi {cust.name if cust else 'Customer'}, your payment of ₹{case.amount_at_risk:,.2f} could not be processed. Complete your payment securely via 1-click UPI or card link: https://pay.revive.ai/r/{case.case_id}"
+        ),
         "policy_status": case.policy_status,
         "policy_checklist": case.policy_checklist or [],
         "approval_required": case.approval_required,
