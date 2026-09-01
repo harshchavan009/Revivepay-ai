@@ -9,7 +9,8 @@ import {
   Check,
   Menu,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  Cpu
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -123,6 +124,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
               {isLoading ? "--.-%" : `${recoveryRate.toFixed(1)}%`} Rate
             </span>
           </div>
+
+          {/* Quick System Evaluation Link */}
+          <button
+            onClick={() => navigate("/evaluation")}
+            aria-label="View System Evaluation"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] hover:border-[var(--color-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-bold text-xs shadow-premium-sm transition-all cursor-pointer shrink-0"
+          >
+            <Cpu className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            <span>System Evaluation</span>
+          </button>
 
           {/* Quick Simulation Trigger Button */}
           <button

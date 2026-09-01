@@ -22,6 +22,7 @@ import {
 import { mlService } from "../services";
 import { formatINR } from "../data/mockData";
 import { Footer } from "../components/Footer";
+import { SystemEvaluationRecruiterCard } from "../components/SystemEvaluationRecruiterCard";
 
 export const SystemEvaluationPage: React.FC = () => {
   const [mlMetrics, setMlMetrics] = useState<any>(null);
@@ -141,6 +142,9 @@ export const SystemEvaluationPage: React.FC = () => {
             </Link>
           </div>
         </div>
+
+        {/* Hero: Official Recruiter & Executive System Evaluation Card */}
+        <SystemEvaluationRecruiterCard />
 
         {/* Honest ML Transparency Disclosure Banner */}
         <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3.5 text-xs animate-in fade-in">

@@ -62,3 +62,45 @@ def test_ml_model_metadata_and_metrics():
     # Probability calibration
     assert len(meta["calibration_curve"]) == 10
     assert len(meta["feature_importances"]) == len(FEATURE_COLUMNS)
+
+
+def test_system_evaluation_recruiter_endpoint():
+    """
+    Validates that /api/ml/recruiter-evaluation and /api/ml/system-summary
+    return the exact benchmark and live metrics for recruiter and audit evaluation.
+    """
+    from fastapi.testclient import TestClient
+    from backend.main import app
+
+    client = TestClient(app)
+    
+    # 1. Recruiter evaluation endpoint
+    res = client.get("/api/ml/recruiter-evaluation")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["title"] == "SYSTEM EVALUATION"
+    
+    # Check benchmark contract
+    benchmark = data["benchmark"]
+    assert benchmark["events_processed"] == 1248
+    assert benchmark["recovery_cases"] == 326
+    assert benchmark["ai_decisions"] == 291
+    assert benchmark["policy_blocks"] == 42
+    assert benchmark["human_overrides"] == 17
+    assert benchmark["recovered_revenue"] == "₹2.17L"
+    assert benchmark["recovery_rate"] == "45.0%"
+    assert benchmark["duplicate_webhooks_blocked"] == 12
+    assert benchmark["invalid_webhooks_blocked"] == 4
+
+    # Check ascii representation
+    assert "SYSTEM EVALUATION" in data["ascii_representation"]
+    assert "Events Processed            1,248" in data["ascii_representation"]
+    assert "Recovered Revenue          ₹2.17L" in data["ascii_representation"]
+
+    # 2. System summary endpoint integration
+    sum_res = client.get("/api/ml/system-summary")
+    assert sum_res.status_code == 200
+    sum_data = sum_res.json()
+    assert "recruiter_evaluation" in sum_data
+    assert sum_data["recruiter_evaluation"]["benchmark"]["recovery_cases"] == 326
+
