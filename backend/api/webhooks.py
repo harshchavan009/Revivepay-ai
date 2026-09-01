@@ -173,6 +173,8 @@ async def handle_razorpay_webhook(
             failure_category="temporary_bank_failure",
             retry_count=0,
             max_retry_count=2,
+            source="RAZORPAY_TEST",
+            source_description="Event received from Razorpay Test environment via HTTPS Webhook",
             created_at=received_at,
             updated_at=received_at
         )
@@ -180,13 +182,15 @@ async def handle_razorpay_webhook(
         db.commit()
         db.refresh(payment)
 
-    # 4. Ingest PaymentEvent Entity into Database
+    # 4. Ingest PaymentEvent Entity into Database (Razorpay Test Mode Provenance)
     payment_event = PaymentEvent(
         event_id=f"evt_{uuid.uuid4().hex[:12]}",
         provider="razorpay",
         provider_event_id=provider_event_id,
         event_type=event_type,
         payment_id=payment.payment_id,
+        source="RAZORPAY_TEST",
+        source_description="Event received from Razorpay Test environment via HTTPS Webhook",
         raw_webhook_body=body_str,
         signature=x_razorpay_signature,
         payload_hash=hashlib.sha256(raw_body).hexdigest() if raw_body else None,
