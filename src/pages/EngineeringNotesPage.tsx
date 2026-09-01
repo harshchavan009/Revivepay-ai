@@ -210,7 +210,7 @@ export const EngineeringNotesPage: React.FC = () => {
                   entry_hash = SHA256(prev_hash + audit_id + timestamp + actor + action + case_id + notes)
                 </p>
                 <p className="text-[11px] text-[var(--color-text-muted)] pt-1">
-                  1-Click Verification API: <code className="text-[var(--color-accent)]">GET /api/audit/verify-chain</code> verifies the entire chain from Genesis to Head in &lt; 5ms.
+                  1-Click Verification API: <code className="text-[var(--color-accent)]">GET /api/audit/verify-chain</code> verifies the entire hash chain from Genesis to Head programmatically.
                 </p>
               </div>
             </div>
