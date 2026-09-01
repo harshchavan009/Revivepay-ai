@@ -43,8 +43,8 @@ def get_subscriptions(db: Session = Depends(get_db)):
 @router.post("/{subscription_id}/send-pre-debit-notification")
 def send_pre_debit_notification(subscription_id: str, db: Session = Depends(get_db)):
     """
-    Sends/simulates an RBI e-mandate compliant 24-hour pre-debit alert to customer.
-    Sets the timestamp to 25 hours prior to allow subsequent retries.
+    Sends/simulates an educational reference implementation of the RBI 24-hour pre-debit alert to customer.
+    Sets the timestamp to 25 hours prior to allow subsequent retries in sandbox.
     """
     sub = db.query(Subscription).filter(
         (Subscription.id == subscription_id) | (Subscription.subscription_id == subscription_id)

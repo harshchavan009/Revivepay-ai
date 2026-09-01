@@ -6,116 +6,132 @@
 [![React 19](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-emerald.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.0-336791.svg)](https://www.postgresql.org/)
-[![Tests](https://img.shields.io/badge/tests-67%20passing-success.svg)](backend/tests/)
-[![ML Model](https://img.shields.io/badge/ML%20Model-Gradient%20Boosting%20(ROC--AUC%200.81)-indigo.svg)](ml/)
+[![Tests](https://img.shields.io/badge/tests-88%20passing-success.svg)](backend/tests/)
+[![ML Model](https://img.shields.io/badge/ML%20Evaluation-Synthetic%20Held--Out%20(ROC--AUC%200.81)-indigo.svg)](ml/MODEL_CARD.md)
+[![Environment](https://img.shields.io/badge/Environment-Sandbox%20%2F%20Razorpay%20Test%20Mode-orange.svg)](#-operational-scope--disclaimers)
 [![Audit Chain](https://img.shields.io/badge/Audit%20Ledger-SHA--256%20Hash--Chained-emerald.svg)](backend/services/audit_service.py)
 
-> **Recover Revenue Before It's Lost.**  
-> Revive AI is a **production-oriented fintech engineering prototype** designed to demonstrate policy-governed autonomous revenue recovery across transient payment failures, recurring subscription dunning declines, and abandoned checkout sessions.
+> **Scope & Positioning Disclosure**:  
+> Revive AI is an open-source **production-oriented fintech engineering prototype** designed to demonstrate policy-governed autonomous revenue recovery across transient payment failures, recurring subscription dunning declines, and abandoned checkout sessions in a **sandbox / demonstration environment**.  
+> All live gateway interactions operate strictly in **Razorpay Test Mode**, with machine learning models benchmarked via **synthetic ML evaluation**. The platform is not certified by or affiliated with the Reserve Bank of India (RBI).
 
 ---
 
-## 📖 Executive Overview
+## 📖 Project Overview
 
-Traditional recovery systems rely on static, blind retry intervals and generic email spam. This naive approach frustrates customers, increases gateway interchange fees, triggers card-issuer fraud blocks, and accelerates customer churn.
+In traditional payment setups, failed transactions are often handled with naive automated retries or blanket customer emails. This frequently leads to duplicate charges, customer frustration, gateway rate-limiting, and unnecessary churn.
 
-**Revive AI** introduces an intelligent decision layer that analyzes transaction context, customer payment history, failure characteristics, empirical recovery likelihood, and merchant policies before recommending or executing a recovery action.
+**Revive AI** demonstrates a bounded decision-and-recovery architecture that evaluates failure codes, customer payment reliability, transaction size, and merchant safety rules before recommending or executing any action:
 
 $$\textbf{INGEST} \longrightarrow \textbf{RISK SCORE} \longrightarrow \textbf{ML LIKELIHOOD} \longrightarrow \textbf{AI DIAGNOSIS} \longrightarrow \textbf{POLICY GATE} \longrightarrow \textbf{EXECUTE} \longrightarrow \textbf{VERIFY} \longrightarrow \textbf{AUDIT}$$
 
-### 🎯 Core Objectives
-- **Reduce Revenue Loss**: Maximize recovered payment volume through intelligent retries and optimized communication links without triggering issuer fraud blocks.
-- **Explainable Autonomous Actions**: Answer *what* should happen next, *why*, *whether the action is allowed by policy*, and *whether the settlement actually succeeded*.
-- **Bounded Autonomy**: Separate generative AI reasoning from deterministic financial rules, ensuring the LLM cannot execute financial actions without passing strict policy gates.
-- **Cryptographic Auditability**: Every decision, evaluation, and state transition is immutably recorded in a SHA-256 hash-chained ledger.
-- **Genuine Gateway Integration**: End-to-end webhook ingestion with timing-safe HMAC-SHA256 signature validation in Razorpay Test Mode.
+### 🎯 Core Engineering Objectives
+- **Single Source of Truth**: All metrics (Recovered Revenue, Recovery Rate, Failed Payments, Active Recovery) are computed dynamically from backend database state—never hardcoded or invented by the UI.
+- **Strict Division of Labor**: Generative AI is strictly confined to root-cause diagnosis, reasoning, recommendation, operator explanation, and customer messaging. Financial boundaries, retry limits, amount thresholds, consent, state transitions, audit logging, and settlement verifications are strictly deterministic.
+- **Real Webhook Idempotency**: Enforces `UNIQUE(provider, provider_event_id)`. Replaying identical webhooks returns `duplicate_ignored` with HTTP 200 without creating secondary recovery cases, duplicate customer alerts, or double-counted revenue.
+- **Honest Ingress Separation**: Transparently separates real **Razorpay Test Mode** webhook ingestion (with HMAC-SHA256 signature verification) from the synthetic **Simulation** harness, routing both into the shared recovery pipeline.
+- **Cryptographic Auditability**: Every decision, policy evaluation, and state transition is immutably recorded in a SHA-256 hash-chained ledger.
+- **Deterministic Outcome Verification**: A case cannot be marked `RECOVERED` by an AI model; state progression to `RECOVERED` strictly requires direct payment capture verification from gateway callbacks.
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ Architectural Division of Labor
 
-```mermaid
-flowchart TD
-    A[Payment Declines / Webhook Ingestion] --> B[Razorpay Test Mode / HMAC-SHA256 Ingestion]
-    B --> C[4-Factor Revenue Risk Engine]
-    C --> D[Calibrated ML Recovery Likelihood Model]
-    D --> E[Multi-Tier AI Root-Cause Reasoner]
-    E --> F{Deterministic Policy & Safety Gateway}
-    F -- Action Blocked --> G[Safe Escalation / Human Review Queue]
-    F -- Auto-Approved (Low Risk) --> H[Execute Bounded Recovery Action]
-    F -- High Value >= ₹50k / Low Confidence --> I[Human-in-the-Loop Approval Center]
-    I -- Approved (Step-Up Re-Auth) --> H
-    I -- Rejected --> G
-    H --> J[Dedicated Outcome Verification Service]
-    J -- Settlement Confirmed --> K[Mark RECOVERED & Update Revenue Metrics]
-    J -- Settlement Failed --> G
-    K --> L[SHA-256 Hash-Chained Cryptographic Audit Ledger]
-    L --> M[Server-Sent Events (SSE) Live Broadcast Stream]
-    M --> N[Executive Command Center & System Evaluation Diagnostics]
+Revive AI establishes an uncompromised boundary separating probabilistic AI reasoning from deterministic safety code:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        REVIVEPAY AI ARCHITECTURE                       │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+          ┌─────────────────────────┴─────────────────────────┐
+          ▼                                                   ▼
+┌───────────────────────────────────┐       ┌───────────────────────────────────┐
+│             AI SPHERE             │       │     DETERMINISTIC CODE SPHERE     │
+├───────────────────────────────────┤       ├───────────────────────────────────┤
+│ 1. Root-Cause Diagnosis           │       │ 1. Risk Score (pure math formula) │
+│ 2. Contextual Reasoning           │       │ 2. Retry Limits (hard max 2 cap)  │
+│ 3. Recovery Recommendation        │       │ 3. Amount Limits (₹10k/₹50k gates)│
+│ 4. Operator Explanation           │       │ 4. DPDP Customer Consent Checks   │
+│ 5. Customer-Message Generation    │       │ 5. RBAC & Step-Up Permissions     │
+│                                   │       │ 6. Allowed Actions Whitelisting   │
+│ (Claude 3.5 Sonnet / Gemini 1.5   │       │ 7. Policy Gateway Safety Rules    │
+│ Pro / Deterministic Rules Floor)  │       │ 8. Finite State Machine (FSM)     │
+│                                   │       │ 9. SHA-256 Hash-Chained Audit     │
+│                                   │       │ 10. Direct Bank Outcome Verify    │
+└───────────────────────────────────┘       └───────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Key Platform Capabilities
+## 🚀 Key Technical Modules
 
-### 1. 🧠 Multi-Tier AI Root-Cause Reasoning
-Revive AI uses contextual LLMs to interpret error strings, customer tenure, gateway codes, and merchant policies into actionable structured recovery plans.
-- **Structured Pydantic Validation**: Guarantees schema conformance ($100\%$ type safety); rejects malformed model outputs.
-- **3-Tier Failover Hierarchy**:
-  - **Tier 1 (Primary)**: Anthropic Claude 3.5 Sonnet for deep contextual reasoning.
+### 1. 🧠 Multi-Tier AI Root-Cause Reasoner
+Interprets gateway error codes, card rails, timing telemetry, and customer history into structured recovery recommendations:
+- **Pydantic Validation**: Strict schema enforcement guarantees $100\%$ type conformance on every LLM output.
+- **3-Tier Fallback Hierarchy**:
+  - **Tier 1 (Primary)**: Anthropic Claude 3.5 Sonnet for detailed operational reasoning.
   - **Tier 2 (Secondary)**: Google Gemini 1.5 Pro for rapid automatic failover.
-  - **Tier 3 (Safe Floor)**: Local Deterministic Rules Engine for zero external dependency fail-safety.
-- **Bounded Actions Only**:
+  - **Tier 3 (Safe Floor)**: Local Deterministic Rules Engine ensuring continuous operation with zero external dependencies.
+- **Strict Tool Whitelist**:
   `retry_payment`, `create_payment_link`, `send_customer_notification`, `trigger_checkout_reminder`, `request_payment_method_update`, `escalate_to_merchant`, `stop_recovery`.
 
 ### 2. 📊 Deterministic Revenue Risk Scoring Engine
-Before AI diagnosis, every case is evaluated by a deterministic 4-factor scoring formula ($0 \text{ to } 100$):
+Before invoking AI diagnosis, each failure is scored by a deterministic mathematical formula ($0 \text{ to } 100$):
 
 $$\text{Risk Score} = 0.35 \times \text{Value Factor} + 0.25 \times \text{Recovery Likelihood} + 0.20 \times \text{Customer History} + 0.20 \times \text{Failure Severity}$$
 
-| Score Range | Risk Level | Governance Action |
+| Score Range | Risk Level | Action Routing |
 | :--- | :--- | :--- |
-| **0 – 29** | `LOW` | Eligible for automated autonomous execution |
-| **30 – 59** | `MEDIUM` | Standard policy-guided routing |
+| **0 – 29** | `LOW` | Eligible for automated recovery action |
+| **30 – 59** | `MEDIUM` | Standard policy-guided evaluation |
 | **60 – 79** | `HIGH` | Operator review recommended |
 | **80 – 100** | `CRITICAL` | Mandatory human authorization required |
 
-### 3. 🤖 Empirical ML Recovery Likelihood Classifier (`ml/`)
-An independent machine learning pipeline trained on synthetic multi-pattern transaction telemetry estimates the empirical probability of recovery: $P(\text{recovery\_success})$.
-- **Algorithm**: `CalibratedClassifierCV(GradientBoostingClassifier, cv=5, method='isotonic')`
-- **Dataset Structure**: 5,000 synthetic transaction failure records (80% training / 20% holdout evaluation split).
-- **10 Candidate Signals**: `transaction_amount`, `failure_category_encoded`, `payment_method_encoded`, `customer_success_rate`, `customer_failure_rate`, `retry_count`, `customer_tenure_days`, `is_subscription`, `previous_recovery_success`, `checkout_intent_score`.
-- **Synthetic Evaluation Metrics**:
-  - **ROC-AUC**: `0.8094`
-  - **F1 Score**: `0.8702`
-  - **Precision**: `0.8146` | **Recall**: `0.9341`
-  - **Brier Score**: `0.1401` (Well-calibrated probability floor)
+### 3. 🤖 Machine Learning Model: Empirical Specification ([ml/MODEL_CARD.md](ml/MODEL_CARD.md))
+
+> **Methodology Disclosure**:  
+> **Baseline recovery-likelihood model evaluated on a synthetic held-out dataset.**  
+> Metrics reported below reflect an 80/20 train/test split on simulated payment failure telemetry modeled after Indian payment rail dynamics (Razorpay, UPI, cards, and netbanking), not unverified production claims.
+
+| Dimension | Specification |
+| :--- | :--- |
+| **Dataset** | 5,000 synthetic failure events simulating Indian payment rail mechanics (switch timeouts, UPI VPA latency, balance dips, expired cards). |
+| **Training Size** | **4,000 samples** (80% stratified train split) |
+| **Test Size** | **1,000 samples** (20% held-out test split, stratified by outcome) |
+| **Features (10 Signals)** | `transaction_amount`, `failure_category_encoded`, `payment_method_encoded`, `customer_success_rate`, `customer_failure_rate`, `retry_count`, `customer_tenure_days`, `is_subscription`, `previous_recovery_success`, `checkout_intent_score` |
+| **Model** | `CalibratedClassifierCV(estimator=GradientBoostingClassifier(n_estimators=120, learning_rate=0.08, max_depth=4, subsample=0.85), method='isotonic', cv=5)` |
+| **ROC-AUC** | **0.8094** (80.94% on synthetic held-out test split) |
+| **Precision** | **0.8146** (81.46% on synthetic held-out test split) |
+| **Recall** | **0.9341** (93.41% on synthetic held-out test split) |
+| **F1 Score** | **0.8702** (87.02% harmonic mean on held-out test split) |
+| **Calibration** | **Brier Score: 0.1401** (Isotonic Regression calibrated; predicted probabilities align with observed empirical frequencies across 10 reliability bins). |
 
 ### 4. 🛡️ Deterministic Policy & Safety Gateway
-Every recommended action must pass 10+ deterministic safety invariants before execution:
-- `IF retry_count >= max_retries` $\rightarrow$ **BLOCK & ESCALATE**
-- `IF payment_status == SUCCESS` $\rightarrow$ **BLOCK (Never retry settled payments)**
-- `IF failure_type == PERMANENT` (e.g. stolen card, fraud) $\rightarrow$ **BLOCK RETRY**
-- `IF customer_opted_out == TRUE` $\rightarrow$ **BLOCK CUSTOMER NOTIFICATIONS**
-- `IF amount >= ₹50,000` $\rightarrow$ **REQUIRE MANDATORY STEP-UP HUMAN RE-AUTHENTICATION**
+Every action proposed by AI must pass 11 deterministic safety invariants before execution:
+- `IF retry_count >= max_retries` $\rightarrow$ **BLOCK & ESCALATE** (Hard max 2 retries)
+- `IF payment_status == SUCCESS` $\rightarrow$ **BLOCK** (Settled payments are immutable)
+- `IF failure_type == PERMANENT` (e.g., stolen card, void token) $\rightarrow$ **BLOCK RETRY**
+- `IF customer_opted_out == TRUE` $\rightarrow$ **BLOCK NOTIFICATIONS** (DPDP compliance)
+- `IF amount >= ₹50,000` $\rightarrow$ **REQUIRE STEP-UP HUMAN AUTHORIZATION**
 - `IF ai_confidence < 0.70` $\rightarrow$ **REQUIRE HUMAN REVIEW**
 
 ### 5. 🔎 Cryptographic SHA-256 Hash-Chained Audit Ledger
-Every state transition is linked to its predecessor via cryptographic hashing:
+Every state transition and policy check is cryptographically linked to its predecessor:
 
-$$\text{entry\_hash} = \text{SHA-256}(\text{previous\_hash} + \text{audit\_id} + \text{timestamp} + \text{actor} + \text{action} + \text{case\_id} + \text{notes})$$
+$$\text{entry\_hash} = \text{SHA-256}(\text{previous\_hash} + \text{timestamp} + \text{case\_id} + \text{action} + \text{actor})$$
 
-- **Tamper Evident**: Modifying any past record breaks the cryptographic chain.
-- **Verification Endpoint**: `GET /api/audit/verify-chain` verifies the entire database ledger from genesis to head in real-time.
+- **Tamper Evident**: Modifying any past database record breaks all subsequent chain hashes.
+- **Verification Endpoint**: `GET /api/audit/verify-chain` programmatically validates the ledger from genesis to head.
 
 ### 6. 🔬 Dedicated Outcome Verification Service
-- Isolates payment settlement verification before committing `RECOVERED` state.
-- Asserts provider transaction IDs, capture state, currency, and exact amount matching.
+- Isolates payment capture verification before committing the `RECOVERED` state.
+- Matches provider payment ID, capture state, currency, and amount.
 - **Recovered revenue metrics only update after verified settlement**.
 
-### 7. ⚖️ RBI Guidance Reference Implementations (Published Guidelines)
-- **Turn Around Time (TAT) Framework (RBI/2019-20/67)**: Calculates statutory auto-reversal deadlines (UPI $T+1$, Card $T+5$ working days), accrues ₹100/day statutory compensation on breaches, and auto-escalates overdue cases.
-- **e-Mandate 24-Hour Pre-Debit Window**: Enforces mandatory 24-hour pre-debit notifications and processes customer opt-out cancellations.
+### 7. ⚖️ Educational Reference Implementations (Published RBI Frameworks)
+- **Turn Around Time (TAT) Reference Implementation (RBI/2019-20/67)**: Demonstrates auto-reversal deadline calculations (UPI $T+1$, Card $T+5$ working days) and tracks statutory ₹100/day compensation indicators on overdue cases.
+- **e-Mandate Pre-Debit Alert Implementation**: Educational reference implementation of the 24-hour pre-debit customer notification window.
 
 ---
 
@@ -133,9 +149,9 @@ stateDiagram-v2
     AWAITING_APPROVAL --> APPROVED: Operator Human Approval
     AWAITING_APPROVAL --> REJECTED: Operator Rejection
     APPROVED --> EXECUTING: Dispatch Action
-    EXECUTING --> VERIFYING: Provider Callback
+    EXECUTING --> VERIFYING: Gateway Callback
     VERIFYING --> RECOVERED: Settlement Verified
-    VERIFYING --> FAILED: Provider Error / Timeout
+    VERIFYING --> FAILED: Gateway Error / Timeout
     FAILED --> ESCALATED: Max Retries Exhausted
     FAILED --> STOPPED: Terminal Failure / Expired
     REJECTED --> STOPPED
@@ -152,13 +168,13 @@ stateDiagram-v2
 | :--- | :--- |
 | **Frontend UI** | React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Recharts |
 | **Backend API** | FastAPI 0.115, Python 3.11+, Pydantic v2, Uvicorn (ASGI) |
-| **Database & ORM** | PostgreSQL 16 (Production) / SQLite (Dev), SQLAlchemy 2.0, Alembic |
+| **Database & ORM** | PostgreSQL 16 / SQLite (Local Dev), SQLAlchemy 2.0, Alembic |
 | **Machine Learning** | Scikit-learn (Calibrated Gradient Boosting), NumPy, Pandas, Joblib |
-| **AI Reasoning** | Multi-Tier Orchestrator: Anthropic Claude 3.5 Sonnet $\rightarrow$ Google Gemini 1.5 Pro $\rightarrow$ Deterministic Rules |
-| **Gateway Integration** | Razorpay Test Mode API, HMAC-SHA256 Webhook Ingestion & Idempotency Filter |
+| **AI Reasoning** | Multi-Tier Orchestrator: Claude 3.5 Sonnet $\rightarrow$ Gemini 1.5 Pro $\rightarrow$ Deterministic Rules Floor |
+| **Gateway Integration** | Razorpay Test Mode API, Timing-Safe HMAC-SHA256 Webhooks, Idempotency Deduplication |
 | **Observability & Audit**| SHA-256 Hash-Chained Audit Ledger, Server-Sent Events (SSE) Live Feed, Structured Logging |
 | **Containerization** | Docker, Docker Compose, Nginx (Frontend Reverse Proxy) |
-| **CI / CD** | GitHub Actions (Lint, ML Calibration, Secrets Hygiene Audit, 67 Pytest Suite) |
+| **CI / CD** | GitHub Actions (Lint, Typecheck, ML Calibration, Secrets Scanner, 88 Pytest Suite) |
 
 ---
 
@@ -167,19 +183,19 @@ stateDiagram-v2
 ```text
 .
 ├── backend/
-│   ├── api/                     # FastAPI route handlers (auth, recovery, webhooks, ml)
+│   ├── api/                     # FastAPI route handlers (recovery, webhooks, ml, auth)
 │   ├── events/                  # Canonical event taxonomy & validator
 │   ├── models/                  # 11 SQLAlchemy domain entities
 │   ├── schemas/                 # Pydantic v2 response & request schemas
-│   ├── services/                # Core domain business logic
+│   ├── services/                # Domain services (ai_agent, policy_gateway, recovery_engine)
 │   │   ├── razorpay_service.py  # HMAC-SHA256 verification & test API client
-│   │   ├── recovery_engine.py   # Recovery orchestration & state machine
-│   │   ├── risk_engine.py       # 4-factor deterministic risk scorer
-│   │   ├── ai_agent.py          # 3-tier multi-LLM root-cause reasoner
+│   │   ├── recovery_engine.py   # Recovery orchestration & idempotency guards
+│   │   ├── risk_engine.py       # 4-factor deterministic risk formula
+│   │   ├── ai_agent.py          # Multi-tier LLM reasoner & safe fallback
 │   │   ├── policy_gateway.py    # Deterministic safety rules gateway
 │   │   ├── outcome_verification_service.py # Settlement verification
-│   │   └── audit_service.py     # SHA-256 hash-chain builder
-│   ├── tests/                   # 67 Pytest backend integration tests
+│   │   └── audit_service.py     # SHA-256 cryptographic hash-chain builder
+│   ├── tests/                   # 88 Pytest backend integration & invariant tests
 │   ├── database.py              # SQLAlchemy connection pooling & SessionLocal
 │   ├── config.py                # Pydantic settings & environment configuration
 │   └── main.py                  # FastAPI application entrypoint & middleware
@@ -188,41 +204,45 @@ stateDiagram-v2
 │   ├── evaluate.py              # Model evaluation & classification report
 │   ├── predict.py               # Real-time inference service
 │   ├── model_registry.py        # Feature metadata & artifact paths
-│   └── artifacts/               # Serialized .joblib & evaluation .json
-├── alembic/                     # Alembic database migration scripts
+│   ├── MODEL_CARD.md            # Comprehensive ML model specification
+│   └── artifacts/               # Serialized .joblib & evaluation_metrics.json
+├── alembic/                     # Database migration scripts (migration-first)
 ├── src/
-│   ├── components/              # Header, Sidebar, ErrorBoundary, LiveTicker
+│   ├── components/              # Investigation cards, Policy checklist, Header, Sidebar
 │   ├── context/                 # AuthContext, MetricsContext, ThemeContext
-│   ├── pages/                   # 27 Production pages (Dashboard, Cases, etc.)
-│   │   ├── DashboardPage.tsx    # Executive KPIs & real-time telemetry
-│   │   ├── SystemEvaluationPage.tsx # Live ML diagnostics & playground
-│   │   ├── RecoveryCasesPage.tsx# Recovery registry & TAT breach badges
-│   │   ├── HardeningLogPage.tsx # Issues found and fixed log
+│   ├── pages/                   # Application pages (Dashboard, Cases, Investigation, Evaluation)
+│   │   ├── DashboardPage.tsx    # Live dynamic metrics from DB single source of truth
+│   │   ├── SystemEvaluationPage.tsx # ML diagnostics, model card, & inference playground
+│   │   ├── CaseInvestigationPage.tsx # Deep inspection: AI card, policy card, ledger
+│   │   ├── HardeningLogPage.tsx # Production hardening audit log
 │   │   └── ApprovalCenterPage.tsx# Human-in-the-loop review queue
-│   ├── services/                # Centralized typed Axios API clients
+│   ├── services/                # Typed Axios API clients
 │   └── utils/errorTracking.ts   # Client telemetry & error instrumentation
 ├── Dockerfile.backend           # Container configuration for FastAPI
 ├── Dockerfile.frontend          # Container configuration for Vite / Nginx
 ├── docker-compose.yml           # Multi-service stack (PostgreSQL + API + UI)
 ├── .github/workflows/ci.yml     # Automated CI pipeline
-├── .env.example                 # Production configuration template
+├── .env.example                 # Environment configuration template
 ├── package.json                 # Node.js dependencies
 └── README.md                    # Project documentation
 ```
 
 ---
 
-## 🛠️ Production Hardening Log (Issues Found & Fixed)
+## 🛠️ Hardening & Architectural Refinements Log
 
-A chronological record of genuine security, honesty, consistency, and architecture fixes implemented during platform hardening:
+A chronological record of genuine security, honesty, consistency, and architecture improvements:
 
-| Date | Category | Issue Identified | Why It Mattered (Risk / Impact) | Engineering Fix Enforced | Resolution |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Aug 2026** | **Security** | Demo Credential Exposure (Hardcoded Secret Tokens) | Plaintext credentials in client bundles expose backend APIs to credential theft and unauthorized mutation. | Migrated to server-side bcrypt (12 rounds) persona login with automated secrets hygiene scanner in CI pipeline. | `VERIFIED` |
-| **Aug 2026** | **Honesty & Framing** | LIVE / TEST Label Contradiction & Provenance Ambiguity | Inconsistent labels break credibility when presenting to technical evaluators and reviewers. | Enforced strict source provenance tags (`RAZORPAY_TEST` vs. `SIMULATION`) across all models, badges, and filters. | `VERIFIED` |
-| **Aug 2026** | **Data Integrity** | Case-Count Divergence (Dashboard vs. Registry Mismatch) | Two different totals for the same dataset breaks user trust in the platform's telemetry. | Unified database query with default `limit=1000` and shared `GET /api/recovery/count` canonical endpoint. | `VERIFIED` |
-| **Aug 2026** | **Honesty & Framing** | Unverifiable Regulatory Badging ('RBI Certified' Copy) | RBI does not certify software products; claiming official certification creates legal and credibility risks. | Replaced marketing copy with honest educational reference implementations of RBI circulars (RBI/2019-20/67). | `VERIFIED` |
-| **Aug 2026** | **Security** | High-Value Transaction Execution Without Step-Up Verification | Automated execution on transactions >= ₹50,000 without MFA creates substantial financial blast-radius risk. | Implemented mandatory Step-Up Re-Authentication (OTP/password verification) logging distinct audit events. | `VERIFIED` |
+| Category | Issue Identified | Engineering Fix Enforced | Resolution |
+| :--- | :--- | :--- | :---: |
+| **Database Truth** | Dashboard metric calculations in UI | Migrated all KPIs to backend SQL queries (`GET /api/dashboard/summary`) as single source of truth. | `VERIFIED` |
+| **State Machine** | UI inventing state changes | Enforced strict backend Finite State Machine (`RecoveryStateMachine`) with terminal state locking. | `VERIFIED` |
+| **Gateway Ingress** | Ambiguity between Razorpay and Simulation | Honest architectural separation: `RAZORPAY_TEST` (HMAC + idempotency) vs. `SIMULATION` (Harness button). | `VERIFIED` |
+| **Idempotency** | Duplicate webhooks re-triggering pipelines | Enforced database-level `UNIQUE(provider, provider_event_id)` returning `duplicate_ignored` with HTTP 200. | `VERIFIED` |
+| **AI Layer Boundary** | LLM hallucinating business rules | Strict division: AI handles 5 reasoning responsibilities; deterministic code handles 10 safety rules. | `VERIFIED` |
+| **ML Honesty** | Unqualified performance claims | Documented as a baseline recovery-likelihood model evaluated on a synthetic held-out dataset (`ml/MODEL_CARD.md`). | `VERIFIED` |
+| **Regulatory Scope** | Ambiguous regulatory badges | Replaced marketing copy with educational reference implementations of public RBI frameworks (RBI/2019-20/67). | `VERIFIED` |
+| **Security** | High-value execution without MFA | Enforced mandatory Step-Up Re-Authentication for transactions $\ge$ ₹50,000. | `VERIFIED` |
 
 ---
 
@@ -233,11 +253,11 @@ The platform includes 4 pre-configured personas with secure server-side bcrypt p
 | Persona | Email | Assigned Role | Permissions & Scope |
 | :--- | :--- | :--- | :--- |
 | **Merchant Owner** | `owner@revivepay.ai` | `MERCHANT_OWNER` | Policy configuration, revenue analytics, payout views |
-| **Revenue Operator** | `operator@revivepay.ai` | `REVENUE_OPERATOR` | Approve/reject cases, execute retries, simulations |
-| **Support Operator** | `support@revivepay.ai` | `SUPPORT_OPERATOR` | Read-only investigation, customer communications |
+| **Revenue Operator** | `operator@revivepay.ai` | `REVENUE_OPERATOR` | Approve/reject cases, execute retries, trigger simulations |
+| **Support Operator** | `support@revivepay.ai` | `SUPPORT_OPERATOR` | Read-only investigation, view customer communications |
 | **Admin** | `admin@revivepay.ai` | `ADMIN` | Platform administration, webhook key management |
 
-> **Demo Environment**: Credentials are configured through environment variables. No production credentials are included in this repository. 1-Click login presets are provided in the UI for local sandbox evaluation.
+> **Demonstration Environment**: Credentials are configured through environment variables. 1-Click login presets are provided in the UI for local sandbox evaluation.
 
 ---
 
@@ -263,26 +283,22 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
 
-# 4. Train & Validate ML Recovery Model
+# 4. Train & Validate ML Recovery Model (Synthetic Baseline)
 PYTHONPATH=. python3 ml/train.py
-PYTHONPATH=. python3 ml/evaluate.py
 
 # 5. Run Database Migrations
 PYTHONPATH=. alembic upgrade head
 
-# 6. Run Test Suite (67 tests)
+# 6. Run Full Test Suite (88 tests)
 PYTHONPATH=. pytest backend/tests -v
 
-# 7. Run Secrets Hygiene CI Audit
-python scripts/audit_secrets.py
-
-# 8. Start FastAPI Backend
+# 7. Start FastAPI Backend
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-In a new terminal window:
+In a second terminal window:
 ```bash
-# 9. Install and Start Frontend
+# 8. Install and Start Frontend
 npm install
 npm run dev
 ```
@@ -292,21 +308,6 @@ npm run dev
 ```bash
 docker compose up --build -d
 ```
-
-### Production Deployment & Migration Lifecycle:
-RevivePay AI enforces an enterprise-grade, migration-first startup lifecycle:
-
-```
-PostgreSQL (Container Healthcheck Passed)
-   ↓
-Alembic migration (`alembic upgrade head`)
-   ↓
-FastAPI starts (`uvicorn backend.main:app`)
-```
-
-- **Zero Runtime DDL Injections**: Production dependence on `Base.metadata.create_all(...)` is completely removed.
-- **Explicit Versioned Schemas**: All table definitions, indexes, foreign keys, and unique constraints are strictly version-controlled in `alembic/versions/`.
-- **Automated Container Startup**: Handled seamlessly by `scripts/entrypoint.sh` prior to binding the ASGI port.
 
 ### Application URLs:
 - **Frontend Command Center**: `http://localhost:5173` (or `http://localhost` via Docker)
@@ -319,42 +320,33 @@ FastAPI starts (`uvicorn backend.main:app`)
 
 ## 🧪 Testing & Quality Invariants
 
-Revive AI enforces 67 automated tests across all domain invariants:
+Revive AI enforces 88 automated tests covering all domain invariants:
 
 ```bash
 PYTHONPATH=. pytest backend/tests/ -v -W ignore
 ```
 
 ### Critical Invariants Verified:
-- `test_retry_count_never_exceeds_max_retries`: Strict boundary enforcement.
+- `test_same_webhook_twice_first_processed_second_ignored`: Real webhook deduplication.
+- `test_never_second_recovery_case_created`: Webhook replays produce exactly 1 recovery case.
+- `test_never_double_counted_revenue`: Duplicate webhooks cannot double-count recovered revenue.
+- `test_ai_layer_generates_all_five_responsibilities`: Validates root cause, reasoning, action, explanation, and customer copy.
+- `test_deterministic_retry_limits_override_ai`: Policy blocks retries exceeding hard cap of 2.
+- `test_deterministic_amount_limits_override_ai`: Orders > ₹10,000 force operator review.
+- `test_deterministic_consent_blocks_ai_outreach`: DPDP consent denial halts automated messaging.
+- `test_deterministic_state_transitions_and_outcome_verification`: Direct bank capture required to set `RECOVERED`.
 - `test_payment_marked_success_cannot_be_retried`: Settled payments are immutable.
-- `test_recovery_case_counts_are_strictly_consistent`: Registry and dashboard counters match identically.
-- `test_razorpay_hmac_sha256_verification`: Cryptographic signature verification.
+- `test_razorpay_hmac_sha256_verification`: Cryptographic webhook signature verification.
 - `test_step_up_auth_required_for_high_value_cases`: Transactions $\ge$ ₹50,000 enforce re-authentication.
-- `test_tat_breach_detection_and_compensation_calculation`: Auto-calculates ₹100/day compensation on overdue cases.
-- `test_outcome_verification_success`: Requires provider transaction reference before marking `RECOVERED`.
-- `test_chaos_tampered_webhook_simulation`: Forged webhook signatures rejected with HTTP 401 and logged as security defense.
-
----
-
-## 🔒 Security & Secrets Hygiene
-
-- **Recursive Secrets Hygiene CI Audit**: Automated security scanner (`scripts/audit_secrets.py`) recursively scanning `backend/`, `src/`, `ml/`, `scripts/`, `alembic/`, `Dockerfiles`, and configuration files to guarantee zero hardcoded API keys, private keys, or credentials in source control.
-- **Zero Plaintext Credentials in Source**: All production secrets strictly loaded from environment variables (`.env`).
-- **Cryptographic Hashing**: User authentication verified via `bcrypt` ($12$ rounds).
-- **Session Protection**: Short-lived JWTs ($15$ min) + httpOnly, Secure, SameSite=Strict refresh cookies.
-- **CSRF Defense**: State-changing operations validate cryptographic double-submit cookies.
-- **Anti-Abuse Rate Limiting**: Sliding window limiter on `/api/auth/*` ($15/\text{min}$), `/api/webhooks/*` ($120/\text{min}$), and `/api/chat` ($30/\text{min}$).
-- **Security Headers**: `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security: max-age=31536000`.
 
 ---
 
 ## ⚖️ Operational Scope & Disclaimers
 
-1. **Sandbox Environment**: All Razorpay gateway interactions run against **Razorpay Test Mode**. No real fiat currency or bank debiting occurs.
-2. **Synthetic ML Evaluation Data**: The calibrated gradient boosting recovery classifier was trained and evaluated on synthetic transaction records modeling representative banking and card-network failure patterns in the Indian payments ecosystem.
-3. **Educational Reference Implementation**: References to published Reserve Bank of India (RBI) Turn Around Time (TAT) framework (RBI/2019-20/67) and e-Mandate circulars are educational reference implementations of public guidelines and do not constitute official regulatory certification.
-4. **Engineering Prototype**: Revive AI is an open-source fintech engineering prototype created by **Harsh Chavan** to demonstrate enterprise-grade revenue recovery architecture.
+1. **Sandbox / Demonstration Environment**: All gateway interactions run against **Razorpay Test Mode**. No actual debiting of live customer accounts or real fiat currency settlement takes place.
+2. **Synthetic ML Evaluation**: The calibrated gradient boosting recovery classifier was trained and evaluated on synthetic transaction failure records modeling Indian digital payment rails.
+3. **Educational Reference Implementation**: References to published Reserve Bank of India (RBI) circulars (e.g. TAT Framework RBI/2019-20/67 and e-Mandate guidelines) are educational reference implementations of public frameworks, not official regulatory certifications or compliance endorsements.
+4. **Engineering Prototype**: Revive AI is an open-source fintech engineering prototype developed by **Harsh Chavan** to demonstrate bounded autonomous architecture and policy-governed recovery engineering.
 
 ---
 
