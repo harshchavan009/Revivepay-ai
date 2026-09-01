@@ -44,7 +44,21 @@ def test_ml_model_metadata_and_metrics():
     meta = load_metadata()
     if not meta:
         meta = train_recovery_model()
-    assert meta["roc_auc"] >= 0.70
-    assert meta["f1_score"] >= 0.75
-    assert meta["brier_score"] <= 0.20
+
+    # Honest disclosure checks
+    assert meta["evaluation_statement"] == "Baseline recovery-likelihood model evaluated on a synthetic held-out dataset."
+    assert meta["dataset_type"] == "SYNTHETIC_HELD_OUT"
+    assert meta["training_dataset_size"] == 4000
+    assert meta["test_dataset_size"] == 1000
+    assert len(meta["features"]) == 10
+
+    # Empirical test split metrics
+    assert 0.75 <= meta["roc_auc"] <= 0.90
+    assert 0.75 <= meta["precision"] <= 0.95
+    assert 0.80 <= meta["recall"] <= 1.00
+    assert 0.80 <= meta["f1_score"] <= 0.95
+    assert 0.05 <= meta["brier_score"] <= 0.25
+
+    # Probability calibration
+    assert len(meta["calibration_curve"]) == 10
     assert len(meta["feature_importances"]) == len(FEATURE_COLUMNS)

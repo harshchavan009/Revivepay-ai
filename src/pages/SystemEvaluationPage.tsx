@@ -16,7 +16,8 @@ import {
   Sliders,
   Check,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Info
 } from "lucide-react";
 import { mlService } from "../services";
 import { formatINR } from "../data/mockData";
@@ -141,33 +142,49 @@ export const SystemEvaluationPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Honest ML Transparency Disclosure Banner */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3.5 text-xs animate-in fade-in">
+          <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold text-amber-800 dark:text-amber-300 font-mono uppercase tracking-wider text-[11px] flex items-center gap-2">
+              <span>Empirical Methodology & Evaluation Disclosure</span>
+              <span className="px-2 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30">
+                Synthetic Held-Out Data
+              </span>
+            </p>
+            <p className="text-[var(--color-text-secondary)] leading-relaxed">
+              <strong className="text-[var(--color-text-primary)]">Baseline recovery-likelihood model evaluated on a synthetic held-out dataset.</strong> In accordance with responsible ML evaluation standards, all performance indicators reported below reflect an 80/20 stratified train/test split on 5,000 simulated payment failure events modeled after Indian payment rails (Razorpay, UPI, cards, and netbanking), not unverified production claims.
+            </p>
+          </div>
+        </div>
+
         {/* 4 Core Benchmark Scorecards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono font-semibold text-[var(--color-text-secondary)] uppercase">
-                ML Model ROC-AUC
+                ROC-AUC (Synthetic Test)
               </span>
               <Brain className="w-4 h-4 text-[var(--color-accent)]" />
             </div>
             <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-              {(rocAuc * 100).toFixed(1)}%
+              {(rocAuc * 100).toFixed(2)}%
             </p>
             <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1">
               <Check className="w-3 h-3" />
-              <span>Calibrated via Isotonic Regression</span>
+              <span>Held-out split (N=1,000)</span>
             </p>
           </div>
 
           <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono font-semibold text-[var(--color-text-secondary)] uppercase">
-                F1 Classification Score
+                F1 Score (Synthetic Test)
               </span>
               <TrendingUp className="w-4 h-4 text-purple-500" />
             </div>
             <p className="text-2xl font-bold font-mono text-[var(--color-text-primary)]">
-              {(f1 * 100).toFixed(1)}%
+              {(f1 * 100).toFixed(2)}%
             </p>
             <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--color-text-muted)]">
               <span>P: {(precision * 100).toFixed(1)}%</span>
@@ -179,7 +196,7 @@ export const SystemEvaluationPage: React.FC = () => {
           <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono font-semibold text-[var(--color-text-secondary)] uppercase">
-                Brier Calibration Score
+                Brier Calibration Loss
               </span>
               <ShieldCheck className="w-4 h-4 text-emerald-500" />
             </div>
@@ -187,7 +204,7 @@ export const SystemEvaluationPage: React.FC = () => {
               {brier.toFixed(4)}
             </p>
             <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
-              Empirical probabilities reflect true yield
+              Calibrated via 5-Fold Isotonic CV
             </p>
           </div>
 
@@ -204,6 +221,65 @@ export const SystemEvaluationPage: React.FC = () => {
             <p className="text-[11px] text-[var(--color-text-muted)] font-mono">
               0 Pydantic schema validation failures
             </p>
+          </div>
+        </div>
+
+        {/* Detailed ML Model Card & Evaluation Specifications */}
+        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--color-border-subtle)] pb-4">
+            <div>
+              <h3 className="font-bold text-sm text-[var(--color-text-primary)] flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-[var(--color-accent)]" />
+                <span>ML Recovery Model Specification & Technical Card</span>
+              </h3>
+              <p className="text-[11px] text-[var(--color-text-muted)] font-mono mt-0.5">
+                Baseline recovery-likelihood model evaluated on a synthetic held-out dataset
+              </p>
+            </div>
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)] font-bold self-start sm:self-auto">
+              v1.2.0 Calibrated
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
+            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Dataset</p>
+              <p className="font-bold text-[var(--color-text-primary)]">Synthetic Payment Telemetry</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">Modeled on Indian payment rails</p>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Training Size</p>
+              <p className="font-bold text-[var(--color-text-primary)]">4,000 Samples</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">80% stratified train split</p>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Test Size</p>
+              <p className="font-bold text-[var(--color-text-primary)]">1,000 Samples</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">20% held-out test split</p>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Features (10 Signals)</p>
+              <p className="font-bold text-[var(--color-text-primary)]">10 Candidate Inputs</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">Amounts, codes, rails, tenure, retries</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono pt-1">
+            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Model Architecture</p>
+              <p className="font-bold text-[var(--color-text-primary)] text-[11px]">CalibratedClassifierCV</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">GradientBoosting(120 estimators, lr=0.08)</p>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Evaluation Metrics</p>
+              <p className="font-bold text-[var(--color-text-primary)] text-[11px]">ROC-AUC 0.8094 • F1 0.8702</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">Precision: 81.5% • Recall: 93.4%</p>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+              <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-bold">Calibration</p>
+              <p className="font-bold text-[var(--color-text-primary)] text-[11px]">Brier Score: {brier.toFixed(4)}</p>
+              <p className="text-[10px] text-[var(--color-text-muted)]">Isotonic Regression (5-fold CV)</p>
+            </div>
           </div>
         </div>
 

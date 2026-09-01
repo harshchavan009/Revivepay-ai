@@ -169,9 +169,17 @@ def train_recovery_model() -> dict:
     metrics = {
         "model_name": "RevivePay Calibrated Gradient Boosting Recovery Classifier",
         "model_version": "v1.2.0",
-        "training_dataset_size": 5000,
-        "test_dataset_size": 1000,
-        "trained_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "evaluation_statement": "Baseline recovery-likelihood model evaluated on a synthetic held-out dataset.",
+        "dataset_type": "SYNTHETIC_HELD_OUT",
+        "dataset_description": "Synthetic payment failure dataset modeling Indian payment rail dynamics (switch timeouts, balance dips, expired cards, and cart drop-offs).",
+        "total_dataset_size": len(X),
+        "training_dataset_size": len(X_train),
+        "test_dataset_size": len(X_test),
+        "features": FEATURE_COLUMNS,
+        "feature_count": len(FEATURE_COLUMNS),
+        "model_algorithm": "CalibratedClassifierCV(estimator=GradientBoostingClassifier(n_estimators=120, learning_rate=0.08, max_depth=4, subsample=0.85), method='isotonic', cv=5)",
+        "calibration_method": "Isotonic Regression (5-fold CV)",
+        "trained_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "roc_auc": round(roc_auc, 4),
         "precision": round(precision, 4),
         "recall": round(recall, 4),
@@ -179,8 +187,7 @@ def train_recovery_model() -> dict:
         "brier_score": round(brier, 4),
         "confusion_matrix": cm,
         "feature_importances": norm_importances,
-        "calibration_curve": calibration_data,
-        "features": FEATURE_COLUMNS
+        "calibration_curve": calibration_data
     }
 
     # Save artifacts
@@ -191,12 +198,17 @@ def train_recovery_model() -> dict:
     save_metadata(metrics)
 
     print(f"✅ Model Training Complete!")
-    print(f"   • ROC-AUC Score: {roc_auc:.4f}")
+    print(f"   • Statement:     {metrics['evaluation_statement']}")
+    print(f"   • Training Size: {len(X_train):,} samples (80% stratified)")
+    print(f"   • Test Size:     {len(X_test):,} samples (20% held-out)")
+    print(f"   • Features:      {len(FEATURE_COLUMNS)} candidate signals")
+    print(f"   • Model:         CalibratedClassifierCV(GradientBoosting, method='isotonic', cv=5)")
+    print(f"   • ROC-AUC Score: {roc_auc:.4f} (synthetic held-out)")
     print(f"   • Precision:     {precision:.4f}")
     print(f"   • Recall:        {recall:.4f}")
     print(f"   • F1 Score:      {f1:.4f}")
-    print(f"   • Brier Score:   {brier:.4f}")
-    print(f"   • Artifacts saved to: {MODEL_FILE_PATH}")
+    print(f"   • Calibration:   Brier Score {brier:.4f} (Isotonic)")
+    print(f"   • Artifacts:     {MODEL_FILE_PATH}")
 
     return metrics
 

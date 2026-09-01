@@ -651,8 +651,11 @@ export const mlService = {
       return {
         model_name: "RevivePay Calibrated Gradient Boosting Recovery Classifier",
         model_version: "v1.2.0",
-        algorithm: "CalibratedClassifierCV(GradientBoostingClassifier)",
-        training_dataset_size: 5000,
+        evaluation_statement: "Baseline recovery-likelihood model evaluated on a synthetic held-out dataset.",
+        dataset_type: "SYNTHETIC_HELD_OUT",
+        dataset_description: "Synthetic payment failure dataset modeling Indian payment rail dynamics (switch timeouts, balance dips, expired cards, and cart drop-offs).",
+        total_dataset_size: 5000,
+        training_dataset_size: 4000,
         test_dataset_size: 1000,
         roc_auc: 0.8094,
         precision: 0.8146,

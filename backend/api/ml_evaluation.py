@@ -100,10 +100,17 @@ def get_system_technical_evaluation(db: Session = Depends(get_db)):
         },
         "ml_performance": {
             "model_version": meta.get("model_version", "v1.2.0") if meta else "v1.2.0",
-            "algorithm": "CalibratedClassifierCV(GradientBoosting)",
+            "evaluation_statement": meta.get("evaluation_statement", "Baseline recovery-likelihood model evaluated on a synthetic held-out dataset."),
+            "dataset_type": meta.get("dataset_type", "SYNTHETIC_HELD_OUT"),
+            "dataset_description": meta.get("dataset_description", "Synthetic payment failure dataset modeling Indian payment rail dynamics (switch timeouts, balance dips, expired cards, and cart drop-offs)."),
+            "algorithm": meta.get("model_algorithm", "CalibratedClassifierCV(GradientBoostingClassifier, method='isotonic', cv=5)"),
+            "training_samples": meta.get("training_dataset_size", 4000),
+            "test_samples": meta.get("test_dataset_size", 1000),
             "roc_auc": roc_auc,
+            "precision": meta.get("precision", 0.8146),
+            "recall": meta.get("recall", 0.9341),
             "f1_score": f1,
-            "brier_score": meta.get("brier_score", 0.14) if meta else 0.14,
-            "training_samples": meta.get("training_dataset_size", 5000) if meta else 5000
+            "brier_score": meta.get("brier_score", 0.1401),
+            "calibration_method": meta.get("calibration_method", "Isotonic Regression (5-fold CV)")
         }
     }
