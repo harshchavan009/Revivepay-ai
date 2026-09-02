@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatINR } from "../data/mockData";
+import { API_BASE_URL } from "../services";
 
 interface ActivityItem {
   id: string;
@@ -30,7 +31,8 @@ export const LiveActivityTicker: React.FC = () => {
   useEffect(() => {
     let eventSource: EventSource | null = null;
     try {
-      eventSource = new EventSource("/api/events/stream");
+      const sseUrl = `${API_BASE_URL}/events/stream`;
+      eventSource = new EventSource(sseUrl);
 
       eventSource.onopen = () => {
         setIsLiveConnected(true);

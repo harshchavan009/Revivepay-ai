@@ -24,7 +24,7 @@ const getApiBaseUrl = (): string => {
   return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
 };
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
