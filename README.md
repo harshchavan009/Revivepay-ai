@@ -1,6 +1,10 @@
 # ⚡ Revive AI — Autonomous Revenue Recovery & Payment Failure Resolution Platform
 ### *A Production-Oriented Fintech Engineering Prototype for Payment Recovery & Failure Resolution*
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-success?style=for-the-badge&logo=vercel)](https://reviveay-ai.vercel.app/demo)
+[![Live Backend](https://img.shields.io/badge/Live%20API-Render%20FastAPI-blue?style=for-the-badge&logo=render)](https://revivepay-backend.onrender.com/docs)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL%2016-336791?style=for-the-badge&logo=postgresql)](https://revivepay-backend.onrender.com)
+
 [![RevivePay CI Suite](https://github.com/harshchavan009/Revivepay-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/harshchavan009/Revivepay-ai/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![React 19](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
@@ -10,6 +14,18 @@
 [![ML Model](https://img.shields.io/badge/ML%20Evaluation-Synthetic%20Held--Out%20(ROC--AUC%200.81)-indigo.svg)](ml/MODEL_CARD.md)
 [![Environment](https://img.shields.io/badge/Environment-Sandbox%20%2F%20Razorpay%20Test%20Mode-orange.svg)](#-operational-scope--disclaimers)
 [![Audit Chain](https://img.shields.io/badge/Audit%20Ledger-SHA--256%20Hash--Chained-emerald.svg)](backend/services/audit_service.py)
+
+---
+
+### 🌐 Live Production Deployments & Quick Links
+
+| Service | Live Deployment URL | Description |
+| :--- | :--- | :--- |
+| **🚀 Recruiter Demo Journey** | **[https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)** | **Interactive 5-minute guided demonstration** showing real end-to-end failure $\to$ diagnosis $\to$ policy $\to$ recovery $\to$ audit. |
+| **🖥️ Executive Command Center** | **[https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)** | Live React 19 dashboard streaming real PostgreSQL metrics via Server-Sent Events (SSE). |
+| **⚡ FastAPI Backend API** | **[https://revivepay-backend.onrender.com](https://revivepay-backend.onrender.com)** | High-performance Python backend deployed on Render Docker containers with auto-migrations. |
+| **📖 Interactive API Docs** | **[https://revivepay-backend.onrender.com/docs](https://revivepay-backend.onrender.com/docs)** | OpenAPI Swagger documentation for all 35+ REST endpoints. |
+| **🐘 Managed PostgreSQL** | `Render Dedicated PostgreSQL` | Fully migrated schema with Alembic and seeded canonical synthetic cases. |
 
 > **Scope & Positioning Disclosure**:  
 > Revive AI is an open-source **production-oriented fintech engineering prototype** designed to demonstrate policy-governed autonomous revenue recovery across transient payment failures, recurring subscription dunning declines, and abandoned checkout sessions in a **sandbox / demonstration environment**.  
@@ -32,6 +48,40 @@ $$\textbf{INGEST} \longrightarrow \textbf{RISK SCORE} \longrightarrow \textbf{ML
 - **Honest Ingress Separation**: Transparently separates real **Razorpay Test Mode** webhook ingestion (with HMAC-SHA256 signature verification) from the synthetic **Simulation** harness, routing both into the shared recovery pipeline.
 - **Cryptographic Auditability**: Every decision, policy evaluation, and state transition is immutably recorded in a SHA-256 hash-chained ledger.
 - **Deterministic Outcome Verification**: A case cannot be marked `RECOVERED` by an AI model; state progression to `RECOVERED` strictly requires direct payment capture verification from gateway callbacks.
+
+---
+
+## 🎬 5-Minute Recruiter Demonstration Journey
+
+Experience the live end-to-end recovery pipeline in under 5 minutes without manual configuration:
+
+👉 **Launch the Interactive Recruiter Demo**: **[https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)**
+
+```
+Recruiter Clicks "Start Demo"
+           ↓
+[1] Gateway Failure Ingestion ──> Razorpay Webhook with error code GATEWAY_TIMEOUT_504
+           ↓
+[2] Risk Scoring Engine       ──> Evaluates 4-factor formula (Value, Likelihood, History, Severity)
+           ↓
+[3] ML Likelihood Classifier  ──> Gradient Boosting Calibrated Classifier scores 74% recoverability
+           ↓
+[4] Multi-Tier AI Diagnosis   ──> Claude 3.5 Sonnet / Gemini 1.5 Pro analyzes root cause (96% confidence)
+           ↓
+[5] Deterministic Policy Gate ──> Evaluates 7 hardcoded rules (₹10k limit, max 2 retries, DPDP consent)
+           ↓
+[6] Bounded Execution         ──> Safe gateway retry or 1-Click WhatsApp recovery link dispatched
+           ↓
+[7] Bank Verification         ──> Direct gateway capture verification confirms settlement
+           ↓
+[8] Cryptographic Ledger      ──> SHA-256 block chained to immutable audit log + KPIs updated live
+```
+
+### Pre-Configured Interactive Scenarios:
+1. **Temporary Bank Failure (₹4,999)**: The flagship killer demo showcasing automated retry, deterministic policy clearance, and immediate bank verification.
+2. **Insufficient Funds (₹2,499)**: AI diagnoses customer liquidity window and recommends a non-intrusive 1-Click WhatsApp payment link to avoid bounce penalties.
+3. **High-Value Transaction (₹85,000)**: Deterministic policy intercepts high transaction value exceeding ₹50,000 auto limit, requiring human operator sign-off in the **Approval Center**.
+4. **Retry Exhaustion (₹6,200)**: Simulates 2 failed retries triggering an automated deterministic policy block and case escalation to avoid spamming the customer.
 
 ---
 
@@ -309,12 +359,26 @@ npm run dev
 docker compose up --build -d
 ```
 
+### Option 3: Production Cloud Deployment (Vercel + Render + PostgreSQL)
+
+Revive AI is architected for zero-downtime, production cloud deployment:
+
+1. **Backend & Database (Render Blueprint)**:
+   - Infrastructure-as-code defined via [`render.yaml`](render.yaml).
+   - Provisions a managed PostgreSQL 16 database and Docker containerized FastAPI service.
+   - Container startup lifecycle: Database readiness healthcheck $\to$ `alembic upgrade head` $\to$ automated synthetic demo dataset initialization $\to$ `uvicorn` ASGI server.
+
+2. **Frontend (Vercel Edge)**:
+   - Configured via [`vercel.json`](vercel.json) with SPA client routing and edge reverse proxy.
+   - Production environment variable: `VITE_API_URL=https://revivepay-backend.onrender.com`.
+
 ### Application URLs:
-- **Frontend Command Center**: `http://localhost:5173` (or `http://localhost` via Docker)
-- **System Evaluation & ML Diagnostics**: `http://localhost:5173/evaluation`
-- **Backend Swagger UI**: `http://localhost:8000/docs`
-- **Live Event Stream (SSE)**: `http://localhost:8000/api/events/stream`
-- **Audit Chain Verification**: `http://localhost:8000/api/audit/verify-chain`
+- **Live Recruiter Demo**: `https://reviveay-ai.vercel.app/demo`
+- **Live Executive Command Center**: `https://reviveay-ai.vercel.app/`
+- **Live Backend API**: `https://revivepay-backend.onrender.com`
+- **Interactive OpenAPI Swagger Docs**: `https://revivepay-backend.onrender.com/docs`
+- **Local Dev Frontend**: `http://localhost:5173` (or `http://localhost` via Docker)
+- **Local Backend**: `http://localhost:8000`
 
 ---
 
