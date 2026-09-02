@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+export PATH="/usr/local/bin:$PATH"
+
 echo "🚀 [RevivePay AI] Initializing backend container startup sequence..."
 
 # 1. Wait for database if PostgreSQL is configured
