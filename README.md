@@ -1,7 +1,12 @@
 # ⚡ Revive AI — Autonomous Revenue Recovery & Payment Failure Resolution Platform
 ### *A Production-Oriented Fintech Engineering Prototype for Payment Recovery & Failure Resolution*
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-success?style=for-the-badge&logo=vercel)](https://reviveay-ai.vercel.app/demo)
+> ### 🌐 **Live Web Application**: [https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)  
+> ### 🚀 **Live Recruiter Demo Flow**: [https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)  
+> ⚡ **Live API**: [https://revivepay-backend.onrender.com](https://revivepay-backend.onrender.com) &nbsp;•&nbsp; 📖 **Swagger Docs**: [https://revivepay-backend.onrender.com/docs](https://revivepay-backend.onrender.com/docs)
+
+[![Live Web App](https://img.shields.io/badge/Live%20App-reviveay--ai.vercel.app-success?style=for-the-badge&logo=vercel)](https://reviveay-ai.vercel.app/)
+[![Live Demo Journey](https://img.shields.io/badge/Recruiter%20Demo-Live%20Journey-blueviolet?style=for-the-badge&logo=playstation)](https://reviveay-ai.vercel.app/demo)
 [![Live Backend](https://img.shields.io/badge/Live%20API-Render%20FastAPI-blue?style=for-the-badge&logo=render)](https://revivepay-backend.onrender.com/docs)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%2016-336791?style=for-the-badge&logo=postgresql)](https://revivepay-backend.onrender.com)
 
@@ -21,8 +26,8 @@
 
 | Service | Live Deployment URL | Description |
 | :--- | :--- | :--- |
+| **🌐 Live Application** | **[https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)** | **Official Production Web App** — Live executive command center streaming real PostgreSQL metrics. |
 | **🚀 Recruiter Demo Journey** | **[https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)** | **Interactive 5-minute guided demonstration** showing real end-to-end failure $\to$ diagnosis $\to$ policy $\to$ recovery $\to$ audit. |
-| **🖥️ Executive Command Center** | **[https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)** | Live React 19 dashboard streaming real PostgreSQL metrics via Server-Sent Events (SSE). |
 | **⚡ FastAPI Backend API** | **[https://revivepay-backend.onrender.com](https://revivepay-backend.onrender.com)** | High-performance Python backend deployed on Render Docker containers with auto-migrations. |
 | **📖 Interactive API Docs** | **[https://revivepay-backend.onrender.com/docs](https://revivepay-backend.onrender.com/docs)** | OpenAPI Swagger documentation for all 35+ REST endpoints. |
 | **🐘 Managed PostgreSQL** | `Render Dedicated PostgreSQL` | Fully migrated schema with Alembic and seeded canonical synthetic cases. |
