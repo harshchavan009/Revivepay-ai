@@ -17,7 +17,14 @@ import {
 import { SHARED_CASES, SHARED_SUBSCRIPTIONS, SHARED_PAYMENTS, SHARED_ABANDONED_CARTS } from "../data/mockData";
 import { safeStorage } from "../utils/storage";
 
-const API_BASE_URL = "/api";
+const getApiBaseUrl = (): string => {
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (!envUrl) return "/api";
+  const trimmed = envUrl.replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

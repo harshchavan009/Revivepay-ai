@@ -117,7 +117,7 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
 
     return response
 
-# Set up CORS for all dev and production origins with Safari WebKit compatibility
+# Set up CORS for all dev and production origins with Safari WebKit & Vercel/Render compatibility
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -129,9 +129,10 @@ app.add_middleware(
         "http://[::1]:8000",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://demo.revivepay.ai"
+        "https://demo.revivepay.ai",
+        *[o for o in settings.CORS_ORIGINS if o != "*"]
     ],
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:\d+)?$",
+    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:\d+)?|https://.*\.vercel\.app|https://.*\.onrender\.com)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
