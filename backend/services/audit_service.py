@@ -126,7 +126,7 @@ class AuditService:
         """
         Walks the entire audit log from genesis to head and verifies SHA-256 cryptographic linkage.
         """
-        logs = db.query(AuditLog).order_by(AuditLog.timestamp.asc()).all()
+        logs = db.query(AuditLog).order_by(AuditLog.timestamp.asc(), AuditLog.audit_id.asc()).all()
         if not logs:
             return {
                 "valid": True,

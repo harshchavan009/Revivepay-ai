@@ -42,6 +42,11 @@ echo "🔄 [RevivePay AI] Running official Alembic database migrations (alembic 
 alembic upgrade head
 echo "✅ [RevivePay AI] Alembic database schema migrations successfully applied."
 
+# 2.5 Initialize synthetic demo dataset (idempotent)
+echo "🌱 [RevivePay AI] Ensuring canonical synthetic demo dataset is initialized..."
+python3 -c "from backend.seed_data import seed_database; seed_database(force_reseed=False)"
+echo "✅ [RevivePay AI] Synthetic demo dataset verified."
+
 # 3. Start FastAPI ASGI Server
 PORT="${PORT:-8000}"
 HOST="${HOST:-0.0.0.0}"
