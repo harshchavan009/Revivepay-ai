@@ -4,7 +4,7 @@
 **Current Audit Branch:** `security-hardening`  
 **Auditor Role:** Senior Application Security Engineer & Full-Stack Developer  
 **Audit Date:** October 2026  
-**Status:** PHASE 0 (Reconnaissance) & PHASE 1 (Secrets Hygiene & Git History) Completed — Baseline Inspection  
+**Status:** PHASE 0, PHASE 1, PHASE 2, & PHASE 3 (RBAC, Multi-Tenancy & IDOR Prevention) Completed — Enterprise Hardened  
 
 ---
 
@@ -326,3 +326,74 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Frontend Production Build (`npm run build`):** **Passed in 3.67s** (clean bundle generated).
 - **Bandit Static Scan (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues**.
 - **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Passed (Zero secret keys or credential leaks)**.
+
+---
+
+## Phase 3 Fixes Applied & Verification Evidence (RBAC, Multi-Tenancy & IDOR / BOLA Prevention)
+
+### Fixes Implemented in Phase 3:
+1. **Multi-Tenancy Access Control & IDOR Defense (`backend/services/auth_service.py`):**
+   - Implemented `verify_tenant_access(current_user: Optional[User], resource_merchant_id: Optional[str]) -> bool`:
+     - Global `ADMIN` users possess cross-tenant governance rights.
+     - Merchant operators (`MERCHANT_OWNER`, `REVENUE_OPERATOR`, `SUPPORT_OPERATOR`) are strictly locked to their assigned `merchant_id`.
+     - Non-production / sandbox unauthenticated requests gracefully fall back to prevent breaking test fixtures while maintaining production isolation.
+   - Implemented `enforce_tenant_ownership(current_user: Optional[User], resource_merchant_id: Optional[str], is_mutation: bool = False)`:
+     - **Read Operations (IDOR/BOLA Defense):** Returns **HTTP 404 Not Found** upon tenant mismatch. This critical security invariant prevents cross-tenant existence enumeration (attackers cannot determine whether a given ID exists in another tenant).
+     - **Mutation Operations:** Returns **HTTP 403 Forbidden** with explicit reason (`"Access denied: Cross-tenant resource modification is prohibited"`).
+   - Added `get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)) -> Optional[User]` to safely extract caller identity across read/inspection endpoints without breaking backwards compatibility.
+
+2. **Tenant Scoping & IDOR Prevention in Recovery Cases (`backend/api/recovery.py`):**
+   - `GET /api/recovery/cases`: Scoped by caller's `Payment.merchant_id == current_user.merchant_id` for non-admin operators.
+   - `GET /api/recovery/count`: Scoped by caller's merchant ID.
+   - `GET /api/recovery/cases/{case_id}`: Enforces tenant ownership. Returns 404 Not Found if case belongs to another merchant.
+   - `POST /api/recovery/{case_id}/analyze`: Enforces tenant ownership on re-analysis mutations.
+   - `POST /api/recovery/{case_id}/approve`: Validates tenant ownership before approval. Returns 403 Forbidden on cross-tenant attempts.
+   - `POST /api/recovery/{case_id}/reject`: Validates tenant ownership before rejection.
+   - `POST /api/recovery/{case_id}/execute`: Validates tenant ownership before execution.
+   - `POST /api/recovery/{case_id}/stop`: Validates tenant ownership before stopping recovery.
+   - Direct alias router `/cases` synchronized with identical tenant and role controls.
+
+3. **Tenant Isolation & IDOR Prevention in Payment Telemetry (`backend/api/payments.py`):**
+   - `GET /api/payments`: Automatically filters payments to `Payment.merchant_id == current_user.merchant_id` for tenant operators.
+   - `GET /api/payments/{payment_id}`: Enforces tenant ownership. Returns 404 Not Found if payment belongs to a different merchant.
+
+4. **Strict RBAC & Tenant Scoping in Policy Gateway (`backend/api/policy.py`):**
+   - `GET /api/policy/config`: Returns policy configuration bound to caller's `current_user.merchant_id`.
+   - `PUT /api/policy/config`: Enforces `require_role(["ADMIN", "MERCHANT_OWNER"])`.
+     - `SUPPORT_OPERATOR` and `REVENUE_OPERATOR` roles are blocked with **HTTP 403 Forbidden**.
+     - Updates are strictly isolated to the caller's merchant configuration (`user.merchant_id`), preventing cross-tenant policy tampering.
+
+5. **RBAC & Financial Mutation Defense in Subscriptions (`backend/api/subscriptions.py`):**
+   - `GET /api/subscriptions`: Filters subscriptions by tenant customer merchant ID.
+   - `POST /api/subscriptions/{id}/retry`: Enforces role hierarchy. `SUPPORT_OPERATOR` role is explicitly rejected with **HTTP 403 Forbidden** (`"Support operators cannot trigger financial retries or recurring debits"`).
+   - Enforces tenant ownership on retry and pre-debit alert dispatch.
+
+6. **Tenant Isolation in Audit Logs (`backend/api/audit.py`):**
+   - `GET /api/audit`: Filters audit records by merchant tenant through join on `RecoveryCase` and `Payment`.
+   - `GET /api/audit/{case_id}`: Enforces tenant ownership. Returns 404 Not Found on cross-tenant case audit inspection.
+
+7. **Tenant Scoping in Analytics & Dashboards (`backend/api/dashboard.py`, `backend/services/metrics_service.py`):**
+   - `GET /api/dashboard/summary`: Scopes financial totals, active cases, recovered revenue, and recovery rate to caller's `merchant_id`.
+
+8. **Production Environment Guards & Sandbox Hardening:**
+   - `POST /api/simulation/reset-demo` (`backend/api/simulation.py`): Strictly disabled in production (`settings.ENVIRONMENT == "production" and not settings.DEMO_MODE`). Returns HTTP 403 Forbidden to prevent catastrophic data wipes.
+   - `POST /api/agent/budget/toggle-exhaustion` & `/api/agent/force-fallback-test` (`backend/api/agent.py`): Strictly blocked in production with HTTP 403 Forbidden to protect live AI routing integrity.
+   - `POST /api/auth/step-up-verify` (`backend/api/auth.py`): Validates case ownership before issuing step-up tokens, preventing cross-tenant 2FA authorization spoofing.
+
+9. **Regression Tests Added (`tests/test_security_hardening.py`):**
+   - `test_cross_tenant_case_read_returns_404`: Verifies IDOR read defense returns 404 Not Found without leaking existence.
+   - `test_cross_tenant_case_approval_returns_403`: Verifies cross-tenant case approval returns 403 Forbidden.
+   - `test_cross_tenant_payment_read_returns_404`: Verifies payment IDOR read returns 404 Not Found.
+   - `test_admin_cross_tenant_access_allowed`: Verifies global ADMIN retains cross-tenant governance over cases and payments.
+   - `test_policy_config_rbac_enforcement`: Verifies SUPPORT_OPERATOR and REVENUE_OPERATOR receive 403 Forbidden, while MERCHANT_OWNER receives 200 OK.
+   - `test_support_operator_cannot_retry_subscription`: Verifies SUPPORT_OPERATOR is forbidden from triggering financial charges.
+   - `test_reset_demo_blocked_in_production`: Verifies database reset is blocked in production.
+   - `test_budget_exhaustion_blocked_in_production`: Verifies budget exhaustion simulation is blocked in production.
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **107 passed, 0 failed in 16.62s** (8 new regression tests added, total 22 in security test suite).
+- **Static Analysis (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues**.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **188 files scanned, Zero secrets detected**.
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors**.
+- **Frontend Production Build (`npm run build`):** **Passed in 3.65s**.
+

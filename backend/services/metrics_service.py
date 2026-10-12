@@ -6,24 +6,30 @@ from backend.models.all_models import Payment, RecoveryCase, Customer
 
 class MetricsService:
     @classmethod
-    def get_dashboard_summary(cls, db: Session) -> Dict[str, Any]:
+    def get_dashboard_summary(cls, db: Session, merchant_id: Optional[str] = None) -> Dict[str, Any]:
+        pay_query = db.query(Payment)
+        case_query = db.query(RecoveryCase)
+        if merchant_id:
+            pay_query = pay_query.filter(Payment.merchant_id == merchant_id)
+            case_query = case_query.join(Payment, RecoveryCase.payment_id == Payment.payment_id).filter(Payment.merchant_id == merchant_id)
+
         # 1. Total Failed Payments
-        failed_count = db.query(Payment).filter(Payment.status.in_(["FAILED", "PENDING"])).count()
+        failed_count = pay_query.filter(Payment.status.in_(["FAILED", "PENDING"])).count()
         
         # 2. Revenue At Risk (sum of unrecovered failed payments)
-        risk_sum = db.query(func.sum(RecoveryCase.amount_at_risk)).filter(
+        risk_sum = case_query.filter(
             RecoveryCase.recovery_status.in_([
                 "NEW", "ANALYZING", "ACTION_RECOMMENDED", "AWAITING_APPROVAL", "APPROVED", "EXECUTING", "FAILED", "ESCALATED"
             ])
-        ).scalar() or 0.0
+        ).with_entities(func.sum(RecoveryCase.amount_at_risk)).scalar() or 0.0
 
         # 3. Recovered Revenue
-        recovered_sum = db.query(func.sum(RecoveryCase.recovered_amount)).filter(
+        recovered_sum = case_query.filter(
             RecoveryCase.recovery_status == "RECOVERED"
-        ).scalar() or 0.0
+        ).with_entities(func.sum(RecoveryCase.recovered_amount)).scalar() or 0.0
 
         # 4. Active Recovery Cases (all non-terminal in-flight states)
-        active_count = db.query(RecoveryCase).filter(
+        active_count = case_query.filter(
             RecoveryCase.recovery_status.in_([
                 "NEW", "ANALYZING", "ACTION_RECOMMENDED", "AWAITING_APPROVAL",
                 "APPROVED", "AUTO_APPROVED", "EXECUTING", "VERIFYING", "REASSESS"
@@ -31,24 +37,24 @@ class MetricsService:
         ).count()
 
         # 5. Escalated Cases
-        escalated_count = db.query(RecoveryCase).filter(
+        escalated_count = case_query.filter(
             RecoveryCase.recovery_status == "ESCALATED"
         ).count()
 
         # 6. Awaiting Approval Count
-        approval_count = db.query(RecoveryCase).filter(
+        approval_count = case_query.filter(
             RecoveryCase.approval_status == "PENDING"
         ).count()
 
         # 7. Total Cases Count
-        total_cases = db.query(RecoveryCase).count()
+        total_cases = case_query.count()
 
         # Calculate dynamic Recovery Rate %
         total_impact = risk_sum + recovered_sum
         recovery_rate = round((recovered_sum / max(1.0, total_impact)) * 100.0, 1) if total_impact > 0 else 0.0
 
         # Dynamic average recovery time in minutes
-        recovered_cases = db.query(RecoveryCase).filter(
+        recovered_cases = case_query.filter(
             RecoveryCase.recovery_status == "RECOVERED",
             RecoveryCase.resolved_at.isnot(None),
             RecoveryCase.created_at.isnot(None)
@@ -62,12 +68,12 @@ class MetricsService:
 
         # Dynamic retry success rate & autonomous recovery rate
         total_recovered_cases = len(recovered_cases)
-        total_resolved_cases = db.query(RecoveryCase).filter(
+        total_resolved_cases = case_query.filter(
             RecoveryCase.recovery_status.in_(["RECOVERED", "FAILED", "ESCALATED", "STOPPED", "REJECTED"])
         ).count()
         retry_success_rate = round((total_recovered_cases / max(1, total_resolved_cases)) * 100.0, 1) if total_resolved_cases > 0 else 0.0
 
-        auto_approved_recovered = db.query(RecoveryCase).filter(
+        auto_approved_recovered = case_query.filter(
             RecoveryCase.recovery_status == "RECOVERED",
             RecoveryCase.approval_status == "AUTO_APPROVED"
         ).count()

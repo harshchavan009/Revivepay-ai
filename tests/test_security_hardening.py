@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from backend.main import app, rate_limiter
 from backend.database import get_db, SessionLocal
-from backend.models.all_models import User, Merchant, RecoveryCase, Payment, Customer, AuditLog
+from backend.models.all_models import User, Merchant, RecoveryCase, Payment, Customer, AuditLog, Subscription
 from backend.services.auth_service import (
     create_access_token, create_refresh_token, verify_refresh_token,
     create_step_up_token, verify_step_up_token, get_password_hash
@@ -479,4 +479,220 @@ def test_password_reset_flow_and_single_use_token():
         assert "Invalid or expired password reset token" in reuse_res.json()["detail"]
     finally:
         db.close()
+
+
+# ==============================================================================
+# PHASE 3: MULTI-TENANCY, IDOR DEFENSE, RBAC, AND PRODUCTION GUARDS
+# ==============================================================================
+
+def test_cross_tenant_case_read_returns_404():
+    """Validates that cross-tenant read of recovery case returns 404 Not Found (IDOR defense)."""
+    db = SessionLocal()
+    try:
+        # 1. Ensure Tenant B merchant, customer, payment, and case exist
+        mer_b = db.query(Merchant).filter(Merchant.merchant_id == "mer_tenant_b").first()
+        if not mer_b:
+            mer_b = Merchant(merchant_id="mer_tenant_b", name="Tenant B Corp", industry="SaaS")
+            db.add(mer_b)
+            db.commit()
+
+        cust_b = db.query(Customer).filter(Customer.customer_id == "cust_tenant_b").first()
+        if not cust_b:
+            cust_b = Customer(
+                customer_id="cust_tenant_b",
+                merchant_id="mer_tenant_b",
+                external_customer_id="ext_tenant_b_01",
+                name="Tenant B Customer",
+                email="cust_b@tenantb.com"
+            )
+            db.add(cust_b)
+            db.commit()
+
+        pay_b = db.query(Payment).filter(Payment.payment_id == "pay_tenant_b_01").first()
+        if not pay_b:
+            pay_b = Payment(
+                payment_id="pay_tenant_b_01",
+                merchant_id="mer_tenant_b",
+                customer_id=cust_b.customer_id,
+                amount=15000.0,
+                currency="INR",
+                status="FAILED",
+                failure_reason="temporary_bank_failure"
+            )
+            db.add(pay_b)
+
+            case_b = RecoveryCase(
+                case_id="RV-TENANT-B-01",
+                payment_id="pay_tenant_b_01",
+                customer_id=cust_b.customer_id,
+                source="RAZORPAY_TEST",
+                amount_at_risk=15000.0,
+                approval_required=False,
+                approval_status="AUTO_APPROVED",
+                recovery_status="ACTION_RECOMMENDED"
+            )
+            db.add(case_b)
+            db.commit()
+
+        # 2. Operator belonging strictly to Tenant A
+        user_a = db.query(User).filter(User.email == "op_tenant_a@revivepay.ai").first()
+        if not user_a:
+            user_a = User(
+                email="op_tenant_a@revivepay.ai",
+                name="Tenant A Operator",
+                hashed_password=get_password_hash("StrongPass123!"),
+                role="REVENUE_OPERATOR",
+                merchant_id="mer_sec_test",
+                is_active=True
+            )
+            db.add(user_a)
+            db.commit()
+
+        token_a = create_access_token({"sub": user_a.email, "role": user_a.role, "name": user_a.name})
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+
+        # 3. User A attempts to read Tenant B's case -> Must return 404 (IDOR defense: do not leak existence)
+        res = client.get("/api/recovery/cases/RV-TENANT-B-01", headers=headers_a)
+        assert res.status_code == 404
+        assert "Resource not found" in res.json()["detail"]
+    finally:
+        db.close()
+
+
+def test_cross_tenant_case_approval_returns_403():
+    """Validates that cross-tenant mutation/approval of recovery case returns 403 Forbidden."""
+    db = SessionLocal()
+    try:
+        user_a = db.query(User).filter(User.email == "op_tenant_a@revivepay.ai").first()
+        token_a = create_access_token({"sub": user_a.email, "role": user_a.role, "name": user_a.name})
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+
+        # User A attempts to approve Tenant B's case -> Must return 403 Forbidden
+        res = client.post(
+            "/api/recovery/RV-TENANT-B-01/approve",
+            json={"notes": "Malicious cross-tenant attempt"},
+            headers=headers_a
+        )
+        assert res.status_code == 403
+        assert "Cross-tenant resource modification is prohibited" in res.json()["detail"]
+    finally:
+        db.close()
+
+
+def test_cross_tenant_payment_read_returns_404():
+    """Validates that cross-tenant read of payment returns 404 Not Found (IDOR defense)."""
+    db = SessionLocal()
+    try:
+        user_a = db.query(User).filter(User.email == "op_tenant_a@revivepay.ai").first()
+        token_a = create_access_token({"sub": user_a.email, "role": user_a.role, "name": user_a.name})
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+
+        # User A attempts to inspect Tenant B's payment -> Must return 404 Not Found
+        res = client.get("/api/payments/pay_tenant_b_01", headers=headers_a)
+        assert res.status_code == 404
+    finally:
+        db.close()
+
+
+def test_admin_cross_tenant_access_allowed():
+    """Validates that global ADMIN has cross-tenant access to inspect cases and payments."""
+    db = SessionLocal()
+    try:
+        admin_user = db.query(User).filter(User.role == "ADMIN").first()
+        token_admin = create_access_token({"sub": admin_user.email, "role": admin_user.role, "name": admin_user.name})
+        headers_admin = {"Authorization": f"Bearer {token_admin}"}
+
+        # Admin can view case and payment from Tenant B
+        res_case = client.get("/api/recovery/cases/RV-TENANT-B-01", headers=headers_admin)
+        assert res_case.status_code == 200
+        assert res_case.json()["case_id"] == "RV-TENANT-B-01"
+
+        res_pay = client.get("/api/payments/pay_tenant_b_01", headers=headers_admin)
+        assert res_pay.status_code == 200
+        assert res_pay.json()["payment_id"] == "pay_tenant_b_01"
+    finally:
+        db.close()
+
+
+def test_policy_config_rbac_enforcement():
+    """Validates that only ADMIN and MERCHANT_OWNER can update policy configuration."""
+    db = SessionLocal()
+    try:
+        # Support operator -> 403 Forbidden
+        supp_user = db.query(User).filter(User.role == "SUPPORT_OPERATOR").first()
+        token_supp = create_access_token({"sub": supp_user.email, "role": supp_user.role, "name": supp_user.name})
+        res_supp = client.put(
+            "/api/policy/config",
+            json={"max_auto_amount": 5000.0},
+            headers={"Authorization": f"Bearer {token_supp}"}
+        )
+        assert res_supp.status_code == 403
+        assert "Not enough permissions" in res_supp.json()["detail"]
+
+        # Revenue operator -> 403 Forbidden
+        rev_user = db.query(User).filter(User.role == "REVENUE_OPERATOR").first()
+        token_rev = create_access_token({"sub": rev_user.email, "role": rev_user.role, "name": rev_user.name})
+        res_rev = client.put(
+            "/api/policy/config",
+            json={"max_auto_amount": 5000.0},
+            headers={"Authorization": f"Bearer {token_rev}"}
+        )
+        assert res_rev.status_code == 403
+        assert "Not enough permissions" in res_rev.json()["detail"]
+
+        # Merchant owner -> 200 OK
+        owner_user = db.query(User).filter(User.role == "MERCHANT_OWNER").first()
+        token_owner = create_access_token({"sub": owner_user.email, "role": owner_user.role, "name": owner_user.name})
+        res_owner = client.put(
+            "/api/policy/config",
+            json={"max_auto_amount": 15000.0},
+            headers={"Authorization": f"Bearer {token_owner}"}
+        )
+        assert res_owner.status_code == 200
+        assert res_owner.json()["max_auto_amount"] == 15000.0
+    finally:
+        db.close()
+
+
+def test_support_operator_cannot_retry_subscription():
+    """Validates that SUPPORT_OPERATOR is forbidden from triggering financial subscription retries."""
+    db = SessionLocal()
+    try:
+        supp_user = db.query(User).filter(User.role == "SUPPORT_OPERATOR").first()
+        token_supp = create_access_token({"sub": supp_user.email, "role": supp_user.role, "name": supp_user.name})
+
+        sub = db.query(Subscription).first()
+        assert sub is not None
+
+        res = client.post(
+            f"/api/subscriptions/{sub.subscription_id}/retry",
+            headers={"Authorization": f"Bearer {token_supp}"}
+        )
+        assert res.status_code == 403
+        assert "Support operators cannot trigger financial retries" in res.json()["detail"]
+    finally:
+        db.close()
+
+
+def test_reset_demo_blocked_in_production(monkeypatch):
+    """Validates that reset-demo is strictly forbidden in production mode."""
+    from backend.config import settings
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "DEMO_MODE", False)
+
+    res = client.post("/api/simulation/reset-demo")
+    assert res.status_code == 403
+    assert "disabled in production environment" in res.json()["detail"]
+
+
+def test_budget_exhaustion_blocked_in_production(monkeypatch):
+    """Validates that simulated budget exhaustion toggle is forbidden in production mode."""
+    from backend.config import settings
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "DEMO_MODE", False)
+
+    res = client.post("/api/agent/budget/toggle-exhaustion")
+    assert res.status_code == 403
+    assert "disabled in production environment" in res.json()["detail"]
+
 

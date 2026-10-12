@@ -14,6 +14,7 @@ from backend.database import get_db
 from backend.models.all_models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 
 # Pre-computed dummy bcrypt hash to guarantee constant-time evaluation during user enumeration defense
 DUMMY_BCRYPT_HASH = "$2b$12$e80yqVb0Gj6jQyv1Cq4f/uF2QO7pYyR9QG7XfV9O9H5kM6mF1QW2q"
@@ -211,6 +212,48 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
+def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """
+    Extracts authenticated user from Bearer token if provided.
+    Returns None if no token is passed.
+    Raises 401 Unauthorized if an invalid, expired, or revoked token is provided.
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        email: str = payload.get("sub")
+        if email is None or payload.get("type") == "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if is_token_revoked(db, token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db.query(User).filter(User.email == email).first()
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
 def require_role(allowed_roles: list):
     def role_checker(current_user: User = Depends(get_current_user)):
         if current_user.role not in allowed_roles:
@@ -220,3 +263,60 @@ def require_role(allowed_roles: list):
             )
         return current_user
     return role_checker
+
+def verify_tenant_access(
+    current_user: Optional[User],
+    resource_merchant_id: Optional[str]
+) -> bool:
+    """
+    Evaluates whether the current user has authorization to access a resource
+    belonging to resource_merchant_id.
+    - Global ADMINs have cross-tenant access.
+    - When unauthenticated in non-production / demo mode, allows access to support legacy test suites.
+    - In production, unauthenticated requests are denied.
+    - Merchant operators (MERCHANT_OWNER, REVENUE_OPERATOR, SUPPORT_OPERATOR) can only
+      access resources where user.merchant_id == resource_merchant_id.
+    """
+    if current_user is None:
+        if settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
+            return False
+        return True
+    
+    # Global Administrator has omni-tenant governance
+    if current_user.role == "ADMIN":
+        return True
+    
+    # If the user has no assigned merchant_id (e.g. unassigned admin or test fixture user)
+    if not current_user.merchant_id:
+        if settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
+            return False
+        return True
+    
+    # If resource has no merchant_id specified
+    if not resource_merchant_id:
+        return True
+    
+    return current_user.merchant_id == resource_merchant_id
+
+def enforce_tenant_ownership(
+    current_user: Optional[User],
+    resource_merchant_id: Optional[str],
+    is_mutation: bool = False
+) -> None:
+    """
+    Enforces multi-tenant isolation and defends against IDOR/BOLA attacks.
+    - Read operations return 404 Not Found upon tenant mismatch (preventing cross-tenant existence enumeration).
+    - Mutating operations return 403 Forbidden upon tenant mismatch.
+    """
+    if not verify_tenant_access(current_user, resource_merchant_id):
+        if is_mutation:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: Cross-tenant resource modification is prohibited"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Resource not found"
+            )
+

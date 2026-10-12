@@ -1,18 +1,28 @@
 import datetime
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models.all_models import Subscription, Customer, PolicyConfig
+from backend.models.all_models import Subscription, Customer, PolicyConfig, User
 from backend.schemas.all_schemas import SubscriptionResponse
 from backend.services.audit_service import AuditService
 from backend.events.taxonomy import SubscriptionEventType
+from backend.services.auth_service import get_current_user_optional, enforce_tenant_ownership
+from backend.config import settings
 
 router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 
 @router.get("", response_model=List[SubscriptionResponse])
-def get_subscriptions(db: Session = Depends(get_db)):
-    subs = db.query(Subscription).order_by(Subscription.created_at.desc()).all()
+def get_subscriptions(
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Subscription)
+    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
+        query = query.join(Customer, Customer.customer_id == Subscription.customer_id).filter(
+            Customer.merchant_id == current_user.merchant_id
+        )
+    subs = query.order_by(Subscription.created_at.desc()).all()
     results = []
     for s in subs:
         cust = db.query(Customer).filter(Customer.customer_id == s.customer_id).first()
@@ -41,7 +51,11 @@ def get_subscriptions(db: Session = Depends(get_db)):
     return results
 
 @router.post("/{subscription_id}/send-pre-debit-notification")
-def send_pre_debit_notification(subscription_id: str, db: Session = Depends(get_db)):
+def send_pre_debit_notification(
+    subscription_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     """
     Sends/simulates an educational reference implementation of the RBI 24-hour pre-debit alert to customer.
     Sets the timestamp to 25 hours prior to allow subsequent retries in sandbox.
@@ -51,6 +65,9 @@ def send_pre_debit_notification(subscription_id: str, db: Session = Depends(get_
     ).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    cust = db.query(Customer).filter(Customer.customer_id == sub.customer_id).first()
+    enforce_tenant_ownership(current_user, cust.merchant_id if cust else None, is_mutation=True)
     
     # Set to 25 hours ago to satisfy 24h window for demo
     sent_time = datetime.datetime.utcnow() - datetime.timedelta(hours=25)
@@ -109,7 +126,11 @@ def customer_opt_out(subscription_id: str, db: Session = Depends(get_db)):
     }
 
 @router.post("/{subscription_id}/retry")
-def retry_subscription(subscription_id: str, db: Session = Depends(get_db)):
+def retry_subscription(
+    subscription_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     """
     Executes automated subscription retry after validating RBI e-mandate policy rules.
     """
@@ -118,6 +139,20 @@ def retry_subscription(subscription_id: str, db: Session = Depends(get_db)):
     ).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    if current_user:
+        if current_user.role == "SUPPORT_OPERATOR":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Support operators cannot trigger financial retries or recurring debits"
+            )
+        cust = db.query(Customer).filter(Customer.customer_id == sub.customer_id).first()
+        enforce_tenant_ownership(current_user, cust.merchant_id if cust else None, is_mutation=True)
+    elif settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to retry subscription"
+        )
     
     # Policy Check 1: Customer Opt-out
     if sub.opt_out_status:

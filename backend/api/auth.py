@@ -18,7 +18,7 @@ from backend.services.auth_service import (
     create_refresh_token, verify_refresh_token, generate_csrf_token,
     verify_step_up_credential, create_step_up_token, get_current_user,
     DUMMY_BCRYPT_HASH, revoke_token, create_password_reset_token,
-    verify_and_consume_reset_token
+    verify_and_consume_reset_token, enforce_tenant_ownership
 )
 from backend.services.audit_service import AuditService
 from backend.events.taxonomy import RecoveryEventType
@@ -300,6 +300,9 @@ def step_up_verify(
     case = db.query(RecoveryCase).filter(RecoveryCase.case_id == req.case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail="Recovery case not found")
+
+    case_merchant_id = case.payment.merchant_id if case.payment else None
+    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
 
     is_valid = verify_step_up_credential(current_user, req.credential)
     if not is_valid:
