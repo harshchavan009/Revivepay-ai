@@ -2,8 +2,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models.all_models import Payment, Customer
+from backend.models.all_models import Payment, Customer, User
 from backend.schemas.all_schemas import PaymentResponse
+from backend.services.auth_service import get_current_user_optional, enforce_tenant_ownership
+from backend.services.sanitizer import escape_sql_like
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
@@ -11,21 +13,26 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 def get_payments(
     status: Optional[str] = None,
     failure_category: Optional[str] = None,
-    search: Optional[str] = None,
+    search: Optional[str] = Query(None, max_length=100),
     limit: int = Query(100, ge=1, le=500),
-    offset: int = 0,
+    offset: int = Query(0, ge=0),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     query = db.query(Payment)
+    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
+        query = query.filter(Payment.merchant_id == current_user.merchant_id)
+        
     if status and status != "ALL":
         query = query.filter(Payment.status == status)
     if failure_category and failure_category != "ALL":
         query = query.filter(Payment.failure_category == failure_category)
     if search:
+        search_fmt = f"%{escape_sql_like(search)}%"
         query = query.filter(
-            (Payment.payment_id.ilike(f"%{search}%")) |
-            (Payment.failure_code.ilike(f"%{search}%")) |
-            (Payment.failure_reason.ilike(f"%{search}%"))
+            (Payment.payment_id.ilike(search_fmt)) |
+            (Payment.failure_code.ilike(search_fmt)) |
+            (Payment.failure_reason.ilike(search_fmt))
         )
     
     payments = query.order_by(Payment.created_at.desc()).offset(offset).limit(limit).all()
@@ -57,12 +64,19 @@ def get_payments(
     return results
 
 @router.get("/{payment_id}", response_model=PaymentResponse)
-def get_payment_by_id(payment_id: str, db: Session = Depends(get_db)):
+def get_payment_by_id(
+    payment_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     p = db.query(Payment).filter(
         Payment.payment_id == payment_id
     ).first()
     if not p:
         raise HTTPException(status_code=404, detail="Payment not found")
+        
+    enforce_tenant_ownership(current_user, p.merchant_id, is_mutation=False)
+    
     cust = db.query(Customer).filter(Customer.customer_id == p.customer_id).first()
     return {
         "payment_id": p.payment_id,

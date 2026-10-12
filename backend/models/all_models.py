@@ -327,6 +327,8 @@ class User(Base):
     role = Column(String(50), default="REVENUE_OPERATOR")
     merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), nullable=True)
     is_active = Column(Boolean, default=True)
+    failed_login_attempts = Column(Integer, default=0)
+    locked_until = Column(DateTime, nullable=True)
     theme_preference = Column(String(20), default="dark") # "dark" | "light" | "system"
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -449,4 +451,30 @@ class ChatMessage(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     thread = relationship("ChatThread", back_populates="messages")
+
+
+# ==========================================
+# AUTHENTICATION & SECURITY ENTITIES
+# ==========================================
+class RevokedToken(Base):
+    """Stores cryptographically hashed revoked JWT tokens (logout / invalidation)."""
+    __tablename__ = "revoked_tokens"
+
+    id = Column(String(100), primary_key=True, default=generate_uuid)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    token_type = Column(String(20), default="refresh")  # "access" | "refresh"
+    revoked_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+
+
+class PasswordResetToken(Base):
+    """Stores single-use, time-bound, SHA-256 hashed password reset tokens."""
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(String(100), primary_key=True, default=generate_uuid)
+    user_id = Column(String(100), ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
 

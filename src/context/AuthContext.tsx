@@ -67,16 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await authService.demoLogin(persona);
       setUser(res.user);
       safeStorage.setItem("revivepay_user", JSON.stringify(res.user));
-    } catch {
-      const roleMap: Record<string, UserRole> = {
-        merchant_owner: "MERCHANT_OWNER",
-        revenue_operator: "REVENUE_OPERATOR",
-        support_operator: "SUPPORT_OPERATOR",
-        admin: "ADMIN"
-      };
-      const fallbackUser = DEMO_PERSONAS[roleMap[persona] || "REVENUE_OPERATOR"];
-      setUser(fallbackUser);
-      safeStorage.setItem("revivepay_user", JSON.stringify(fallbackUser));
     } finally {
       setIsLoading(false);
     }
@@ -87,23 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await authService.login(email, pass);
       setUser(res.user);
-    } catch {
-      // If offline, match demo persona
-      const found = Object.values(DEMO_PERSONAS).find(p => p.email === email);
-      if (found) {
-        setUser(found);
-        safeStorage.setItem("revivepay_user", JSON.stringify(found));
-      } else {
-        const fallback: User = {
-          id: "usr_custom",
-          name: email.split("@")[0],
-          email,
-          role: "REVENUE_OPERATOR",
-          is_active: true
-        };
-        setUser(fallback);
-        safeStorage.setItem("revivepay_user", JSON.stringify(fallback));
-      }
+      safeStorage.setItem("revivepay_user", JSON.stringify(res.user));
     } finally {
       setIsLoading(false);
     }
@@ -112,18 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, pass: string, role: string) => {
     setIsLoading(true);
     try {
-      const newUser = await authService.register(name, email, pass, role);
+      await authService.register(name, email, pass, role);
       await login(email, pass);
-    } catch {
-      const fallback: User = {
-        id: "usr_reg",
-        name,
-        email,
-        role: role as UserRole,
-        is_active: true
-      };
-      setUser(fallback);
-      safeStorage.setItem("revivepay_user", JSON.stringify(fallback));
     } finally {
       setIsLoading(false);
     }

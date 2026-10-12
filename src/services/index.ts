@@ -135,63 +135,48 @@ export const authService = {
       };
     }
   },
-  login: async (role: string, email?: string, password?: string): Promise<{ token: string; user: User }> => {
-    try {
-      const res = await apiClient.post("/auth/login", {
-        username: email || `${role.toLowerCase()}@revivepay.ai`,
-        password: password || "password123",
-        role: role
-      });
-      const token = res.data.access_token || res.data.token || "mock_jwt_token";
-      safeStorage.setItem("auth_token", token);
-      safeStorage.setItem("revivepay_token", token);
-      if (res.data.csrf_token) {
-        safeStorage.setItem("csrf_token", res.data.csrf_token);
-      }
-      return { token, user: res.data.user };
-    } catch {
-      const mockUser: User = {
-        id: "usr_mock_001",
-        email: email || "rohan@enterprise.in",
-        name: email ? email.split("@")[0] : "Rohan Deshmukh",
-        role: (role as any) || "REVENUE_OPERATOR",
-        is_active: true,
-        created_at: new Date().toISOString()
-      };
-      safeStorage.setItem("auth_token", "mock_jwt_token");
-      return { token: "mock_jwt_token", user: mockUser };
+  login: async (emailOrRole: string, passwordOrEmail?: string, password?: string): Promise<{ token: string; user: User }> => {
+    let email = emailOrRole;
+    let pwd = passwordOrEmail || "";
+    if (password !== undefined) {
+      email = passwordOrEmail || `${emailOrRole.toLowerCase()}@revivepay.ai`;
+      pwd = password;
     }
+    const res = await apiClient.post("/auth/login", {
+      email: email,
+      password: pwd
+    });
+    const token = res.data.access_token || res.data.token;
+    safeStorage.setItem("auth_token", token);
+    safeStorage.setItem("revivepay_token", token);
+    if (res.data.csrf_token) {
+      safeStorage.setItem("csrf_token", res.data.csrf_token);
+    }
+    return { token, user: res.data.user };
   },
   register: async (name: string, email: string, password?: string, role: string = "REVENUE_OPERATOR"): Promise<User> => {
-    try {
-      const res = await apiClient.post<User>("/auth/register", { name, email, password, role });
-      return res.data;
-    } catch {
-      return {
-        id: `usr_${Date.now()}`,
-        name,
-        email,
-        role: (role as any) || "REVENUE_OPERATOR",
-        is_active: true,
-        created_at: new Date().toISOString()
-      };
-    }
+    const res = await apiClient.post<User>("/auth/register", { name, email, password, role });
+    return res.data;
+  },
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const res = await apiClient.post("/auth/forgot-password", { email });
+    return res.data;
+  },
+  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+    const res = await apiClient.post("/auth/reset-password", { token, new_password: newPassword });
+    return res.data;
   },
   getCurrentUser: async (): Promise<User | null> => {
+    const token = safeStorage.getItem("auth_token");
+    if (!token) return null;
     try {
       const res = await apiClient.get<User>("/auth/me");
       return res.data;
     } catch {
-      const token = safeStorage.getItem("auth_token");
-      if (!token) return null;
-      return {
-        id: "usr_mock_001",
-        email: "rohan@enterprise.in",
-        name: "Rohan Deshmukh",
-        role: "REVENUE_OPERATOR",
-        is_active: true,
-        created_at: new Date().toISOString()
-      };
+      safeStorage.removeItem("auth_token");
+      safeStorage.removeItem("revivepay_token");
+      safeStorage.removeItem("revivepay_user");
+      return null;
     }
   },
   demoLogin: async (persona: "merchant_owner" | "revenue_operator" | "support_operator" | "admin"): Promise<{ token: string; user: User }> => {

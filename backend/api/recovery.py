@@ -8,7 +8,10 @@ from backend.schemas.all_schemas import (
 )
 from backend.services.recovery_engine import RecoveryEngine
 from backend.config import settings
-from backend.services.auth_service import require_role, verify_step_up_token
+from backend.services.auth_service import (
+    require_role, verify_step_up_token, get_current_user_optional, enforce_tenant_ownership
+)
+from backend.services.sanitizer import escape_sql_like
 
 router = APIRouter(prefix="/recovery", tags=["Recovery Cases"])
 
@@ -75,21 +78,30 @@ def map_case_response(case: RecoveryCase, db: Session) -> dict:
     }
 
 @router.get("/count")
-def get_recovery_cases_count(db: Session = Depends(get_db)):
+def get_recovery_cases_count(
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     """Returns the single canonical total count of all recovery cases in the registry."""
-    return {"total_cases": db.query(RecoveryCase).count()}
+    query = db.query(RecoveryCase)
+    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
+        query = query.join(Payment).filter(Payment.merchant_id == current_user.merchant_id)
+    return {"total_cases": query.count()}
 
 @router.get("/cases", response_model=List[RecoveryCaseResponse])
 def get_recovery_cases(
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
     approval_status: Optional[str] = None,
-    search: Optional[str] = None,
-    limit: int = 1000,
-    offset: int = 0,
+    search: Optional[str] = Query(None, max_length=100),
+    limit: int = Query(1000, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     query = db.query(RecoveryCase)
+    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
+        query = query.join(Payment).filter(Payment.merchant_id == current_user.merchant_id)
     
     if status and status != "ALL":
         query = query.filter(RecoveryCase.recovery_status == status)
@@ -98,7 +110,7 @@ def get_recovery_cases(
     if approval_status and approval_status != "ALL":
         query = query.filter(RecoveryCase.approval_status == approval_status)
     if search:
-        search_fmt = f"%{search}%"
+        search_fmt = f"%{escape_sql_like(search)}%"
         query = query.join(Customer, isouter=True).filter(
             (RecoveryCase.case_id.ilike(search_fmt)) |
             (RecoveryCase.failure_type.ilike(search_fmt)) |
@@ -109,21 +121,35 @@ def get_recovery_cases(
     return [map_case_response(c, db) for c in cases]
 
 @router.get("/cases/{case_id}", response_model=RecoveryCaseResponse)
-def get_recovery_case_detail(case_id: str, db: Session = Depends(get_db)):
+def get_recovery_case_detail(
+    case_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     case = db.query(RecoveryCase).filter(
         RecoveryCase.case_id == case_id
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Recovery case '{case_id}' not found")
+    
+    case_merchant_id = case.payment.merchant_id if case.payment else None
+    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=False)
     return map_case_response(case, db)
 
 @router.post("/{case_id}/analyze", response_model=RecoveryCaseResponse)
-def reanalyze_case(case_id: str, db: Session = Depends(get_db)):
+def reanalyze_case(
+    case_id: str,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     case = db.query(RecoveryCase).filter(
         RecoveryCase.case_id == case_id
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+    
+    case_merchant_id = case.payment.merchant_id if case.payment else None
+    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
     
     payment = case.payment
     customer = case.customer
@@ -149,6 +175,9 @@ def approve_case(
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+    
+    case_merchant_id = case.payment.merchant_id if case.payment else None
+    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
     
     # Enforce Step-Up Re-Authentication for High-Value Cases (>= ₹50,000)
     if case.amount_at_risk >= settings.HIGH_VALUE_THRESHOLD:
@@ -179,6 +208,9 @@ def reject_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
+    case_merchant_id = case.payment.merchant_id if case.payment else None
+    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
+    
     reason = req.rejection_reason or "Declined by operator"
     updated_case = RecoveryEngine.reject_case(
         db=db,
@@ -200,6 +232,9 @@ def execute_case(
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+    
+    case_merchant_id = case.payment.merchant_id if case.payment else None
+    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
     
     result = RecoveryEngine.execute_recovery_action(
         db=db,
@@ -227,6 +262,9 @@ def stop_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
+    case_merchant_id = case.payment.merchant_id if case.payment else None
+    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
+    
     case.recommended_action = "stop_recovery"
     RecoveryEngine.execute_recovery_action(db=db, case=case, actor=f"{current_user.name} ({current_user.role})")
     return map_case_response(case, db)
@@ -235,18 +273,22 @@ def stop_case(
 cases_router = APIRouter(prefix="/cases", tags=["Cases Direct Access"])
 
 @cases_router.get("/count")
-def get_cases_count_direct(db: Session = Depends(get_db)):
-    return {"total_cases": db.query(RecoveryCase).count()}
+def get_cases_count_direct(
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    return get_recovery_cases_count(current_user, db)
 
 @cases_router.get("", response_model=List[RecoveryCaseResponse])
 def get_cases_direct(
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
     approval_status: Optional[str] = None,
-    search: Optional[str] = None,
-    limit: int = 1000,
-    offset: int = 0,
+    search: Optional[str] = Query(None, max_length=100),
+    limit: int = Query(1000, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    return get_recovery_cases(status, risk_level, approval_status, search, limit, offset, db)
+    return get_recovery_cases(status, risk_level, approval_status, search, limit, offset, current_user, db)
 

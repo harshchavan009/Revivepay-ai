@@ -1,14 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models.all_models import PolicyConfig, Merchant
+from backend.models.all_models import PolicyConfig, Merchant, User
 from backend.schemas.all_schemas import PolicyConfigResponse, PolicyConfigUpdate
+from backend.services.auth_service import require_role, get_current_user_optional
 
 router = APIRouter(prefix="/policy", tags=["Policy Engine"])
 
+POLICY_ADMIN_ROLES = ["ADMIN", "MERCHANT_OWNER"]
+
 @router.get("/config", response_model=PolicyConfigResponse)
-def get_policy_config(db: Session = Depends(get_db)):
-    merchant = db.query(Merchant).first()
+def get_policy_config(
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    target_merchant_id = None
+    if current_user and current_user.merchant_id:
+        target_merchant_id = current_user.merchant_id
+
+    if target_merchant_id:
+        merchant = db.query(Merchant).filter(Merchant.merchant_id == target_merchant_id).first()
+    else:
+        merchant = db.query(Merchant).first()
+
     if not merchant:
         merchant = Merchant(name="Apex Cloud Services", industry="Fintech & SaaS")
         db.add(merchant)
@@ -24,8 +39,22 @@ def get_policy_config(db: Session = Depends(get_db)):
     return policy
 
 @router.put("/config", response_model=PolicyConfigResponse)
-def update_policy_config(config_in: PolicyConfigUpdate, db: Session = Depends(get_db)):
-    merchant = db.query(Merchant).first()
+def update_policy_config(
+    config_in: PolicyConfigUpdate,
+    current_user: User = Depends(require_role(POLICY_ADMIN_ROLES)),
+    db: Session = Depends(get_db)
+):
+    target_merchant_id = current_user.merchant_id
+    if current_user.role == "ADMIN" and not target_merchant_id:
+        merchant = db.query(Merchant).first()
+    elif target_merchant_id:
+        merchant = db.query(Merchant).filter(Merchant.merchant_id == target_merchant_id).first()
+    else:
+        merchant = db.query(Merchant).first()
+
+    if not merchant:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+
     policy = db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.merchant_id).first()
     if not policy:
         policy = PolicyConfig(merchant_id=merchant.merchant_id)

@@ -1,8 +1,10 @@
 import os
 import time
+import math
+import hashlib
 import logging
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Tuple, Optional
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -19,85 +21,198 @@ logger = logging.getLogger("revivepay")
 # Schema migrations are strictly managed via Alembic (`alembic upgrade head`)
 # before the application starts. FastAPI never runs runtime create_all() DDL commands.
 
+is_prod_env = settings.ENVIRONMENT.lower() == "production"
+
 app = FastAPI(
     title="RevivePay AI",
     description="Production-Oriented Fintech Engineering Prototype for Autonomous Revenue Recovery & Payment Failure Resolution",
     version="1.0.0",
-    openapi_url="/openapi.json",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    openapi_url=None if is_prod_env else "/openapi.json",
+    docs_url=None if is_prod_env else "/docs",
+    redoc_url=None if is_prod_env else "/redoc",
 )
 
 # =========================================================
-# 1. RATE LIMITING ENGINE (In-Memory Sliding Window)
+# 1. RATE LIMITING ENGINE (Sliding Window with Header Math)
 # =========================================================
 class SlidingWindowRateLimiter:
     def __init__(self):
         # Maps key -> list of request timestamps
         self.requests: Dict[str, List[float]] = defaultdict(list)
 
-    def is_allowed(self, key: str, max_requests: int, window_seconds: int = 60) -> bool:
+    def check_rate_limit(self, key: str, max_requests: int, window_seconds: int = 60) -> Tuple[bool, int, int, int]:
+        """
+        Calculates rate limit state for key.
+        Returns: (allowed: bool, remaining: int, retry_after: int, reset_epoch: int)
+        """
         now = time.time()
         window_start = now - window_seconds
-        # Clean older entries
-        self.requests[key] = [t for t in self.requests[key] if t > window_start]
-        
-        if len(self.requests[key]) >= max_requests:
-            return False
-        
-        self.requests[key].append(now)
-        return True
+
+        # Bounded cleanup to prevent memory exhaustion
+        if len(self.requests) > 10000:
+            stale_keys = [k for k, v in self.requests.items() if not v or v[-1] <= window_start]
+            for k in stale_keys:
+                del self.requests[k]
+
+        valid_timestamps = [t for t in self.requests[key] if t > window_start]
+        self.requests[key] = valid_timestamps
+
+        if len(valid_timestamps) >= max_requests:
+            oldest = valid_timestamps[0]
+            retry_after = max(1, int(math.ceil(oldest + window_seconds - now)))
+            reset_epoch = int(oldest + window_seconds)
+            return False, 0, retry_after, reset_epoch
+
+        valid_timestamps.append(now)
+        self.requests[key] = valid_timestamps
+        remaining = max(0, max_requests - len(valid_timestamps))
+        reset_epoch = int(now + window_seconds)
+        return True, remaining, 0, reset_epoch
+
+    def is_allowed(self, key: str, max_requests: int, window_seconds: int = 60) -> bool:
+        allowed, _, _, _ = self.check_rate_limit(key, max_requests, window_seconds)
+        return allowed
 
 rate_limiter = SlidingWindowRateLimiter()
+
+def get_client_identifiers(request: Request) -> Tuple[str, str, bool]:
+    """
+    Extracts (client_ip, actor_identifier, is_authenticated).
+    """
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+        if parts:
+            client_ip = parts[0]
+
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        token = auth_header[7:].strip()
+        if token:
+            token_sig = hashlib.sha256(token.encode("utf-8")).hexdigest()[:16]
+            return client_ip, f"user_{token_sig}", True
+
+    return client_ip, f"ip_{client_ip}", False
 
 # =========================================================
 # 2. SECURITY HEADERS & RATE LIMITING MIDDLEWARE
 # =========================================================
 @app.middleware("http")
 async def security_and_rate_limiting_middleware(request: Request, call_next):
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip, actor_id, is_auth = get_client_identifiers(request)
     path = request.url.path
 
-    # Rate Limiting: /api/auth/* (exempting /environment)
+    # Payload Size Check (Slowloris & Buffer Overflow Defense across all endpoints)
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            cl = int(content_length)
+            if cl > settings.MAX_REQUEST_BODY_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={
+                        "detail": f"Payload Too Large: Request entity exceeds limit of {settings.MAX_REQUEST_BODY_BYTES // (1024*1024)}MB.",
+                        "error_code": "PAYLOAD_TOO_LARGE"
+                    }
+                )
+        except ValueError:
+            pass
+
+    rate_limit_meta: Optional[Tuple[int, int, int]] = None
+
+    # Tier A: Authentication routes (/api/auth/*, exempting /environment)
     if path.startswith("/api/auth") and path != "/api/auth/environment":
         key = f"auth:{client_ip}"
-        if not rate_limiter.is_allowed(key, max_requests=settings.RATE_LIMIT_AUTH_PER_MINUTE):
+        limit = settings.RATE_LIMIT_AUTH_PER_MINUTE
+        allowed, remaining, retry_after, reset_epoch = rate_limiter.check_rate_limit(key, max_requests=limit)
+        rate_limit_meta = (limit, remaining, reset_epoch)
+        if not allowed:
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": "Too Many Requests: Rate limit exceeded on authentication routes (15 req/min). Please try again later.",
+                    "detail": f"Too Many Requests: Rate limit exceeded on authentication routes ({limit} req/min). Please try again later.",
                     "error_code": "AUTH_RATE_LIMIT_EXCEEDED"
                 },
-                headers={"Retry-After": "60"}
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(reset_epoch)
+                }
             )
 
-    # Rate Limiting: /api/webhooks/*
+    # Tier B: Webhook ingestion routes (/api/webhooks/*)
     elif path.startswith("/api/webhooks"):
         key = f"webhook:{client_ip}"
-        if not rate_limiter.is_allowed(key, max_requests=settings.RATE_LIMIT_WEBHOOK_PER_MINUTE):
+        limit = settings.RATE_LIMIT_WEBHOOK_PER_MINUTE
+        allowed, remaining, retry_after, reset_epoch = rate_limiter.check_rate_limit(key, max_requests=limit)
+        rate_limit_meta = (limit, remaining, reset_epoch)
+        if not allowed:
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": "Too Many Requests: Rate limit exceeded on webhook ingestion (120 req/min).",
+                    "detail": f"Too Many Requests: Rate limit exceeded on webhook ingestion ({limit} req/min).",
                     "error_code": "WEBHOOK_RATE_LIMIT_EXCEEDED"
                 },
-                headers={"Retry-After": "60"}
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(reset_epoch)
+                }
             )
 
-    # Rate Limiting: AI Reasoning & Simulation Endpoints (/api/chat, /api/simulation, /api/agent)
+    # Tier C: AI Reasoning, Chat & Simulation routes (/api/chat, /api/simulation, /api/agent)
     elif path.startswith("/api/chat") or path.startswith("/api/simulation") or path.startswith("/api/agent"):
-        key = f"ai:{client_ip}"
-        if not rate_limiter.is_allowed(key, max_requests=30):
+        key = f"ai:{actor_id}"
+        limit = settings.RATE_LIMIT_AI_PER_MINUTE
+        allowed, remaining, retry_after, reset_epoch = rate_limiter.check_rate_limit(key, max_requests=limit)
+        rate_limit_meta = (limit, remaining, reset_epoch)
+        if not allowed:
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": "Too Many Requests: Rate limit exceeded on AI reasoning & simulation routes (30 req/min). Please try again shortly.",
+                    "detail": f"Too Many Requests: Rate limit exceeded on AI reasoning & simulation routes ({limit} req/min). Please try again shortly.",
                     "error_code": "AI_RATE_LIMIT_EXCEEDED"
                 },
-                headers={"Retry-After": "60"}
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(reset_epoch)
+                }
+            )
+
+    # Tier D: General API routes (/api/*, exempting health checks)
+    elif path.startswith("/api") and path not in ["/api/health", "/health"]:
+        key = f"api:{actor_id}"
+        limit = settings.RATE_LIMIT_USER_PER_MINUTE if is_auth else settings.RATE_LIMIT_API_PER_MINUTE
+        allowed, remaining, retry_after, reset_epoch = rate_limiter.check_rate_limit(key, max_requests=limit)
+        rate_limit_meta = (limit, remaining, reset_epoch)
+        if not allowed:
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": f"Too Many Requests: API rate limit exceeded ({limit} req/min). Please try again later.",
+                    "error_code": "API_RATE_LIMIT_EXCEEDED"
+                },
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(reset_epoch)
+                }
             )
 
     response = await call_next(request)
+
+    # Append standard X-RateLimit headers if route was rate-limited
+    if rate_limit_meta:
+        limit, remaining, reset_epoch = rate_limit_meta
+        response.headers["X-RateLimit-Limit"] = str(limit)
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        response.headers["X-RateLimit-Reset"] = str(reset_epoch)
 
     # Mandatory Security Hardening Headers
     response.headers["X-Frame-Options"] = "DENY"
@@ -151,15 +266,16 @@ def on_startup():
 
 @app.get("/")
 def root():
+    is_prod = settings.ENVIRONMENT.lower() == "production"
     return {
         "service": "revivepay-api",
         "name": "RevivePay AI",
         "tagline": "Autonomous Revenue Recovery Engine",
         "status": "online",
         "version": "1.0.0",
-        "docs_url": "/docs",
-        "redoc_url": "/redoc",
-        "openapi_url": "/openapi.json",
+        "docs_url": None if is_prod else "/docs",
+        "redoc_url": None if is_prod else "/redoc",
+        "openapi_url": None if is_prod else "/openapi.json",
         "health_url": "/health"
     }
 

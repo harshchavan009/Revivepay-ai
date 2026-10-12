@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from backend.services.broadcaster import _active_connections, broadcast_live_event, notify_live_event
 
@@ -9,11 +9,20 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Live Events"])
 
+MAX_CONCURRENT_SSE_CONNECTIONS = 200
+
 @router.get("/events/stream")
 async def stream_live_events(request: Request):
     """
     Server-Sent Events (SSE) stream endpoint for real-time live telemetry ticker & dashboard updates.
     """
+    if len(_active_connections) >= MAX_CONCURRENT_SSE_CONNECTIONS:
+        logger.warning(f"Rejected SSE connection: reached maximum concurrency limit ({MAX_CONCURRENT_SSE_CONNECTIONS}).")
+        raise HTTPException(
+            status_code=429,
+            detail="Maximum concurrent event stream connections reached. Please retry later."
+        )
+
     queue: asyncio.Queue = asyncio.Queue(maxsize=100)
     _active_connections.add(queue)
 

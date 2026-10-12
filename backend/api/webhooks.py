@@ -8,12 +8,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from backend.database import get_db
 from backend.models.all_models import PaymentEvent, Payment, Customer, Merchant, RecoveryCase
-from backend.events.taxonomy import PaymentEventType, RecoveryEventType
+from backend.events.taxonomy import PaymentEventType, RecoveryEventType, WebhookEventType
 from backend.services.razorpay_service import RazorpayService
 from backend.services.recovery_engine import RecoveryEngine
+from backend.services.audit_service import AuditService
+from backend.services.sanitizer import sanitize_text
+from backend.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
+
+MAX_WEBHOOK_PAYLOAD_BYTES = 1_048_576  # 1MB limit to protect against OOM / DoS
+MAX_REPLAY_WINDOW_SECONDS = 300        # 5 minutes timestamp drift tolerance
 
 @router.post("/razorpay")
 @router.post("/v1/razorpay")
@@ -28,76 +34,144 @@ async def handle_razorpay_webhook(
     """
     received_at = datetime.datetime.utcnow()
     raw_body = await request.body()
+
+    # 1. Payload size check (prevent buffer / memory exhaustion DoS)
+    if len(raw_body) > MAX_WEBHOOK_PAYLOAD_BYTES:
+        logger.warning(f"Rejected oversized webhook payload: {len(raw_body)} bytes.")
+        try:
+            AuditService.log_event(
+                db=db,
+                case_id="WEBHOOK-INGRESS",
+                actor="Razorpay Ingress Defense",
+                actor_type="GATEWAY",
+                action=WebhookEventType.WEBHOOK_PAYLOAD_OVERSIZED.value,
+                policy_result="BLOCKED",
+                execution_result="REJECTED_413",
+                decision={"reason": "PAYLOAD_TOO_LARGE", "payload_bytes": len(raw_body)},
+                notes=f"Security defense: Webhook rejected due to oversized payload ({len(raw_body)} bytes > 1MB limit)."
+            )
+            db.commit()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=413,
+            detail="Webhook payload exceeds maximum allowable size limit of 1MB"
+        )
+
     body_str = raw_body.decode("utf-8") if raw_body else "{}"
 
-    # 1. HMAC-SHA256 Signature Verification
-    # Razorpay sends raw hex signature in 'X-Razorpay-Signature' header
+    # 2. HMAC-SHA256 Signature Verification
     if not x_razorpay_signature:
         logger.warning("Rejected Razorpay webhook with missing X-Razorpay-Signature header.")
-        from backend.models.all_models import AuditLog
-        from backend.events.taxonomy import WebhookEventType
-        now_dt = datetime.datetime.utcnow()
         try:
-            db.add(AuditLog(
-                audit_id=f"aud_sec_{uuid.uuid4().hex[:10]}",
+            AuditService.log_event(
+                db=db,
                 case_id="WEBHOOK-INGRESS",
-                event_type=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
-                actor_type="GATEWAY",
-                actor_id="Razorpay Ingress Defense",
                 actor="Razorpay HMAC-SHA256 Gateway",
-                action=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
-                timestamp=now_dt,
+                actor_type="GATEWAY",
+                action=WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
                 policy_result="BLOCKED",
                 execution_result="REJECTED_401",
                 decision={"reason": "MISSING_SIGNATURE", "security_defense": True},
                 notes="Security defense: Webhook rejected due to missing X-Razorpay-Signature header. Payload dropped."
-            ))
+            )
             db.commit()
         except Exception:
             pass
         raise HTTPException(status_code=401, detail="Missing X-Razorpay-Signature header")
 
-    if x_razorpay_signature != "test_signature":
+    # Gated check: 'test_signature' is strictly forbidden in production or when DEMO_MODE is False
+    allow_sandbox_test_sig = settings.DEMO_MODE and settings.ENVIRONMENT.lower() != "production"
+
+    if x_razorpay_signature == "test_signature" and not allow_sandbox_test_sig:
+        logger.warning("Rejected 'test_signature' bypass attempt in production/strict mode.")
+        try:
+            AuditService.log_event(
+                db=db,
+                case_id="WEBHOOK-INGRESS",
+                actor="Razorpay HMAC-SHA256 Gateway",
+                actor_type="GATEWAY",
+                action=WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
+                policy_result="BLOCKED",
+                execution_result="REJECTED_401",
+                decision={"reason": "TEST_SIGNATURE_FORBIDDEN_IN_PROD", "security_defense": True},
+                notes="Security defense: Webhook rejected 'test_signature' bypass attempt in production/strict mode."
+            )
+            db.commit()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Razorpay webhook signature (test bypass prohibited in production)"
+        )
+
+    if x_razorpay_signature != "test_signature" or not allow_sandbox_test_sig:
         is_valid = RazorpayService.verify_webhook_signature(raw_body, x_razorpay_signature)
         if not is_valid:
             logger.warning("Rejected Razorpay webhook with invalid/tampered HMAC-SHA256 signature.")
-            from backend.models.all_models import AuditLog
-            from backend.events.taxonomy import WebhookEventType
-            now_dt = datetime.datetime.utcnow()
             try:
-                db.add(AuditLog(
-                    audit_id=f"aud_sec_{uuid.uuid4().hex[:10]}",
+                AuditService.log_event(
+                    db=db,
                     case_id="WEBHOOK-INGRESS",
-                    event_type=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
-                    actor_type="GATEWAY",
-                    actor_id="Razorpay Ingress Defense",
                     actor="Razorpay HMAC-SHA256 Gateway",
-                    action=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
-                    timestamp=now_dt,
+                    actor_type="GATEWAY",
+                    action=WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
                     policy_result="BLOCKED",
                     execution_result="REJECTED_401",
                     decision={"reason": "INVALID_SIGNATURE", "security_defense": True, "signature_received": f"{x_razorpay_signature[:10]}..."},
                     notes="Security defense: Webhook rejected due to invalid/forged HMAC-SHA256 signature. Payload dropped."
-                ))
+                )
                 db.commit()
             except Exception:
                 pass
             raise HTTPException(status_code=401, detail="Invalid Razorpay webhook signature (HMAC-SHA256 verification failed)")
 
+    # 3. Payload validation
     try:
         payload = json.loads(body_str)
+        if not isinstance(payload, dict):
+            raise ValueError("Payload must be a JSON object")
     except Exception:
-        raise HTTPException(status_code=400, detail="Malformed JSON payload")
+        raise HTTPException(status_code=400, detail="Malformed JSON payload: must be a valid JSON object")
+
+    # 4. Replay Window Verification
+    raw_event_timestamp = payload.get("created_at") or payload.get("event_timestamp") or request.headers.get("X-Razorpay-Event-Time")
+    if raw_event_timestamp is not None:
+        try:
+            event_ts = float(raw_event_timestamp)
+            current_ts = datetime.datetime.utcnow().timestamp()
+            drift = abs(current_ts - event_ts)
+            if drift > MAX_REPLAY_WINDOW_SECONDS:
+                if settings.ENVIRONMENT.lower() == "production" or not settings.DEMO_MODE:
+                    logger.warning(f"Rejected replayed/expired webhook: timestamp drift of {drift:.1f}s exceeds {MAX_REPLAY_WINDOW_SECONDS}s.")
+                    try:
+                        AuditService.log_event(
+                            db=db,
+                            case_id="WEBHOOK-INGRESS",
+                            actor="Razorpay Ingress Defense",
+                            actor_type="GATEWAY",
+                            action=WebhookEventType.WEBHOOK_REPLAY_BLOCKED.value,
+                            policy_result="BLOCKED",
+                            execution_result="REJECTED_400",
+                            decision={"reason": "TIMESTAMP_DRIFT_EXCEEDED", "drift_seconds": round(drift, 1)},
+                            notes=f"Security defense: Webhook timestamp drift of {drift:.1f}s exceeds replay window of {MAX_REPLAY_WINDOW_SECONDS}s."
+                        )
+                        db.commit()
+                    except Exception:
+                        pass
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Webhook timestamp expired or outside allowable replay window of {MAX_REPLAY_WINDOW_SECONDS}s"
+                    )
+        except (ValueError, TypeError):
+            pass
 
     # Extract Razorpay canonical event identifiers
-    provider_event_id = (
-        payload.get("event_id") or 
-        payload.get("id") or 
-        f"event_rzp_{hashlib.md5(raw_body).hexdigest()[:12]}"
-    )
+    raw_event_id = payload.get("event_id") or payload.get("id") or f"event_rzp_{hashlib.sha256(raw_body).hexdigest()[:16]}"
+    provider_event_id = sanitize_text(str(raw_event_id), max_length=100, escape_html=False)
     event_type = payload.get("event", PaymentEventType.PAYMENT_FAILED.value)
 
-    # 2. Idempotency Check: UNIQUE(provider, provider_event_id)
+    # 5. Idempotency Check: UNIQUE(provider, provider_event_id)
     provider_name = "razorpay"
     existing_event = db.query(PaymentEvent).filter(
         PaymentEvent.provider == provider_name,
@@ -109,6 +183,21 @@ async def handle_razorpay_webhook(
         existing_case = db.query(RecoveryCase).filter(
             RecoveryCase.payment_id == existing_event.payment_id
         ).first()
+        try:
+            AuditService.log_event(
+                db=db,
+                case_id=existing_case.case_id if existing_case else "WEBHOOK-INGRESS",
+                actor="Razorpay Idempotency Engine",
+                actor_type="GATEWAY",
+                action=WebhookEventType.WEBHOOK_DUPLICATE_BLOCKED.value,
+                policy_result="PASSED",
+                execution_result="DUPLICATE_IGNORED",
+                decision={"reason": "DUPLICATE_EVENT_ID", "provider_event_id": provider_event_id},
+                notes=f"Idempotency defense: Ignored duplicate Razorpay webhook event {provider_event_id}."
+            )
+            db.commit()
+        except Exception:
+            pass
         return {
             "status": "duplicate_ignored",
             "message": "Duplicate event already processed (idempotent)",
@@ -222,6 +311,21 @@ async def handle_razorpay_webhook(
         existing_case = db.query(RecoveryCase).filter(
             RecoveryCase.payment_id == payment.payment_id
         ).first()
+        try:
+            AuditService.log_event(
+                db=db,
+                case_id=existing_case.case_id if existing_case else "WEBHOOK-INGRESS",
+                actor="Razorpay Idempotency Engine",
+                actor_type="GATEWAY",
+                action=WebhookEventType.WEBHOOK_DUPLICATE_BLOCKED.value,
+                policy_result="PASSED",
+                execution_result="DUPLICATE_IGNORED",
+                decision={"reason": "CONCURRENT_DUPLICATE_INTEGRITY_ERROR", "provider_event_id": provider_event_id},
+                notes=f"Idempotency defense: Caught concurrent duplicate event {provider_event_id} via database unique constraint."
+            )
+            db.commit()
+        except Exception:
+            pass
         return {
             "status": "duplicate_ignored",
             "message": "Duplicate event already processed (caught by database unique constraint)",

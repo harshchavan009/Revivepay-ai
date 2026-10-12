@@ -70,6 +70,10 @@ class ChatEventType(str, Enum):
 # ==========================================
 class WebhookEventType(str, Enum):
     WEBHOOK_VERIFICATION_REJECTED = "webhook.verification.rejected"
+    WEBHOOK_SIGNATURE_INVALID = "webhook.signature.invalid"
+    WEBHOOK_DUPLICATE_BLOCKED = "webhook.duplicate.blocked"
+    WEBHOOK_REPLAY_BLOCKED = "webhook.replay.blocked"
+    WEBHOOK_PAYLOAD_OVERSIZED = "webhook.payload.oversized"
 
 
 # ==========================================
@@ -122,6 +126,10 @@ ALL_CANONICAL_EVENTS: Set[str] = {
 
     # Webhook Security Defense events
     WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
+    WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
+    WebhookEventType.WEBHOOK_DUPLICATE_BLOCKED.value,
+    WebhookEventType.WEBHOOK_REPLAY_BLOCKED.value,
+    WebhookEventType.WEBHOOK_PAYLOAD_OVERSIZED.value,
 }
 
 

@@ -1,9 +1,10 @@
 from typing import List, Dict, Any
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.schemas.all_schemas import SimulationTriggerRequest, SimulationResponse
 from backend.services.simulation_service import SimulationService
+from backend.config import settings
 
 router = APIRouter(prefix="/simulation", tags=["Simulation Center"])
 
@@ -99,7 +100,13 @@ def reset_demo_dataset():
     """
     Resets the entire sandbox database back to pristine seeded state,
     re-generating all mock cases, payments, and immutable cryptographic ledger blocks.
+    Strictly blocked in production environments to prevent data destruction.
     """
+    if settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
+        raise HTTPException(
+            status_code=403,
+            detail="Resetting sandbox database is disabled in production environment"
+        )
     from backend.seed_data import seed_database
     seed_database(force_reseed=True)
     return {

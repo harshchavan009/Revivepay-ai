@@ -67,7 +67,8 @@ EXCLUDED_DIRS = {
 EXCLUDED_FILES = {
     "audit_secrets.py",  # Scanner definition file itself
     "package-lock.json",
-    "revivepay.db"
+    "revivepay.db",
+    "SECURITY_AUDIT.md"  # Audit documentation report
 }
 
 BINARY_EXTENSIONS = {

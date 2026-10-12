@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException
 from typing import Dict, Any, Optional
 from backend.schemas.all_schemas import RootCauseAnalysisOutput, RecoveryDecisionOutput
 from backend.services.ai_agent import ai_service
+from backend.config import settings
 
 router = APIRouter(prefix="/agent", tags=["AI Recovery Agent"])
 
@@ -21,11 +22,21 @@ def get_ai_budget():
 @router.post("/budget/toggle-exhaustion")
 def toggle_ai_budget_exhaustion():
     """Toggles daily LLM call budget between normal and exhausted (for reviewer demo)."""
+    if settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
+        raise HTTPException(
+            status_code=403,
+            detail="Simulated LLM budget exhaustion is disabled in production environment"
+        )
     return ai_service.toggle_exhaust_budget()
 
 @router.post("/force-fallback-test")
 def force_gemini_fallback_test(context: Optional[Dict[str, Any]] = None):
     """Explicit test trigger simulating primary provider timeout and routing to Gemini 1.5 Pro."""
+    if settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
+        raise HTTPException(
+            status_code=403,
+            detail="Forced fallback testing is disabled in production environment"
+        )
     test_ctx = context or {
         "case_id": "RV-FALLBACK-TEST",
         "payment_id": "pay_test_fallback",
