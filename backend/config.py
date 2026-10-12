@@ -77,7 +77,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
-        "https://demo.revivepay.ai"
+        "https://reviveay-ai.vercel.app",
+        "https://revivepay-ai.vercel.app",
+        "https://demo.revivepay.ai",
+        "https://revivepay-backend.onrender.com"
     ])
 
     @property

@@ -1127,6 +1127,144 @@ def test_production_mode_disables_docs_and_openapi(monkeypatch):
     assert body["openapi_url"] is None
 
 
+# =========================================================
+# PHASE 7 REGRESSION TESTS: CORS, HEADERS & ERROR SHIELDS
+# =========================================================
+
+def test_cors_allowed_origins_and_explicit_methods():
+    """Validates CORS allowlist matching for authorized frontend origin and explicit methods."""
+    origin = "https://reviveay-ai.vercel.app"
+    headers = {
+        "Origin": origin,
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type,Authorization"
+    }
+    # Preflight OPTIONS check
+    res_options = client.options("/api/health", headers=headers)
+    assert res_options.status_code == 200
+    assert res_options.headers.get("access-control-allow-origin") == origin
+    assert res_options.headers.get("access-control-allow-credentials") == "true"
+    allow_methods = res_options.headers.get("access-control-allow-methods", "")
+    assert "POST" in allow_methods
+    assert "*" not in allow_methods  # Must be explicit methods list, no wildcard
+
+    # GET request from allowed origin
+    res_get = client.get("/api/health", headers={"Origin": origin})
+    assert res_get.status_code == 200
+    assert res_get.headers.get("access-control-allow-origin") == origin
+
+
+def test_cors_unauthorized_foreign_origin_rejected():
+    """Validates that unauthorized origins (e.g. evil.vercel.app) do not receive CORS authorization."""
+    unauthorized_origins = [
+        "https://attacker-phishing.vercel.app",
+        "https://evil.onrender.com",
+        "https://malicious-domain.com",
+        "http://untrusted-local:9999"
+    ]
+    for origin in unauthorized_origins:
+        res = client.get("/api/health", headers={"Origin": origin})
+        assert res.status_code == 200
+        # Access-Control-Allow-Origin MUST NOT match the unauthorized origin
+        assert res.headers.get("access-control-allow-origin") != origin
+
+
+def test_request_id_generated_and_propagated():
+    """Validates that X-Request-ID is automatically generated and propagated across responses."""
+    # 1. Unspecified request ID
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    req_id = res.headers.get("X-Request-ID")
+    assert req_id is not None
+    assert req_id.startswith("req_")
+
+    # 2. Client-provided request ID
+    custom_id = "client-trace-7749-abcdef"
+    res_custom = client.get("/api/health", headers={"X-Request-ID": custom_id})
+    assert res_custom.status_code == 200
+    assert res_custom.headers.get("X-Request-ID") == custom_id
+
+
+def test_unsupported_http_method_trace_blocked():
+    """Validates that HTTP TRACE and TRACK methods are strictly rejected with 405 Method Not Allowed."""
+    res_trace = client.request("TRACE", "/api/health")
+    assert res_trace.status_code == 405
+    assert "Method Not Allowed" in res_trace.text
+    assert res_trace.headers.get("X-Request-ID") is not None
+
+
+def test_global_exception_handler_sanitizes_errors(monkeypatch):
+    """Validates that unexpected internal exceptions return generic sanitized payload without leaking tracebacks."""
+    from backend.services.ai_agent import ai_service
+
+    def mock_broken_budget():
+        raise RuntimeError("FATAL_SECRET_DB_SYNTAX: SELECT * FROM users WHERE pass='leaked_secret'; at /internal/db.py:99")
+
+    monkeypatch.setattr(ai_service, "get_budget_status", mock_broken_budget)
+
+    safe_client = TestClient(app, raise_server_exceptions=False)
+    res = safe_client.get("/api/agent/budget")
+    assert res.status_code == 500
+    body = res.json()
+    assert body["error_code"] == "INTERNAL_SERVER_ERROR"
+    assert "FATAL_SECRET_DB_SYNTAX" not in body["detail"]
+    assert "SELECT * FROM" not in body["detail"]
+    assert "/internal/db.py" not in body["detail"]
+    assert "request_id" in body
+    assert res.headers.get("X-Request-ID") == body["request_id"]
+
+
+
+
+def test_logging_sensitive_data_redacted():
+    """Validates that redact_sensitive_text correctly scrubs credentials, tokens, cards, and keys."""
+    from backend.services.logging_service import redact_sensitive_text
+
+    mock_secret_val = "insecure-test-pass-val"
+    sample_rzp = f"{'rzp'}_{'test'}_88776655443322"
+    raw_log = (
+        f"User login failed with password={repr(mock_secret_val)}, "
+        "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token1234567890, "
+        "API key sk-ant-api03-abcdefghijklmno123456789, "
+        "Card 4111 2222 3333 4444, "
+        f"and {sample_rzp}."
+    )
+    redacted = redact_sensitive_text(raw_log)
+
+    assert mock_secret_val not in redacted
+    assert "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token1234567890" not in redacted
+    assert "sk-ant-api03-abcdefghijklmno123456789" not in redacted
+    assert "4111 2222 3333 4444" not in redacted
+    assert sample_rzp not in redacted
+    assert "[REDACTED_SECRET]" in redacted
+    assert "[REDACTED_TOKEN]" in redacted
+    assert "[REDACTED_ANTHROPIC_KEY]" in redacted
+    assert "[REDACTED_CARD_NUMBER]" in redacted
+    assert "[REDACTED_RAZORPAY_KEY]" in redacted
+
+
+def test_csp_headers_contain_no_unsafe_eval(monkeypatch):
+    """Validates that Content-Security-Policy headers in production and dev strictly omit 'unsafe-eval'."""
+    from backend.config import settings
+
+    # 1. Production Mode
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    res_prod = client.get("/health")
+    assert res_prod.status_code == 200
+    csp_prod = res_prod.headers.get("Content-Security-Policy", "")
+    assert "'unsafe-eval'" not in csp_prod
+    assert "default-src 'self'" in csp_prod
+
+    # 2. Non-production / sandbox mode
+    monkeypatch.setattr(settings, "ENVIRONMENT", "sandbox")
+    res_sandbox = client.get("/health")
+    assert res_sandbox.status_code == 200
+    csp_sandbox = res_sandbox.headers.get("Content-Security-Policy", "")
+    assert "'unsafe-eval'" not in csp_sandbox
+    assert "default-src 'self'" in csp_sandbox
+
+
+
 
 
 

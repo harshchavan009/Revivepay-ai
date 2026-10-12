@@ -2,6 +2,7 @@
 RevivePay AI — ML & System Technical Evaluation Router (Phase 30)
 Exposes real empirical ML classification metrics and system-level telemetry.
 """
+import logging
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -11,6 +12,7 @@ from backend.models.all_models import RecoveryCase, AuditLog, PaymentEvent, Poli
 from ml.model_registry import load_metadata
 from ml.predict import predict_recovery_likelihood
 
+logger = logging.getLogger("revivepay.ml")
 router = APIRouter(prefix="/ml", tags=["ML Evaluation & System Metrics"])
 
 class MLPredictionRequest(BaseModel):
@@ -56,7 +58,11 @@ def predict_case_recovery(req: MLPredictionRequest):
         )
         return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ML Prediction Error: {str(e)}")
+        logger.error(f"ML Prediction Error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to compute ML prediction. Internal model inference error."
+        )
 
 def _compute_recruiter_evaluation_payload(db: Session) -> Dict[str, Any]:
     total_cases = db.query(RecoveryCase).count()

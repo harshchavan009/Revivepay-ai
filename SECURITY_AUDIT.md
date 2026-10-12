@@ -558,6 +558,73 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 189 files**.
 - **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
 
+---
+
+## Phase 7 Fixes Applied & Verification Evidence (CORS, Security Headers, Structured Logging & Exception Shields)
+
+### Fixes Implemented in Phase 7:
+1. **Strict CORS Hardening — Elimination of Wildcard Backdoors (Finding SEC-06):**
+   - **Before:** Allowed wildcard origins (`*`), arbitrary vercel app regex (`r"^https://.*\.vercel\.app$"` permitting external attackers on Vercel to mount credentialed attacks), wildcard methods (`allow_methods=["*"]`), and wildcard headers (`allow_headers=["*"]`).
+   - **After:**
+     - Explicit trusted origins allowlist: `http://localhost:5173`, `http://127.0.0.1:5173`, `http://[::1]:5173`, `http://localhost:3000`, `http://127.0.0.1:3000`, `http://localhost:8000`, `http://127.0.0.1:8000`, `https://reviveay-ai.vercel.app`, `https://revivepay-ai.vercel.app`, `https://demo.revivepay.ai`, `https://revivepay-backend.onrender.com`.
+     - Strict origin regex locked to local loopback ports and RevivePay preview deployments: `r"^(https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?|https://reviveay-ai(-[a-zA-Z0-9_-]+)?\.vercel\.app|https://revivepay-ai(-[a-zA-Z0-9_-]+)?\.vercel\.app|https://revivepay-backend(-[a-zA-Z0-9_-]+)?\.onrender\.com)$"`.
+     - Explicit allowable HTTP methods: `["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]`.
+     - Explicit allowable headers: `["Content-Type", "Authorization", "X-Requested-With", "X-Request-ID", "Accept", "Origin", "X-Razorpay-Signature", "X-Razorpay-Event-Time", "Cookie", "X-CSRF-Token"]`.
+     - Explicitly exposed headers to frontend: `["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After"]`.
+
+2. **Request Tracing & Correlation Header (`X-Request-ID`):**
+   - Added automatic correlation tracing: extracts and validates incoming `X-Request-ID` or generates a cryptographically random correlation ID (`req_{secrets.token_hex(12)}`).
+   - Propagated `X-Request-ID` across all response headers and embedded within contextual log records (`contextvars`).
+
+3. **Insecure HTTP Method Protection:**
+   - Blocked HTTP `TRACE` and `TRACK` methods with **HTTP 405 Method Not Allowed** to prevent Cross-Site Tracing (XST) and credential reflection attacks.
+
+4. **Structured Logging & Sensitive Data Redaction Engine (`backend/services/logging_service.py`):**
+   - Implemented `redact_sensitive_text(text: str) -> str` and `SensitiveDataLoggingFilter(logging.Filter)` attached to Python logger hierarchy:
+     - Automatically scrubs passwords and secret values (`password`, `secret_key`, `csrf_secret`, `razorpay_secret`).
+     - Masks Bearer and JWT authorization tokens (`Bearer [REDACTED_TOKEN]`).
+     - Masks vendor API keys (`sk-ant-*`, `AIzaSy*`, `rzp_test_*`, `rzp_live_*`).
+     - Masks payment card primary account numbers (`[REDACTED_CARD_NUMBER]`).
+
+5. **Global Exception Shield & Anti-Leakage Handler (`backend/main.py`):**
+   - Implemented global `@app.exception_handler(Exception)`:
+     - Catches unhandled internal exceptions, logs redacted tracebacks server-side alongside the correlation `request_id`.
+     - Returns a safe, generic HTTP 500 response (`{"detail": "An internal server error occurred...", "error_code": "INTERNAL_SERVER_ERROR", "request_id": "..."}`) preventing internal file paths, SQL syntax, or stack traces from reaching clients.
+     - Sanitized model inference error handling in `backend/api/ml_evaluation.py` line 59.
+
+6. **Transport & Security Headers Hardening (`backend/main.py`, `vercel.json`):**
+   - **Backend (`backend/main.py`):**
+     - `X-Frame-Options: DENY`
+     - `X-Content-Type-Options: nosniff`
+     - `Strict-Transport-Security: max-age=31536000; includeSubDomains` (without `preload` per instruction)
+     - `Referrer-Policy: strict-origin-when-cross-origin`
+     - `Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()`
+     - `Cross-Origin-Opener-Policy: same-origin`
+     - `Cross-Origin-Resource-Policy: cross-origin`
+     - `Content-Security-Policy`: Strictly stripped `'unsafe-eval'` in both production and development environments.
+     - Stripped `server` and `x-powered-by` response headers to prevent technology fingerprinting.
+   - **Frontend Edge Routing (`vercel.json`):**
+     - Attached comprehensive HTTP security headers to all edge responses `/(.*)`.
+   - **Inline Script Elimination (`index.html`, `src/main.tsx`):**
+     - Migrated service worker unregistration from inline `<script>` in `index.html` into `src/main.tsx`, allowing strict CSP without inline script vulnerabilities.
+
+7. **Regression Tests Added (`tests/test_security_hardening.py`):**
+   - `test_cors_allowed_origins_and_explicit_methods`: Verifies CORS allowlist matching for authorized frontend origin and explicit methods.
+   - `test_cors_unauthorized_foreign_origin_rejected`: Verifies unauthorized foreign origins (e.g. `evil.vercel.app`, malicious domains) do not receive CORS authorization.
+   - `test_request_id_generated_and_propagated`: Verifies `X-Request-ID` is automatically generated and propagated across responses.
+   - `test_unsupported_http_method_trace_blocked`: Verifies HTTP `TRACE` and `TRACK` methods return 405 Method Not Allowed.
+   - `test_global_exception_handler_sanitizes_errors`: Verifies unexpected internal exceptions return generic sanitized payload without leaking stack traces or SQL strings.
+   - `test_logging_sensitive_data_redacted`: Verifies `redact_sensitive_text` correctly scrubs credentials, tokens, cards, and keys.
+   - `test_csp_headers_contain_no_unsafe_eval`: Verifies CSP headers in production and dev strictly omit `'unsafe-eval'`.
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **135 passed, 0 failed in 8.55s** (7 new regression tests added, total 50 in security test suite).
+- **Static Analysis (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues**.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 190 files**.
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
+- **Frontend Production Build (`npm run build`):** **Passed in 2.11s**.
+
+
 
 
 

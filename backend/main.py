@@ -1,6 +1,8 @@
 import os
+import re
 import time
 import math
+import secrets
 import hashlib
 import logging
 from collections import defaultdict
@@ -8,14 +10,25 @@ from typing import Dict, List, Tuple, Optional
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from backend.config import settings
 from backend.database import engine
 from backend.api import api_router
 from backend.seed_data import seed_database
+from backend.services.logging_service import (
+    SensitiveDataLoggingFilter,
+    get_request_id,
+    set_request_id,
+    redact_sensitive_text
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("revivepay")
+
+# Attach sensitive data scrubber filter to logger and root logger
+_scrubber = SensitiveDataLoggingFilter()
+logger.addFilter(_scrubber)
+logging.getLogger().addFilter(_scrubber)
 
 # Database schema management:
 # Schema migrations are strictly managed via Alembic (`alembic upgrade head`)
@@ -100,6 +113,24 @@ def get_client_identifiers(request: Request) -> Tuple[str, str, bool]:
 # =========================================================
 @app.middleware("http")
 async def security_and_rate_limiting_middleware(request: Request, call_next):
+    # 0. Correlation ID Extraction & Tracing
+    raw_req_id = request.headers.get("X-Request-ID")
+    if raw_req_id and re.match(r"^[a-zA-Z0-9_\-\.]{4,64}$", raw_req_id):
+        req_id = raw_req_id
+    else:
+        req_id = f"req_{secrets.token_hex(12)}"
+
+    request.state.request_id = req_id
+    set_request_id(req_id)
+
+    # 1. Block insecure HTTP methods (TRACE, TRACK against Cross-Site Tracing)
+    if request.method in ["TRACE", "TRACK"]:
+        return PlainTextResponse(
+            "Method Not Allowed",
+            status_code=405,
+            headers={"X-Request-ID": req_id}
+        )
+
     client_ip, actor_id, is_auth = get_client_identifiers(request)
     path = request.url.path
 
@@ -114,7 +145,8 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
                     content={
                         "detail": f"Payload Too Large: Request entity exceeds limit of {settings.MAX_REQUEST_BODY_BYTES // (1024*1024)}MB.",
                         "error_code": "PAYLOAD_TOO_LARGE"
-                    }
+                    },
+                    headers={"X-Request-ID": req_id}
                 )
         except ValueError:
             pass
@@ -138,7 +170,8 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
                     "Retry-After": str(retry_after),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(reset_epoch)
+                    "X-RateLimit-Reset": str(reset_epoch),
+                    "X-Request-ID": req_id
                 }
             )
 
@@ -159,7 +192,8 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
                     "Retry-After": str(retry_after),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(reset_epoch)
+                    "X-RateLimit-Reset": str(reset_epoch),
+                    "X-Request-ID": req_id
                 }
             )
 
@@ -180,7 +214,8 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
                     "Retry-After": str(retry_after),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(reset_epoch)
+                    "X-RateLimit-Reset": str(reset_epoch),
+                    "X-Request-ID": req_id
                 }
             )
 
@@ -201,11 +236,15 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
                     "Retry-After": str(retry_after),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(reset_epoch)
+                    "X-RateLimit-Reset": str(reset_epoch),
+                    "X-Request-ID": req_id
                 }
             )
 
     response = await call_next(request)
+
+    # Correlation ID
+    response.headers["X-Request-ID"] = req_id
 
     # Append standard X-RateLimit headers if route was rate-limited
     if rate_limit_meta:
@@ -217,22 +256,73 @@ async def security_and_rate_limiting_middleware(request: Request, call_next):
     # Mandatory Security Hardening Headers
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-        "font-src 'self' https://fonts.gstatic.com data:; "
-        "img-src 'self' data: https: https://fastapi.tiangolo.com; "
-        "connect-src 'self' http: https: ws: wss:; "
-        "frame-ancestors 'none';"
-    )
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+
+    # CSP - Strictly excludes 'unsafe-eval'
+    if is_prod_env:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https: https://fastapi.tiangolo.com; "
+            "connect-src 'self' https: wss:; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
+    else:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https: https://fastapi.tiangolo.com; "
+            "connect-src 'self' http: https: ws: wss:; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
+
+    # Server version leak suppression
+    if "server" in response.headers:
+        del response.headers["server"]
+    if "x-powered-by" in response.headers:
+        del response.headers["x-powered-by"]
 
     return response
 
-# Set up CORS for all dev and production origins with Safari WebKit & Vercel/Render compatibility
+# =========================================================
+# 3. GLOBAL EXCEPTION SHIELD (Anti-Leakage & Sanitization)
+# =========================================================
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    req_id = getattr(request.state, "request_id", None) or get_request_id() or f"req_{secrets.token_hex(12)}"
+    logger.error(
+        f"Unhandled server error on {request.method} {request.url.path} [req_id={req_id}]: {exc}",
+        exc_info=True
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An internal server error occurred. Please contact support with the request ID.",
+            "error_code": "INTERNAL_SERVER_ERROR",
+            "request_id": req_id
+        },
+        headers={
+            "X-Request-ID": req_id,
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY"
+        }
+    )
+
+# =========================================================
+# 4. STRICT CORS CONFIGURATION (No Wildcard with Credentials)
+# =========================================================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -244,14 +334,36 @@ app.add_middleware(
         "http://[::1]:8000",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://reviveay-ai.vercel.app",
+        "https://revivepay-ai.vercel.app",
         "https://demo.revivepay.ai",
+        "https://revivepay-backend.onrender.com",
         *[o for o in settings.CORS_ORIGINS if o != "*"]
     ],
-    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:\d+)?|https://.*\.vercel\.app|https://.*\.onrender\.com)$",
+    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?|https://reviveay-ai(-[a-zA-Z0-9_-]+)?\.vercel\.app|https://revivepay-ai(-[a-zA-Z0-9_-]+)?\.vercel\.app|https://revivepay-backend(-[a-zA-Z0-9_-]+)?\.onrender\.com)$",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "X-Request-ID",
+        "Accept",
+        "Origin",
+        "X-Razorpay-Signature",
+        "X-Razorpay-Event-Time",
+        "Cookie",
+        "X-CSRF-Token"
+    ],
+    expose_headers=[
+        "X-Request-ID",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+        "Retry-After"
+    ]
 )
+
 
 # Include all API routes under /api
 app.include_router(api_router, prefix="/api")
