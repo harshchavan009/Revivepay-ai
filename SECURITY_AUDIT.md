@@ -272,3 +272,57 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **92 passed, 0 failed in 12.18s** (2 new regression tests added).
 - **Bandit Static Scan (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues** (CWE-327 issues completely resolved).
 - **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secret keys, credentials, or private tokens found**.
+
+---
+
+## Phase 2 Fixes Applied & Verification Evidence (Authentication & Sessions)
+
+### Fixes Implemented in Phase 2:
+1. **Account Lockout & Brute-Force Defense (`backend/api/auth.py`, `backend/models/all_models.py`):**
+   - Added `failed_login_attempts` (integer) and `locked_until` (datetime) to the `User` model.
+   - Enforced progressive account lockout: upon 5 consecutive failed login attempts, the account is locked for 15 minutes. Subsequent attempts return HTTP 429 Too Many Requests with a `Retry-After` header.
+   - Successful login resets `failed_login_attempts` to 0 and clears `locked_until`.
+2. **Anti-Enumeration Timing Protection (`backend/services/auth_service.py`, `backend/api/auth.py`):**
+   - Created `DUMMY_BCRYPT_HASH` calculated at startup. When an unknown email attempts to log in, bcrypt calculation runs against this dummy hash so execution time is indistinguishable from a valid user password verification.
+   - Standardized generic error responses (`Incorrect email or password`) to prevent email enumeration.
+3. **Password Complexity & Strength Validation (`backend/schemas/all_schemas.py`):**
+   - Implemented strict `field_validator` on `UserCreate.password`:
+     - Minimum length 10 characters, maximum 128 characters.
+     - Must contain at least one uppercase letter (`[A-Z]`), one lowercase letter (`[a-z]`), one numeric digit (`[0-9]`), and one special character (`[!@#$%^&*(),.?":{}|<>\-_]`).
+     - Rejects common, easily guessed passwords (`password123`, `admin12345`, `welcome123`, etc.).
+4. **Role Escalation Defense in Registration (`backend/schemas/all_schemas.py`, `src/pages/LoginPage.tsx`):**
+   - Validated `UserCreate.role`: prohibits self-assigning high-privileged administrative roles (`ADMIN`, `MERCHANT_OWNER`) during public registration.
+   - Updated frontend registration form in `LoginPage.tsx` to remove prohibited administrative options from self-signup.
+5. **Server-Side Token Revocation & Refresh Token Rotation (`backend/models/all_models.py`, `backend/services/auth_service.py`, `backend/api/auth.py`):**
+   - Created `RevokedToken` entity and migration `417b98e146bb_002_security_hardening_auth.py` to persist SHA-256 hashed revoked tokens.
+   - `POST /api/auth/logout`: Extracts refresh token and adds its hash to the `revoked_tokens` table, terminating the session server-side.
+   - `POST /api/auth/refresh`: Enforces rotation by invalidating the consumed refresh token and validating against `revoked_tokens`.
+   - Access tokens and refresh tokens now include a cryptographically random unique `jti` claim (`secrets.token_hex(16)`).
+6. **Hardened Step-Up Re-Authentication (`backend/services/auth_service.py`):**
+   - Removed insecure regex bypass that permitted arbitrary 6-digit codes.
+   - Sandbox OTP code `"782910"` is strictly gated behind `settings.DEMO_MODE` and non-production environments. In production, step-up re-authentication strictly requires the user account password.
+7. **Secure Password Reset Flow (`backend/models/all_models.py`, `backend/schemas/all_schemas.py`, `backend/api/auth.py`):**
+   - Created `PasswordResetToken` entity with `token_hash`, `expires_at` (15-minute validity), and `used` boolean flag.
+   - `POST /api/auth/forgot-password`: Returns timing-safe constant response preventing email enumeration. Generates cryptographically secure URL-safe tokens (`secrets.token_urlsafe(32)`).
+   - `POST /api/auth/reset-password`: Consumes token once (`used=True`), applies password complexity validation, and resets account lockout counters.
+8. **Frontend Authentication Client Hardening (`src/context/AuthContext.tsx`, `src/services/index.ts`, `src/pages/LoginPage.tsx`):**
+   - Removed insecure client-side fake user fallback on login or registration errors.
+   - Displayed error/success feedback banners in `LoginPage.tsx`.
+   - Connected real `/auth/forgot-password` flow in frontend.
+9. **Database Schema Migration:**
+   - Generated and applied Alembic migration `417b98e146bb_002_security_hardening_auth.py` with batch SQLite support.
+10. **Regression Tests Added (`tests/test_security_hardening.py`):**
+    - `test_login_account_lockout_after_five_failed_attempts`
+    - `test_login_anti_enumeration_dummy_bcrypt`
+    - `test_password_complexity_validator`
+    - `test_role_escalation_prevented_in_registration`
+    - `test_server_side_token_revocation_on_logout`
+    - `test_demo_login_gated_by_demo_mode`
+    - `test_password_reset_flow_and_single_use_token`
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **99 passed, 0 failed in 16.09s** (7 new regression tests added, total 14 in security test suite).
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
+- **Frontend Production Build (`npm run build`):** **Passed in 3.67s** (clean bundle generated).
+- **Bandit Static Scan (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues**.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Passed (Zero secret keys or credential leaks)**.

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useMetrics } from "../context/MetricsContext";
+import { authService } from "../services";
 import { UserRole } from "../types";
 
 export const LoginPage: React.FC = () => {
@@ -30,19 +31,50 @@ export const LoginPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>("REVENUE_OPERATOR");
   const [showPassword, setShowPassword] = useState(false);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (authMode === "signin") {
-      await login(email, password);
-    } else {
-      await register(name, email, password, role);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      if (authMode === "signin") {
+        await login(email, password);
+      } else {
+        await register(name, email, password, role);
+      }
+      navigate("/dashboard");
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Authentication failed. Please verify credentials.";
+      setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
     }
-    navigate("/dashboard");
   };
 
   const handlePersonaLogin = async (persona: "merchant_owner" | "revenue_operator" | "support_operator" | "admin") => {
-    await demoLogin(persona);
-    navigate("/dashboard");
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      await demoLogin(persona);
+      navigate("/dashboard");
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Demo login failed.";
+      setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMessage("Please enter your email address to receive password reset instructions.");
+      return;
+    }
+    setErrorMessage(null);
+    try {
+      const res = await authService.forgotPassword(email);
+      setSuccessMessage(res.message);
+    } catch {
+      setErrorMessage("Unable to process password reset request. Please try again.");
+    }
   };
 
   return (
@@ -200,6 +232,20 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Feedback Banners */}
+            {errorMessage && (
+              <div className="p-3 mb-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+                <span className="font-bold">⚠️</span>
+                <span>{errorMessage}</span>
+              </div>
+            )}
+            {successMessage && (
+              <div className="p-3 mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+                <span className="font-bold">✅</span>
+                <span>{successMessage}</span>
+              </div>
+            )}
+
             {/* Email & Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               {authMode === "signup" && (
@@ -237,7 +283,7 @@ export const LoginPage: React.FC = () => {
                   {authMode === "signin" && (
                     <button
                       type="button"
-                      onClick={() => alert("Password reset instructions sent to your email.")}
+                      onClick={handleForgotPassword}
                       className="text-[11px] text-[var(--color-accent)] hover:underline cursor-pointer"
                     >
                       Forgot password?
@@ -262,6 +308,11 @@ export const LoginPage: React.FC = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {authMode === "signup" && (
+                  <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+                    Must be ≥10 chars, uppercase, lowercase, digit, and special symbol.
+                  </p>
+                )}
               </div>
 
               {authMode === "signup" && (
@@ -273,9 +324,7 @@ export const LoginPage: React.FC = () => {
                     className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans cursor-pointer"
                   >
                     <option value="REVENUE_OPERATOR">Revenue Operator (Recovery Operations)</option>
-                    <option value="MERCHANT_OWNER">Merchant Owner (Executive & Financial View)</option>
                     <option value="SUPPORT_OPERATOR">Customer Support (Direct Customer Outreach)</option>
-                    <option value="ADMIN">System Administrator (Full Governance)</option>
                   </select>
                 </div>
               )}

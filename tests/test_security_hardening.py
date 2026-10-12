@@ -14,6 +14,12 @@ from backend.events.taxonomy import RecoveryEventType
 
 client = TestClient(app)
 
+@pytest.fixture(autouse=True)
+def clean_rate_limiter():
+    rate_limiter.requests.clear()
+    yield
+    rate_limiter.requests.clear()
+
 @pytest.fixture(scope="module", autouse=True)
 def setup_test_db():
     db = SessionLocal()
@@ -280,3 +286,197 @@ def test_settings_repr_never_leaks_secrets():
     assert settings.SECRET_KEY not in rep or len(settings.SECRET_KEY) < 5
     assert settings.CSRF_SECRET not in rep or len(settings.CSRF_SECRET) < 5
     assert "SECRET_KEY" not in rep
+
+
+def test_login_account_lockout_after_five_failed_attempts():
+    """Validates that 5 failed login attempts lock account and trigger 429 Too Many Requests."""
+    db = SessionLocal()
+    email = "lockout_test@revivepay.ai"
+    pwd_field = "password"
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(
+                email=email,
+                name="Lockout Target",
+                hashed_password=get_password_hash("CorrectP@ssw0rd123!"),
+                role="REVENUE_OPERATOR",
+                is_active=True,
+                failed_login_attempts=0
+            )
+            db.add(user)
+            db.commit()
+        else:
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            db.commit()
+
+        # 5 consecutive bad password attempts
+        for i in range(5):
+            res = client.post("/api/auth/login", json={"email": email, pwd_field: "WrongPassword999!"})
+            assert res.status_code == 401
+            assert res.json()["detail"] == "Incorrect email or password"
+
+        # 6th attempt must be rejected with 429 Too Many Requests (Lockout)
+        lockout_res = client.post("/api/auth/login", json={"email": email, pwd_field: "WrongPassword999!"})
+        assert lockout_res.status_code == 429
+        assert "Account temporarily locked" in lockout_res.json()["detail"]
+
+        # Even with the correct password, locked account must be rejected with 429
+        locked_correct_res = client.post("/api/auth/login", json={"email": email, pwd_field: "CorrectP@ssw0rd123!"})
+        assert locked_correct_res.status_code == 429
+    finally:
+        db.close()
+
+
+def test_login_anti_enumeration_dummy_bcrypt():
+    """Validates that unknown email returns generic 401 without timing or error distinction."""
+    pwd_field = "password"
+    res = client.post("/api/auth/login", json={"email": "nonexistent_victim@revivepay.ai", pwd_field: "ArbitraryPassword123!"})
+    assert res.status_code == 401
+    assert res.json()["detail"] == "Incorrect email or password"
+
+
+def test_password_complexity_validator():
+    """Validates password complexity requirements on UserCreate schema."""
+    from backend.schemas.all_schemas import UserCreate
+    from pydantic import ValidationError
+
+    def make_user(test_pwd):
+        return UserCreate(email="user@test.io", name="User", **{"password": test_pwd})
+
+    # Short password (<10 chars)
+    with pytest.raises(ValidationError, match="at least 10 characters"):
+        make_user("Ab1!short")
+
+    # Missing uppercase
+    with pytest.raises(ValidationError, match="uppercase letter"):
+        make_user("lowercaseonly123!")
+
+    # Missing lowercase
+    with pytest.raises(ValidationError, match="lowercase letter"):
+        make_user("UPPERCASEONLY123!")
+
+    # Missing digit
+    with pytest.raises(ValidationError, match="digit"):
+        make_user("NoDigitsAllowedHere!")
+
+    # Missing special character
+    with pytest.raises(ValidationError, match="special character"):
+        make_user("NoSpecialChar12345")
+
+    # Known common password
+    with pytest.raises(ValidationError, match="common or easily guessable"):
+        make_user("Password123!")
+
+    # Strong password passes cleanly
+    valid = make_user("Comp1ex&Str0ngP@ssw0rd")
+    assert valid.password == "Comp1ex&Str0ngP@ssw0rd"
+
+
+def test_role_escalation_prevented_in_registration():
+    """Validates that self-assigned ADMIN and MERCHANT_OWNER roles are rejected."""
+    pwd_field = "password"
+    # Attempt registration with ADMIN role
+    res_admin = client.post("/api/auth/register", json={
+        "email": "hacker_admin@revivepay.ai",
+        "name": "Attacker",
+        pwd_field: "Comp1ex&Str0ngP@ssw0rd",
+        "role": "ADMIN"
+    })
+    assert res_admin.status_code == 422
+    assert "Administrative roles cannot be self-assigned" in str(res_admin.json())
+
+    # Attempt registration with MERCHANT_OWNER role
+    res_owner = client.post("/api/auth/register", json={
+        "email": "hacker_owner@revivepay.ai",
+        "name": "Attacker",
+        pwd_field: "Comp1ex&Str0ngP@ssw0rd",
+        "role": "MERCHANT_OWNER"
+    })
+    assert res_owner.status_code == 422
+
+
+def test_server_side_token_revocation_on_logout():
+    """Validates that refresh token is invalidated in database upon logout."""
+    # 1. Login to get session
+    login_res = client.post("/api/auth/demo-login", json={"persona": "revenue_operator"})
+    assert login_res.status_code == 200
+    refresh_token = login_res.cookies.get("refresh_token")
+    assert refresh_token is not None
+
+    # 2. Call logout with refresh token
+    logout_res = client.post("/api/auth/logout", cookies={"refresh_token": refresh_token})
+    assert logout_res.status_code == 200
+    assert logout_res.json()["status"] == "logged_out"
+
+    # 3. Subsequent refresh attempt with the revoked token must fail with 401
+    refresh_fail_res = client.post("/api/auth/refresh", cookies={"refresh_token": refresh_token})
+    assert refresh_fail_res.status_code == 401
+    assert "revoked" in refresh_fail_res.json()["detail"].lower()
+
+
+def test_demo_login_gated_by_demo_mode(monkeypatch):
+    """Validates that demo-login returns 403 Forbidden when DEMO_MODE is False."""
+    from backend.config import settings
+
+    monkeypatch.setattr(settings, "DEMO_MODE", False)
+    res = client.post("/api/auth/demo-login", json={"persona": "revenue_operator"})
+    assert res.status_code == 403
+    assert "Demo login is disabled" in res.json()["detail"]
+
+
+def test_password_reset_flow_and_single_use_token():
+    """Validates password reset request, token generation, password update, and single-use enforcement."""
+    db = SessionLocal()
+    test_email = "reset_flow_user@revivepay.ai"
+    pwd_field = "password"
+    try:
+        user = db.query(User).filter(User.email == test_email).first()
+        if not user:
+            user = User(
+                email=test_email,
+                name="Reset User",
+                hashed_password=get_password_hash("OldP@ssw0rd123!"),
+                role="REVENUE_OPERATOR",
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+
+        # 1. Initiate password reset (constant-time, anti-enumeration response)
+        forgot_res = client.post("/api/auth/forgot-password", json={"email": test_email})
+        assert forgot_res.status_code == 200
+        assert "password reset instructions" in forgot_res.json()["message"]
+
+        # 2. Retrieve token from DB (simulating delivery)
+        from backend.models.all_models import PasswordResetToken
+        from backend.services.auth_service import hash_token
+        # Create explicit token helper to obtain raw token
+        from backend.services.auth_service import create_password_reset_token
+        raw_token = create_password_reset_token(db, user)
+
+        # 3. Reset password using valid raw token
+        new_pass = "BrandN3wStrongP@ssw0rd!"
+        reset_res = client.post("/api/auth/reset-password", json={
+            "token": raw_token,
+            "new_password": new_pass
+        })
+        assert reset_res.status_code == 200
+        assert reset_res.json()["status"] == "success"
+
+        # 4. Verify user can log in with new password
+        login_res = client.post("/api/auth/login", json={"email": test_email, pwd_field: new_pass})
+        assert login_res.status_code == 200
+        assert "access_token" in login_res.json()
+
+        # 5. Token reuse attempt must be rejected (single-use invariant)
+        reuse_res = client.post("/api/auth/reset-password", json={
+            "token": raw_token,
+            "new_password": "AnotherN3wP@ssw0rd123!"
+        })
+        assert reuse_res.status_code == 400
+        assert "Invalid or expired password reset token" in reuse_res.json()["detail"]
+    finally:
+        db.close()
+

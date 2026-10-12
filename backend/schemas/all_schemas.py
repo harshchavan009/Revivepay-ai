@@ -1,6 +1,7 @@
+import re
 import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 # ==========================================
 # 1. MERCHANT SCHEMAS
@@ -315,9 +316,60 @@ class NotificationResponse(BaseModel):
 # ==========================================
 class UserCreate(BaseModel):
     email: EmailStr
-    name: str
-    password: str
+    name: str = Field(..., min_length=2, max_length=100)
+    password: str = Field(..., min_length=10, max_length=128)
     role: Optional[str] = "REVENUE_OPERATOR"
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if len(v) < 10:
+            raise ValueError("Password must be at least 10 characters long.")
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter.")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter.")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Password must contain at least one digit.")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>\-_]', v):
+            raise ValueError("Password must contain at least one special character.")
+        common_passwords = {
+            "password123", "password123!", "admin12345", "welcome123",
+            "revivepay123", "qwerty12345", "p@ssword123", "password@123"
+        }
+        if v.lower() in common_passwords:
+            raise ValueError("Password is too common or easily guessable.")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: Optional[str]) -> str:
+        # Prevent self-assigning high-privileged administrative roles
+        if v and v.upper() in ["ADMIN", "MERCHANT_OWNER"]:
+            raise ValueError("Administrative roles cannot be self-assigned during public registration.")
+        return v or "REVENUE_OPERATOR"
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=16, description="Single-use password reset token")
+    new_password: str = Field(..., min_length=10, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password_strength(cls, v: str) -> str:
+        if len(v) < 10:
+            raise ValueError("Password must be at least 10 characters long.")
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter.")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter.")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Password must contain at least one digit.")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>\-_]', v):
+            raise ValueError("Password must contain at least one special character.")
+        return v
 
 class UserLogin(BaseModel):
     email: EmailStr
