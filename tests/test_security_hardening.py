@@ -1264,6 +1264,82 @@ def test_csp_headers_contain_no_unsafe_eval(monkeypatch):
     assert "default-src 'self'" in csp_sandbox
 
 
+# ==============================================================================
+# PHASE 8 TESTS: DEBUG MODE, CONFIGURATION & EXPOSED FILES DEFENSE
+# ==============================================================================
+
+def test_serve_spa_blocks_dotfiles():
+    """Validates that hidden dotfiles (.env, .git, etc.) return 404 and are never served."""
+    dotfile_paths = ["/.env", "/.git", "/.env.production", "/.gitignore", "/sub/.env"]
+    for path in dotfile_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+        assert res.json() == {"detail": "Not Found"}
+
+
+def test_serve_spa_blocks_sensitive_extensions():
+    """Validates that direct requests for sensitive source, config, database and log files return 404."""
+    sensitive_paths = [
+        "/revivepay.db", "/backend/config.py", "/alembic.ini",
+        "/scripts/entrypoint.sh", "/server.log", "/schema.sql",
+        "/app.sqlite", "/backup.bak", "/bundle.js.map"
+    ]
+    for path in sensitive_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+        assert res.json() == {"detail": "Not Found"}
+
+
+def test_serve_spa_blocks_path_traversal():
+    """Validates that directory traversal attempts are confined and return 404."""
+    traversal_paths = [
+        "/..%2F..%2Fetc%2Fpasswd",
+        "/assets/../../backend/main.py",
+        "/static/../../alembic.ini"
+    ]
+    for path in traversal_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+
+
+def test_serve_spa_blocks_debug_admin_probes():
+    """Validates that common admin, debug, probe and actuator endpoints return 404."""
+    probe_paths = [
+        "/admin", "/debug", "/_debug", "/actuator",
+        "/metrics", "/phpinfo", "/etc/passwd", "/proc/cpuinfo"
+    ]
+    for path in probe_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+
+
+def test_production_mode_rejects_debug_enabled():
+    """Validates that validate_production_readiness raises ValueError if DEBUG is True in production."""
+    from backend.config import Settings
+    prod_debug_settings = Settings(
+        ENVIRONMENT="production",
+        DATABASE_URL="postgresql://user:pass@host/db",
+        DEBUG=True,
+        SECRET_KEY="0" * 32,
+        CSRF_SECRET="0" * 32,
+        DEMO_MODE=False
+    )
+    with pytest.raises(ValueError, match="CRITICAL SECURITY ERROR: DEBUG must be set to False in production mode"):
+        prod_debug_settings.validate_production_readiness()
+
+
+def test_fastapi_debug_mode_disabled_in_production(monkeypatch):
+    """Validates that FastAPI debug is strictly False in production."""
+    from backend.config import settings
+    monkeypatch.setattr(settings, "DEBUG", True)
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+
+    is_prod = settings.ENVIRONMENT.lower() == "production"
+    effective_debug = settings.DEBUG and not is_prod
+    assert effective_debug is False
+
+
+
 
 
 

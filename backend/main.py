@@ -40,6 +40,7 @@ app = FastAPI(
     title="RevivePay AI",
     description="Production-Oriented Fintech Engineering Prototype for Autonomous Revenue Recovery & Payment Failure Resolution",
     version="1.0.0",
+    debug=settings.DEBUG and not is_prod_env,
     openapi_url=None if is_prod_env else "/openapi.json",
     docs_url=None if is_prod_env else "/docs",
     redoc_url=None if is_prod_env else "/redoc",
@@ -423,6 +424,22 @@ if os.path.exists(dist_dir):
 
     RESERVED_FASTAPI_PATHS = {"", "health", "docs", "redoc", "openapi.json"}
 
+    BLOCKED_EXTENSIONS = {
+        ".env", ".db", ".sqlite", ".sqlite3", ".sql", ".py", ".pyc", ".sh",
+        ".bash", ".yml", ".yaml", ".ini", ".log", ".tar", ".gz", ".zip",
+        ".bak", ".backup", ".map", ".git", ".dockerfile"
+    }
+
+    BLOCKED_PROBE_PREFIXES = (
+        "etc/", "proc/", "sys/", "root/", "bin/", "usr/", "var/",
+        "dev/", "tmp/", "opt/", "windows/", "winnt/", "boot/"
+    )
+
+    BLOCKED_DEBUG_PATHS = {
+        "admin", "debug", "_debug", "actuator", "metrics", "phpinfo", "eval-stdin", "console",
+        "server-status", "wp-login.php", "wp-admin", "config", "env", "git", "etc/passwd"
+    }
+
     @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str):
         clean_path = full_path.strip("/")
@@ -438,9 +455,27 @@ if os.path.exists(dist_dir):
         ):
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
+        # Block direct access to hidden dotfiles, parent directory traversals, or sensitive debug paths
+        if (
+            any(part.startswith(".") for part in clean_path.split("/"))
+            or clean_path in BLOCKED_DEBUG_PATHS
+            or clean_path.startswith(BLOCKED_PROBE_PREFIXES)
+        ):
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
+        # Block direct downloads of source, configuration, database or log files
+        _, ext = os.path.splitext(clean_path.lower())
+        if ext in BLOCKED_EXTENSIONS:
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
+        # Path Traversal Confinement: guarantee target file resolves strictly within dist_dir
+        canonical_dist = os.path.realpath(dist_dir)
+        requested_file = os.path.realpath(os.path.join(dist_dir, clean_path))
+        if not (requested_file == canonical_dist or requested_file.startswith(canonical_dist + os.sep)):
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
         # Check if requesting a direct static file from dist
-        requested_file = os.path.join(dist_dir, full_path)
-        if full_path and os.path.isfile(requested_file):
+        if clean_path and os.path.isfile(requested_file):
             return FileResponse(requested_file)
 
         # Fallback to SPA index.html for frontend client routes (e.g. /dashboard, /cases)
@@ -449,3 +484,4 @@ if os.path.exists(dist_dir):
             return FileResponse(index_file)
 
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
+

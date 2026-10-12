@@ -23,7 +23,9 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.warn("API Call Warning/Error:", error?.response?.data || error.message);
+    if (import.meta.env.DEV) {
+      console.warn("API Call Warning/Error:", error?.response?.data || error.message);
+    }
     return Promise.reject(error);
   }
 );

@@ -624,6 +624,57 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
 - **Frontend Production Build (`npm run build`):** **Passed in 2.11s**.
 
+---
+
+## Phase 8 Fixes Applied & Verification Evidence (Debug Mode, Configuration Hardening & Exposed Files Defense)
+
+### Fixes Implemented in Phase 8:
+1. **Debug Mode Fail-Safe & Production Readiness Gate (`backend/config.py`, `backend/main.py`, `render.yaml`, `.env.example`):**
+   - Added typed `DEBUG: bool = Field(default=False)` in `Settings` (`backend/config.py`).
+   - In `validate_production_readiness`: enforced a strict fail-fast validation check:
+     `if self.DEBUG: raise ValueError("CRITICAL SECURITY ERROR: DEBUG must be set to False in production mode.")`.
+   - In `FastAPI(...)` app instantiation (`backend/main.py`): passed `debug=settings.DEBUG and not is_prod_env`, ensuring interactive debuggers and traceback reflection are unconditionally disabled in production deployments.
+   - Added `DEBUG: "false"` explicitly in `render.yaml` backend environment variables.
+   - Documented `DEBUG=false` in `.env.example`.
+
+2. **Static SPA Route & Local File Inclusion (LFI) Confinement (`backend/main.py`):**
+   - **Path Traversal Confinement:** All static file requests are normalized and resolved via `os.path.realpath(os.path.join(dist_dir, clean_path))` and confirmed to reside strictly within `canonical_dist + os.sep`. Any traversal attempt outside the build directory is rejected with **HTTP 404 Not Found**.
+   - **Hidden Dotfile Defense:** Blocked direct access to any file or directory component starting with `.` (`/.env`, `/.git`, `/.env.production`, `/.gitignore`, `/sub/.env`, etc.) returning **HTTP 404 Not Found**.
+   - **Sensitive File Extension Blocking:** Blocked direct downloads of source files, databases, configurations, scripts, archives, and logs (`.env`, `.db`, `.sqlite`, `.sqlite3`, `.sql`, `.py`, `.pyc`, `.sh`, `.bash`, `.yml`, `.yaml`, `.ini`, `.log`, `.tar`, `.gz`, `.zip`, `.bak`, `.backup`, `.map`, `.git`, `.dockerfile`), returning **HTTP 404 Not Found**.
+   - **Admin, Probe & Actuator Blocking:** Blocked direct reconnaissance access to common admin, debug, actuator, metrics, and OS filesystem probes (`admin`, `debug`, `_debug`, `actuator`, `metrics`, `phpinfo`, `eval-stdin`, `console`, `server-status`, `wp-login.php`, `wp-admin`, `config`, `env`, `git`, `etc/passwd`, and OS prefixes like `etc/`, `proc/`, `sys/`, `root/`, `bin/`, `usr/`, `var/`, `dev/`, `tmp/`, `opt/`), returning **HTTP 404 Not Found**.
+
+3. **Production Client Sourcemap Suppression (`vite.config.ts`):**
+   - Configured `build: { sourcemap: false, minify: "esbuild" }` in `vite.config.ts`.
+   - Production bundle generation verified: zero `.map` files produced in `dist/assets/`, preventing exposure of frontend TypeScript source code, internal comments, and architectural structure to reverse engineering.
+
+4. **Client Console Warning Defense (`src/services/api.ts`):**
+   - Gated Axios response interceptor warning logging behind `if (import.meta.env.DEV)`.
+   - In production builds, API call errors and response payloads are not emitted to client browser devtools.
+
+5. **Reverse Proxy Defense & Information Concealment (`nginx.conf`):**
+   - Added `server_tokens off;` to suppress Nginx server version headers in containerized deployments.
+   - Added `location ~ /\. { deny all; access_log off; log_not_found off; }` to reject hidden dotfiles.
+   - Added regex restriction `location ~* \.(env|db|sqlite|sql|py|sh|yml|yaml|ini|log|bak|map)$ { deny all; access_log off; log_not_found off; }` to block direct access to database, config, script, and source files.
+
+6. **Synthetic Data Hygiene (`backend/seed_data.py`):**
+   - Replaced non-standard synthetic domains (`enterprise.in`, `domain.com`) with RFC 2606 reserved synthetic domain `@example.com` (`vikram.sharma@example.com` and `{fn}.{ln}@example.com`) across all seed customer records and abandoned checkouts.
+
+7. **Regression Tests Added (`tests/test_security_hardening.py`):**
+   - `test_serve_spa_blocks_dotfiles`: Verifies hidden dotfiles (`/.env`, `/.git`, `/.env.production`, `/.gitignore`) return HTTP 404.
+   - `test_serve_spa_blocks_sensitive_extensions`: Verifies requests for sensitive extensions (`.db`, `.py`, `.ini`, `.sh`, `.log`, `.sql`, `.sqlite`, `.bak`, `.map`) return HTTP 404.
+   - `test_serve_spa_blocks_path_traversal`: Verifies directory traversal attempts return HTTP 404.
+   - `test_serve_spa_blocks_debug_admin_probes`: Verifies common probe routes (`/admin`, `/debug`, `/_debug`, `/actuator`, `/metrics`, `/phpinfo`, `/etc/passwd`, `/proc/cpuinfo`) return HTTP 404.
+   - `test_production_mode_rejects_debug_enabled`: Verifies `DEBUG=True` in production raises startup `ValueError`.
+   - `test_fastapi_debug_mode_disabled_in_production`: Verifies FastAPI debug mode is strictly False in production.
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **141 passed, 0 failed in 16.87s** (6 new regression tests added, total 56 in security test suite).
+- **Static Analysis (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues** across 8,489 lines.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 190 files**.
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
+- **Frontend Production Build (`npm run build`):** **Passed in 3.63s** (sourcemaps cleanly disabled).
+
+
 
 
 
