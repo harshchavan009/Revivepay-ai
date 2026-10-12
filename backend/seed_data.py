@@ -109,7 +109,7 @@ def seed_database(force_reseed: bool = False):
         merchant_id=merchant.merchant_id,
         external_customer_id="cust_ext_1001",
         name="Vikramaditya Sharma",
-        email="vikram.sharma@enterprise.in",
+        email="vikram.sharma@example.com",
         account_tier="RETURNING",
         total_successful_payments=8,
         total_failed_payments=1,
@@ -869,7 +869,7 @@ def seed_database(force_reseed: bool = False):
         chk = AbandonedCheckout(
             checkout_id=f"chk_{70000 + i}",
             customer_name=f"{fn} {ln}",
-            customer_email=f"{fn.lower()}.{ln.lower()}@domain.com",
+            customer_email=f"{fn.lower()}.{ln.lower()}@example.com",
             cart_items=items,
             total_value=tot,
             currency="INR",
@@ -908,6 +908,7 @@ def seed_database(force_reseed: bool = False):
     from backend.services.audit_service import AuditService, GENESIS_HASH
     prev_h = GENESIS_HASH
     for log_item in all_logs:
+        log_item._allow_audit_update = True
         log_item.previous_hash = prev_h
         log_item.entry_hash = AuditService._compute_hash(
             prev_hash=prev_h,

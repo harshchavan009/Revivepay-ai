@@ -132,7 +132,10 @@ def test_rbi_emandate_pre_debit_notification_enforcement(db):
     Verifies that recurring subscription charges ≥ ₹15,000 are blocked by PolicyGateway
     if the 24-hour pre-debit customer notification window has not elapsed.
     """
-    # Create subscription ≥ 15,000 with NO notification sent
+    # Create subscription ≥ 15,000 with NO notification sent (clean up any leftover)
+    db.query(Subscription).filter(Subscription.subscription_id == "sub_test_emandate_01").delete()
+    db.commit()
+
     sub = Subscription(
         subscription_id="sub_test_emandate_01",
         customer_id="cust_test_01",
@@ -166,6 +169,9 @@ def test_rbi_emandate_customer_opt_out_cancellation_and_audit(db):
     Verifies that a customer opt-out cancels the recurring charge and logs a distinct
     customer-initiated action in the immutable audit ledger.
     """
+    db.query(Subscription).filter(Subscription.subscription_id == "sub_test_opt_out_01").delete()
+    db.commit()
+
     sub = Subscription(
         subscription_id="sub_test_opt_out_01",
         customer_id="cust_test_02",

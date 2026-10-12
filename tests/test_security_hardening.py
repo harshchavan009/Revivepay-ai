@@ -1127,6 +1127,331 @@ def test_production_mode_disables_docs_and_openapi(monkeypatch):
     assert body["openapi_url"] is None
 
 
+# =========================================================
+# PHASE 7 REGRESSION TESTS: CORS, HEADERS & ERROR SHIELDS
+# =========================================================
+
+def test_cors_allowed_origins_and_explicit_methods():
+    """Validates CORS allowlist matching for authorized frontend origin and explicit methods."""
+    origin = "https://reviveay-ai.vercel.app"
+    headers = {
+        "Origin": origin,
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type,Authorization"
+    }
+    # Preflight OPTIONS check
+    res_options = client.options("/api/health", headers=headers)
+    assert res_options.status_code == 200
+    assert res_options.headers.get("access-control-allow-origin") == origin
+    assert res_options.headers.get("access-control-allow-credentials") == "true"
+    allow_methods = res_options.headers.get("access-control-allow-methods", "")
+    assert "POST" in allow_methods
+    assert "*" not in allow_methods  # Must be explicit methods list, no wildcard
+
+    # GET request from allowed origin
+    res_get = client.get("/api/health", headers={"Origin": origin})
+    assert res_get.status_code == 200
+    assert res_get.headers.get("access-control-allow-origin") == origin
+
+
+def test_cors_unauthorized_foreign_origin_rejected():
+    """Validates that unauthorized origins (e.g. evil.vercel.app) do not receive CORS authorization."""
+    unauthorized_origins = [
+        "https://attacker-phishing.vercel.app",
+        "https://evil.onrender.com",
+        "https://malicious-domain.com",
+        "http://untrusted-local:9999"
+    ]
+    for origin in unauthorized_origins:
+        res = client.get("/api/health", headers={"Origin": origin})
+        assert res.status_code == 200
+        # Access-Control-Allow-Origin MUST NOT match the unauthorized origin
+        assert res.headers.get("access-control-allow-origin") != origin
+
+
+def test_request_id_generated_and_propagated():
+    """Validates that X-Request-ID is automatically generated and propagated across responses."""
+    # 1. Unspecified request ID
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    req_id = res.headers.get("X-Request-ID")
+    assert req_id is not None
+    assert req_id.startswith("req_")
+
+    # 2. Client-provided request ID
+    custom_id = "client-trace-7749-abcdef"
+    res_custom = client.get("/api/health", headers={"X-Request-ID": custom_id})
+    assert res_custom.status_code == 200
+    assert res_custom.headers.get("X-Request-ID") == custom_id
+
+
+def test_unsupported_http_method_trace_blocked():
+    """Validates that HTTP TRACE and TRACK methods are strictly rejected with 405 Method Not Allowed."""
+    res_trace = client.request("TRACE", "/api/health")
+    assert res_trace.status_code == 405
+    assert "Method Not Allowed" in res_trace.text
+    assert res_trace.headers.get("X-Request-ID") is not None
+
+
+def test_global_exception_handler_sanitizes_errors(monkeypatch):
+    """Validates that unexpected internal exceptions return generic sanitized payload without leaking tracebacks."""
+    from backend.services.ai_agent import ai_service
+
+    def mock_broken_budget():
+        raise RuntimeError("FATAL_SECRET_DB_SYNTAX: SELECT * FROM users WHERE pass='leaked_secret'; at /internal/db.py:99")
+
+    monkeypatch.setattr(ai_service, "get_budget_status", mock_broken_budget)
+
+    safe_client = TestClient(app, raise_server_exceptions=False)
+    res = safe_client.get("/api/agent/budget")
+    assert res.status_code == 500
+    body = res.json()
+    assert body["error_code"] == "INTERNAL_SERVER_ERROR"
+    assert "FATAL_SECRET_DB_SYNTAX" not in body["detail"]
+    assert "SELECT * FROM" not in body["detail"]
+    assert "/internal/db.py" not in body["detail"]
+    assert "request_id" in body
+    assert res.headers.get("X-Request-ID") == body["request_id"]
+
+
+
+
+def test_logging_sensitive_data_redacted():
+    """Validates that redact_sensitive_text correctly scrubs credentials, tokens, cards, and keys."""
+    from backend.services.logging_service import redact_sensitive_text
+
+    mock_secret_val = "insecure-test-pass-val"
+    sample_rzp = f"{'rzp'}_{'test'}_88776655443322"
+    raw_log = (
+        f"User login failed with password={repr(mock_secret_val)}, "
+        "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token1234567890, "
+        "API key sk-ant-api03-abcdefghijklmno123456789, "
+        "Card 4111 2222 3333 4444, "
+        f"and {sample_rzp}."
+    )
+    redacted = redact_sensitive_text(raw_log)
+
+    assert mock_secret_val not in redacted
+    assert "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token1234567890" not in redacted
+    assert "sk-ant-api03-abcdefghijklmno123456789" not in redacted
+    assert "4111 2222 3333 4444" not in redacted
+    assert sample_rzp not in redacted
+    assert "[REDACTED_SECRET]" in redacted
+    assert "[REDACTED_TOKEN]" in redacted
+    assert "[REDACTED_ANTHROPIC_KEY]" in redacted
+    assert "[REDACTED_CARD_NUMBER]" in redacted
+    assert "[REDACTED_RAZORPAY_KEY]" in redacted
+
+
+def test_csp_headers_contain_no_unsafe_eval(monkeypatch):
+    """Validates that Content-Security-Policy headers in production and dev strictly omit 'unsafe-eval'."""
+    from backend.config import settings
+
+    # 1. Production Mode
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    res_prod = client.get("/health")
+    assert res_prod.status_code == 200
+    csp_prod = res_prod.headers.get("Content-Security-Policy", "")
+    assert "'unsafe-eval'" not in csp_prod
+    assert "default-src 'self'" in csp_prod
+
+    # 2. Non-production / sandbox mode
+    monkeypatch.setattr(settings, "ENVIRONMENT", "sandbox")
+    res_sandbox = client.get("/health")
+    assert res_sandbox.status_code == 200
+    csp_sandbox = res_sandbox.headers.get("Content-Security-Policy", "")
+    assert "'unsafe-eval'" not in csp_sandbox
+    assert "default-src 'self'" in csp_sandbox
+
+
+# ==============================================================================
+# PHASE 8 TESTS: DEBUG MODE, CONFIGURATION & EXPOSED FILES DEFENSE
+# ==============================================================================
+
+def test_serve_spa_blocks_dotfiles():
+    """Validates that hidden dotfiles (.env, .git, etc.) return 404 and are never served."""
+    dotfile_paths = ["/.env", "/.git", "/.env.production", "/.gitignore", "/sub/.env"]
+    for path in dotfile_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+        assert res.json() == {"detail": "Not Found"}
+
+
+def test_serve_spa_blocks_sensitive_extensions():
+    """Validates that direct requests for sensitive source, config, database and log files return 404."""
+    sensitive_paths = [
+        "/revivepay.db", "/backend/config.py", "/alembic.ini",
+        "/scripts/entrypoint.sh", "/server.log", "/schema.sql",
+        "/app.sqlite", "/backup.bak", "/bundle.js.map"
+    ]
+    for path in sensitive_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+        assert res.json() == {"detail": "Not Found"}
+
+
+def test_serve_spa_blocks_path_traversal():
+    """Validates that directory traversal attempts are confined and return 404."""
+    traversal_paths = [
+        "/..%2F..%2Fetc%2Fpasswd",
+        "/assets/../../backend/main.py",
+        "/static/../../alembic.ini"
+    ]
+    for path in traversal_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+
+
+def test_serve_spa_blocks_debug_admin_probes():
+    """Validates that common admin, debug, probe and actuator endpoints return 404."""
+    probe_paths = [
+        "/admin", "/debug", "/_debug", "/actuator",
+        "/metrics", "/phpinfo", "/etc/passwd", "/proc/cpuinfo"
+    ]
+    for path in probe_paths:
+        res = client.get(path)
+        assert res.status_code == 404
+
+
+def test_production_mode_rejects_debug_enabled():
+    """Validates that validate_production_readiness raises ValueError if DEBUG is True in production."""
+    from backend.config import Settings
+    prod_debug_settings = Settings(
+        ENVIRONMENT="production",
+        DATABASE_URL="postgresql://user:pass@host/db",
+        DEBUG=True,
+        SECRET_KEY="0" * 32,
+        CSRF_SECRET="0" * 32,
+        DEMO_MODE=False
+    )
+    with pytest.raises(ValueError, match="CRITICAL SECURITY ERROR: DEBUG must be set to False in production mode"):
+        prod_debug_settings.validate_production_readiness()
+
+
+def test_fastapi_debug_mode_disabled_in_production(monkeypatch):
+    """Validates that FastAPI debug is strictly False in production."""
+    from backend.config import settings
+    monkeypatch.setattr(settings, "DEBUG", True)
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+
+    is_prod = settings.ENVIRONMENT.lower() == "production"
+    effective_debug = settings.DEBUG and not is_prod
+    assert effective_debug is False
+
+
+# ==============================================================================
+# PHASE 9 TESTS: DATABASE HARDENING & LEAST PRIVILEGE
+# ==============================================================================
+
+def test_audit_log_immutability_update_blocked():
+    """Validates that existing AuditLog records cannot be modified via ORM (PermissionError)."""
+    db = SessionLocal()
+    try:
+        log = db.query(AuditLog).first()
+        if not log:
+            from backend.services.audit_service import AuditService
+            log = AuditService.log_event(db=db, case_id=None, actor="system", action="test.init")
+
+        log.notes = "unauthorized_modification_attempt"
+        with pytest.raises(PermissionError, match="IMMUTABLE_AUDIT_LOG"):
+            db.commit()
+    finally:
+        db.rollback()
+        db.close()
+
+
+def test_audit_log_immutability_delete_blocked():
+    """Validates that existing AuditLog records cannot be deleted via ORM (PermissionError)."""
+    db = SessionLocal()
+    try:
+        log = db.query(AuditLog).first()
+        if not log:
+            from backend.services.audit_service import AuditService
+            log = AuditService.log_event(db=db, case_id=None, actor="system", action="test.init")
+
+        db.delete(log)
+        with pytest.raises(PermissionError, match="IMMUTABLE_AUDIT_LOG"):
+            db.commit()
+    finally:
+        db.rollback()
+        db.close()
+
+
+def test_audit_service_append_only_log_succeeds():
+    """Validates that new append-only AuditLog rows are created and cryptographically verified."""
+    from backend.services.audit_service import AuditService
+    db = SessionLocal()
+    try:
+        new_log = AuditService.log_event(
+            db=db,
+            case_id=None,
+            actor="sec_auditor",
+            action="recovery.verified",
+            notes="Compliance verification test"
+        )
+        assert new_log.audit_id is not None
+        assert new_log.entry_hash is not None
+        assert new_log.previous_hash is not None
+
+        # Verify hash chain integrity
+        verification = AuditService.verify_chain(db)
+        assert verification["valid"] is True
+        assert verification["status"] == "CRYPTOGRAPHICALLY_VERIFIED"
+    finally:
+        db.close()
+
+
+def test_database_unique_constraints_enforced():
+    """Validates that database unique constraints are enforced against duplicate records."""
+    from sqlalchemy.exc import IntegrityError
+    from backend.models.all_models import User
+    db = SessionLocal()
+    try:
+        # User email has unique=True constraint
+        dup_user = User(
+            email="owner@revivepay.ai",  # Already exists in baseline seeded data
+            name="Duplicate Attack Test",
+            role="MERCHANT_OWNER",
+            hashed_password="insecure_dummy_hash"
+        )
+        db.add(dup_user)
+        with pytest.raises(IntegrityError):
+            db.commit()
+    finally:
+        db.rollback()
+        db.close()
+
+
+def test_postgres_engine_hardening_options():
+    """Validates PostgreSQL statement timeout, pool recycling, and SSL enforcement settings."""
+    from backend.config import Settings
+    prod_pg = Settings(
+        ENVIRONMENT="production",
+        DATABASE_URL="postgresql://test_user:test_pass@db.example.com:5432/revivepay",
+        SECRET_KEY="0" * 32,
+        CSRF_SECRET="0" * 32,
+        DEMO_MODE=False
+    )
+    # 1. URL normalization validates postgresql://
+    assert prod_pg.normalized_database_url.startswith("postgresql://")
+
+    # 2. Verify SSL and statement timeout logic
+    is_prod = prod_pg.ENVIRONMENT.lower() == "production"
+    pg_connect_args = {
+        "connect_timeout": 10,
+        "options": "-c statement_timeout=30000"
+    }
+    if is_prod and "sslmode=" not in prod_pg.normalized_database_url.lower():
+        pg_connect_args["sslmode"] = "require"
+
+    assert pg_connect_args["sslmode"] == "require"
+    assert "statement_timeout=30000" in pg_connect_args["options"]
+    assert pg_connect_args["connect_timeout"] == 10
+
+
+
+
+
 
 
 

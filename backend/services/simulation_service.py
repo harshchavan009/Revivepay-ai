@@ -671,7 +671,7 @@ class SimulationService:
             
             db.add(AuditLog(
                 audit_id=audit_id,
-                case_id="WEBHOOK-INGRESS",
+                case_id=None,
                 event_type=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
                 actor_type="GATEWAY",
                 actor_id="Razorpay HMAC-SHA256 Gateway",

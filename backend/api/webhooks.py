@@ -41,7 +41,7 @@ async def handle_razorpay_webhook(
         try:
             AuditService.log_event(
                 db=db,
-                case_id="WEBHOOK-INGRESS",
+                case_id=None,
                 actor="Razorpay Ingress Defense",
                 actor_type="GATEWAY",
                 action=WebhookEventType.WEBHOOK_PAYLOAD_OVERSIZED.value,
@@ -66,7 +66,7 @@ async def handle_razorpay_webhook(
         try:
             AuditService.log_event(
                 db=db,
-                case_id="WEBHOOK-INGRESS",
+                case_id=None,
                 actor="Razorpay HMAC-SHA256 Gateway",
                 actor_type="GATEWAY",
                 action=WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
@@ -88,7 +88,7 @@ async def handle_razorpay_webhook(
         try:
             AuditService.log_event(
                 db=db,
-                case_id="WEBHOOK-INGRESS",
+                case_id=None,
                 actor="Razorpay HMAC-SHA256 Gateway",
                 actor_type="GATEWAY",
                 action=WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
@@ -112,7 +112,7 @@ async def handle_razorpay_webhook(
             try:
                 AuditService.log_event(
                     db=db,
-                    case_id="WEBHOOK-INGRESS",
+                    case_id=None,
                     actor="Razorpay HMAC-SHA256 Gateway",
                     actor_type="GATEWAY",
                     action=WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
@@ -147,7 +147,7 @@ async def handle_razorpay_webhook(
                     try:
                         AuditService.log_event(
                             db=db,
-                            case_id="WEBHOOK-INGRESS",
+                            case_id=None,
                             actor="Razorpay Ingress Defense",
                             actor_type="GATEWAY",
                             action=WebhookEventType.WEBHOOK_REPLAY_BLOCKED.value,
@@ -186,7 +186,7 @@ async def handle_razorpay_webhook(
         try:
             AuditService.log_event(
                 db=db,
-                case_id=existing_case.case_id if existing_case else "WEBHOOK-INGRESS",
+                case_id=existing_case.case_id if existing_case else None,
                 actor="Razorpay Idempotency Engine",
                 actor_type="GATEWAY",
                 action=WebhookEventType.WEBHOOK_DUPLICATE_BLOCKED.value,
@@ -314,7 +314,7 @@ async def handle_razorpay_webhook(
         try:
             AuditService.log_event(
                 db=db,
-                case_id=existing_case.case_id if existing_case else "WEBHOOK-INGRESS",
+                case_id=existing_case.case_id if existing_case else None,
                 actor="Razorpay Idempotency Engine",
                 actor_type="GATEWAY",
                 action=WebhookEventType.WEBHOOK_DUPLICATE_BLOCKED.value,

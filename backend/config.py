@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     # Demo Mode Governance: controls 1-click persona login
     # Defaults to False in production; enabled in sandbox/development/test.
     DEMO_MODE: bool = Field(default=True)
+    DEBUG: bool = Field(default=False)
 
     # Razorpay Gateway Integration
     RAZORPAY_ENABLED: bool = Field(default=False)
@@ -77,7 +78,10 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
-        "https://demo.revivepay.ai"
+        "https://reviveay-ai.vercel.app",
+        "https://revivepay-ai.vercel.app",
+        "https://demo.revivepay.ai",
+        "https://revivepay-backend.onrender.com"
     ])
 
     @property
@@ -129,6 +133,10 @@ class Settings(BaseSettings):
                     raise ValueError("CRITICAL SECURITY ERROR: Valid RAZORPAY_KEY_SECRET is required when Razorpay is enabled in production.")
                 if not self.RAZORPAY_WEBHOOK_SECRET or "placeholder" in self.RAZORPAY_WEBHOOK_SECRET.lower():
                     raise ValueError("CRITICAL SECURITY ERROR: Valid RAZORPAY_WEBHOOK_SECRET is required when Razorpay is enabled in production.")
+
+            # 5. Production Debug Mode Guard
+            if self.DEBUG:
+                raise ValueError("CRITICAL SECURITY ERROR: DEBUG must be set to False in production mode.")
 
         return True
 
