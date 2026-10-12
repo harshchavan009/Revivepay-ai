@@ -458,4 +458,59 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 189 files**.
 - **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
 
+---
+
+## Phase 5 Fixes Applied & Verification Evidence (Webhook Security & Idempotency Hardening)
+
+### Fixes Implemented in Phase 5:
+1. **Timing-Safe HMAC-SHA256 Signature Verification (`backend/services/razorpay_service.py`):**
+   - Implemented constant-time string comparison via `hmac.compare_digest(expected, received)` resisting timing side-channel attacks.
+   - Normalized incoming raw request body across `bytes`, `bytearray`, and UTF-8 strings.
+   - Enforced fail-safe secret resolution:
+     - Automatically falls back to `settings.RAZORPAY_WEBHOOK_SECRET` when `secret` is not explicitly passed.
+     - Strictly rejects unconfigured or empty secrets in production (`settings.ENVIRONMENT == "production"`).
+     - Strictly rejects default/placeholder secrets in production (e.g. `"sandbox_test_webhook_secret"`, `"whsec_placeholder"`, `"whsec_test"`).
+
+2. **Replay Attack Defense & Timestamp Tolerance (`backend/api/webhooks.py`):**
+   - Enforced `MAX_REPLAY_WINDOW_SECONDS = 300` (5 minutes).
+   - Validates event timestamps from payload (`created_at`, `event_timestamp`) or header (`X-Razorpay-Event-Time`).
+   - If timestamp drift exceeds 300 seconds in production or strict mode:
+     - Webhook is rejected with **HTTP 400 Bad Request** (`"Webhook timestamp expired or outside allowable replay window of 300s"`).
+     - Records a `webhook.replay.blocked` event to the immutable audit ledger.
+
+3. **Complete Webhook Security Audit Ledger Integration (`backend/api/webhooks.py`, `backend/services/audit_service.py`):**
+   - Replaced un-hashed raw database inserts with `AuditService.log_event()`, guaranteeing every webhook security event is cryptographically linked with SHA-256 block hashing intact:
+     - `webhook.payload.oversized` (HTTP 413) on DoS attempts.
+     - `webhook.signature.invalid` (HTTP 401) on missing, forged, or unauthorized test signatures.
+     - `webhook.replay.blocked` (HTTP 400) on replayed timestamps.
+     - `webhook.duplicate.blocked` (HTTP 200 idempotent) on pre-ingestion or concurrent duplicate events.
+
+4. **Robust Database-Level Idempotency (`backend/api/webhooks.py`):**
+   - Two-stage idempotency defense:
+     1. Pre-ingestion lookup by `(provider, provider_event_id)` returning cached case status.
+     2. Database transaction `IntegrityError` rollback on concurrent racing webhook deliveries, safely resolving existing case state and writing an audit record without duplicate charge processing or double notifications.
+
+5. **Canonical Event Taxonomy Expansion (`backend/events/taxonomy.py`):**
+   - Registered canonical webhook security events:
+     - `WebhookEventType.WEBHOOK_SIGNATURE_INVALID`
+     - `WebhookEventType.WEBHOOK_DUPLICATE_BLOCKED`
+     - `WebhookEventType.WEBHOOK_REPLAY_BLOCKED`
+     - `WebhookEventType.WEBHOOK_PAYLOAD_OVERSIZED`
+   - Added all new event types to `ALL_CANONICAL_EVENTS` for schema validation and metrics alignment with `/api/ml/evaluation`.
+
+6. **Regression Tests Added (`tests/test_security_hardening.py`):**
+   - `test_webhook_replay_protection_in_production`: Verifies expired timestamps are rejected with HTTP 400 and logged to audit trail.
+   - `test_webhook_signature_audit_event_logged_on_invalid_sig`: Verifies forged signatures are logged to the immutable audit ledger.
+   - `test_webhook_duplicate_audit_event_logged_and_idempotent`: Verifies duplicate deliveries log `webhook.duplicate.blocked` and return idempotent response.
+   - `test_webhook_secret_unconfigured_in_production_fails_safe`: Verifies missing secret in production safely fails closed.
+   - `test_webhook_insecure_placeholder_secret_rejected_in_production`: Verifies placeholder secrets rejected in production.
+   - `test_webhook_raw_bytes_normalization`: Verifies robust handling of bytes, strings, bytearrays, and non-byte inputs.
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **122 passed, 0 failed in 7.97s** (6 new regression tests added, total 37 in security test suite).
+- **Static Analysis (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues**.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 189 files**.
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
+
+
 

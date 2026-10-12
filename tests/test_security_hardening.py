@@ -1,4 +1,6 @@
 import os
+import json
+import uuid
 import pytest
 import datetime
 from fastapi.testclient import TestClient
@@ -861,6 +863,178 @@ def test_sql_like_wildcard_escaping_utility():
 
     res_pay = client.get("/api/payments?search=pay%25")
     assert res_pay.status_code == 200
+
+
+# ==============================================================================
+# PHASE 5 TESTS: WEBHOOK SECURITY & IDEMPOTENCY HARDENING
+# ==============================================================================
+
+def test_webhook_replay_protection_in_production(monkeypatch):
+    """Validates that webhooks with timestamps older than 300s are rejected in production."""
+    import hmac
+    import hashlib
+    from backend.config import settings
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "DEMO_MODE", False)
+    monkeypatch.setattr(settings, "RAZORPAY_WEBHOOK_SECRET", "super_secret_webhook_key_32_chars_long")
+
+    expired_timestamp = datetime.datetime.utcnow().timestamp() - 600  # 10 minutes ago
+    payload = {
+        "event_id": f"evt_replay_test_{uuid.uuid4().hex[:8]}",
+        "event": "payment.failed",
+        "created_at": expired_timestamp,
+        "payload": {}
+    }
+    raw_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(
+        key=b"super_secret_webhook_key_32_chars_long",
+        msg=raw_bytes,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    res = client.post(
+        "/api/webhooks/razorpay",
+        data=raw_bytes,
+        headers={"X-Razorpay-Signature": sig}
+    )
+    assert res.status_code == 400
+    assert "replay window" in res.json()["detail"]
+
+    # Verify audit event was recorded with action "webhook.replay.blocked"
+    db = SessionLocal()
+    try:
+        replay_log = db.query(AuditLog).filter(
+            AuditLog.action == "webhook.replay.blocked"
+        ).order_by(AuditLog.timestamp.desc()).first()
+        assert replay_log is not None
+        assert replay_log.policy_result == "BLOCKED"
+        assert replay_log.entry_hash is not None
+    finally:
+        db.close()
+
+
+def test_webhook_signature_audit_event_logged_on_invalid_sig():
+    """Validates that invalid webhook signature attempts are logged to the immutable audit trail."""
+    import json
+    payload = {"event": "payment.failed", "event_id": f"evt_invalid_sig_{uuid.uuid4().hex[:8]}"}
+    raw_bytes = json.dumps(payload).encode("utf-8")
+
+    res = client.post(
+        "/api/webhooks/razorpay",
+        data=raw_bytes,
+        headers={"X-Razorpay-Signature": "invalid_forged_signature_hex"}
+    )
+    assert res.status_code == 401
+
+    db = SessionLocal()
+    try:
+        sig_log = db.query(AuditLog).filter(
+            AuditLog.action == "webhook.signature.invalid"
+        ).order_by(AuditLog.timestamp.desc()).first()
+        assert sig_log is not None
+        assert sig_log.policy_result == "BLOCKED"
+        assert sig_log.actor == "Razorpay HMAC-SHA256 Gateway"
+        assert sig_log.entry_hash is not None
+    finally:
+        db.close()
+
+
+def test_webhook_duplicate_audit_event_logged_and_idempotent():
+    """Validates that duplicate webhooks log 'webhook.duplicate.blocked' audit entries."""
+    import hmac
+    import hashlib
+    from backend.config import settings
+
+    secret = settings.RAZORPAY_WEBHOOK_SECRET or "sandbox_test_webhook_secret"
+    suffix = uuid.uuid4().hex[:8]
+    event_id = f"evt_sec_dup_{suffix}"
+    pay_id = f"pay_sec_dup_{suffix}"
+
+    payload = {
+        "event_id": event_id,
+        "event": "payment.failed",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": pay_id,
+                    "amount": 250000,
+                    "currency": "INR",
+                    "method": "upi",
+                    "email": f"sec_dup_{suffix}@test.io"
+                }
+            }
+        }
+    }
+    raw_bytes = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(
+        key=secret.encode("utf-8"),
+        msg=raw_bytes,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    # Delivery 1 -> Processed
+    r1 = client.post("/api/webhooks/razorpay", data=raw_bytes, headers={"X-Razorpay-Signature": sig})
+    assert r1.status_code == 200
+    assert r1.json()["status"] == "processed"
+
+    # Delivery 2 -> Duplicate Ignored
+    r2 = client.post("/api/webhooks/razorpay", data=raw_bytes, headers={"X-Razorpay-Signature": sig})
+    assert r2.status_code == 200
+    assert r2.json()["status"] == "duplicate_ignored"
+
+    # Verify audit event was logged
+    db = SessionLocal()
+    try:
+        dup_log = db.query(AuditLog).filter(
+            AuditLog.action == "webhook.duplicate.blocked",
+            AuditLog.decision["provider_event_id"].as_string() == event_id
+        ).first()
+        assert dup_log is not None
+        assert dup_log.policy_result == "PASSED"
+        assert dup_log.execution_result == "DUPLICATE_IGNORED"
+    finally:
+        db.close()
+
+
+def test_webhook_secret_unconfigured_in_production_fails_safe(monkeypatch):
+    """Validates that RazorpayService rejects signatures when secret is empty in production."""
+    from backend.services.razorpay_service import RazorpayService
+    from backend.config import settings
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "RAZORPAY_WEBHOOK_SECRET", "")
+
+    # Must return False safely and not fall back to sandbox secret
+    res = RazorpayService.verify_webhook_signature(b'test_body', 'some_sig', secret="")
+    assert res is False
+
+
+def test_webhook_insecure_placeholder_secret_rejected_in_production(monkeypatch):
+    """Validates that known test placeholders are rejected as webhook secrets in production."""
+    from backend.services.razorpay_service import RazorpayService
+    from backend.config import settings
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+
+    assert RazorpayService.verify_webhook_signature(b'test_body', 'sig', secret="sandbox_test_webhook_secret") is False
+    assert RazorpayService.verify_webhook_signature(b'test_body', 'sig', secret="whsec_placeholder") is False
+
+
+def test_webhook_raw_bytes_normalization():
+    """Validates that verify_webhook_signature safely handles strings, bytearrays, and bytes."""
+    from backend.services.razorpay_service import RazorpayService
+    secret = "test_normalization_key"
+    body_str = '{"test": 123}'
+    body_bytes = body_str.encode("utf-8")
+    body_bytearray = bytearray(body_bytes)
+
+    import hmac
+    import hashlib
+    valid_sig = hmac.new(key=secret.encode("utf-8"), msg=body_bytes, digestmod=hashlib.sha256).hexdigest()
+
+    assert RazorpayService.verify_webhook_signature(body_bytes, valid_sig, secret=secret) is True
+    assert RazorpayService.verify_webhook_signature(body_str, valid_sig, secret=secret) is True
+    assert RazorpayService.verify_webhook_signature(body_bytearray, valid_sig, secret=secret) is True
+    assert RazorpayService.verify_webhook_signature(12345, valid_sig, secret=secret) is False
+
 
 
 

@@ -18,27 +18,41 @@ class RazorpayService:
     """
 
     @classmethod
-    def verify_webhook_signature(cls, raw_body: bytes, received_signature: str, secret: str = None) -> bool:
+    def verify_webhook_signature(cls, raw_body: bytes, received_signature: str, secret: Optional[str] = None) -> bool:
         """
-        Verify incoming Razorpay webhook signature using HMAC-SHA256.
-        Razorpay sends signature in the 'X-Razorpay-Signature' header.
+        Verify incoming Razorpay webhook signature using timing-safe HMAC-SHA256 comparison.
+        Razorpay sends hexadecimal signature in the 'X-Razorpay-Signature' header.
         """
-        if not secret:
+        effective_secret = secret or settings.RAZORPAY_WEBHOOK_SECRET
+
+        # Enforce strict secret configuration in production
+        if not effective_secret or not effective_secret.strip():
             if settings.ENVIRONMENT.lower() == "production":
-                logger.error("RAZORPAY_WEBHOOK_SECRET is not configured in production mode.")
+                logger.error("RAZORPAY_WEBHOOK_SECRET is empty or unconfigured in production environment.")
                 return False
-            secret = "sandbox_test_webhook_secret"
-        
-        if not received_signature or not secret:
+            effective_secret = "sandbox_test_webhook_secret"
+
+        # In production mode, reject default or placeholder secrets
+        if settings.ENVIRONMENT.lower() == "production" and effective_secret in ["sandbox_test_webhook_secret", "whsec_placeholder", "whsec_test"]:
+            logger.error("Insecure placeholder RAZORPAY_WEBHOOK_SECRET detected in production environment.")
+            return False
+
+        if not received_signature or not received_signature.strip():
+            return False
+
+        # Ensure raw_body is normalized to bytes
+        if isinstance(raw_body, str):
+            raw_body = raw_body.encode("utf-8")
+        elif not isinstance(raw_body, (bytes, bytearray)):
             return False
 
         try:
             expected_signature = hmac.new(
-                key=secret.encode("utf-8"),
-                msg=raw_body,
+                key=effective_secret.encode("utf-8"),
+                msg=bytes(raw_body),
                 digestmod=hashlib.sha256
             ).hexdigest()
-            return hmac.compare_digest(expected_signature, received_signature)
+            return hmac.compare_digest(expected_signature, received_signature.strip())
         except Exception as e:
             logger.error(f"Error validating Razorpay webhook signature: {e}")
             return False
