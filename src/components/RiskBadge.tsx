@@ -49,7 +49,7 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ level, score, showScore = 
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border transition-colors ${config.bg} ${config.text} ${config.border}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors ${config.bg} ${config.text} ${config.border}`}
     >
       {config.icon}
       <span>{normalizedLevel}</span>

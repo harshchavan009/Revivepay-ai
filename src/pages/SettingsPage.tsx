@@ -193,7 +193,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* B.4: Architecture Decision — Model-Choice Rationale */}
+        {/* B.4: Architecture Decision: Model-Choice Rationale */}
         <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5 text-xs text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-2 font-bold text-[var(--color-text-primary)]">
             <Sparkles className="w-4 h-4 text-[var(--color-accent)]" />

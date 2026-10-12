@@ -84,7 +84,7 @@ X-Razorpay-Signature: d29...8f4
 }`,
     guarantees: [
       "Real-time authorization switch queue monitoring across HDFC, ICICI, SBI, and Axis.",
-      "Customer salary credit cycles (28th–5th) calculated from lifetime billing dates.",
+      "Customer salary credit cycles (28th to 5th) calculated from lifetime billing dates.",
       "Card velocity limits enforced to prevent issuer account freezes."
     ]
   },
@@ -214,7 +214,7 @@ export const ArchitecturePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm text-white">
+              <div className="w-8 h-8 rounded-md bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm text-white">
                 <Zap className="w-4 h-4 fill-current" />
               </div>
               <span className="font-bold text-lg tracking-tight text-[var(--color-text-primary)] flex items-center gap-1.5">
@@ -232,7 +232,7 @@ export const ArchitecturePage: React.FC = () => {
           <div className="flex items-center gap-3 text-xs font-semibold">
             <Link
               to="/dashboard"
-              className="px-4 py-2 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-premium-sm transition-all"
+              className="px-4 py-2 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-premium-sm transition-all"
             >
               Open Command Center
             </Link>
@@ -244,7 +244,7 @@ export const ArchitecturePage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-6 py-12 space-y-12 flex-1">
         {/* Hero Title & Recruiter Briefing Note */}
         <div className="space-y-4 max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] font-mono text-xs font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] font-mono text-xs font-bold">
             <Layers className="w-3.5 h-3.5" />
             <span>FINTECH ENGINEERING SPECIFICATION · AGENTIC ARCHITECTURE</span>
           </div>
@@ -255,15 +255,15 @@ export const ArchitecturePage: React.FC = () => {
             RevivePay replaces dumb, blind dunning cron loops with a 7-stage autonomous agent loop. Built with strict deterministic policy guardrails, cryptographic SHA-256 hash chaining, and real-time Razorpay webhook verification.
           </p>
           <div className="flex flex-wrap items-center gap-4 pt-2 text-xs font-mono">
-            <span className="px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
+            <span className="px-3 py-1.5 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               <span>Zero Frontend Secret Leakage</span>
             </span>
-            <span className="px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
+            <span className="px-3 py-1.5 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               <span>Deterministic Policy Invariants</span>
             </span>
-            <span className="px-3 py-1.5 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
+            <span className="px-3 py-1.5 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] flex items-center gap-1.5 shadow-sm">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               <span>SHA-256 Hash Chain Integrity</span>
             </span>
@@ -271,7 +271,7 @@ export const ArchitecturePage: React.FC = () => {
         </div>
 
         {/* INTERVIEW-READINESS ARTIFACT: Why a Deterministic Policy Layer */}
-        <div className="p-6 sm:p-7 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-accent-border)] shadow-premium-md space-y-3">
+        <div className="p-6 sm:p-7 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-accent-border)] shadow-premium-md space-y-3">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-5 h-5 text-[var(--color-accent)]" />
             <h2 className="text-base font-bold text-[var(--color-text-primary)]">
@@ -282,7 +282,7 @@ export const ArchitecturePage: React.FC = () => {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-            The LLM proposes and reasons based on multi-signal telemetry, but a bounded, auditable rules engine (hard retry caps, approval thresholds, confidence floors) has the final say on execution — because payment actions need to be explainable and mathematically safe even if the model's output is unpredictable.
+            The LLM proposes and reasons based on multi-signal telemetry, but a bounded, auditable rules engine (hard retry caps, approval thresholds, confidence floors) has the final say on execution: payment actions need to be explainable and mathematically safe even if the model's output is unpredictable.
           </p>
           <div className="pt-2 border-t border-[var(--color-border-subtle)] flex flex-wrap items-center gap-4 text-xs font-mono text-[var(--color-text-muted)]">
             <span className="flex items-center gap-1.5">
@@ -374,7 +374,7 @@ export const ArchitecturePage: React.FC = () => {
               <button
                 key={step.stepNumber}
                 onClick={() => setActiveStepIdx(idx)}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
                   activeStepIdx === idx
                     ? "bg-[var(--color-accent-subtle)] border-[var(--color-accent)] shadow-premium-sm text-[var(--color-text-primary)]"
                     : "bg-[var(--color-bg-surface)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] text-[var(--color-text-secondary)]"
@@ -383,7 +383,7 @@ export const ArchitecturePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-bold text-xs">Step 0{step.stepNumber}</span>
                   {activeStepIdx === idx && (
-                    <span className="w-2 h-2 rounded-full bg-[var(--color-accent)] animate-pulse"></span>
+                    <span className="w-2 h-2 rounded-full bg-[var(--color-accent)]"></span>
                   )}
                 </div>
                 <p className="text-xs font-bold mt-1 text-[var(--color-text-primary)] truncate">{step.title.split(". ")[1]}</p>
@@ -392,7 +392,7 @@ export const ArchitecturePage: React.FC = () => {
           </div>
 
           {/* Detailed Active Step Inspector Card */}
-          <div className="p-6 sm:p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-md space-y-6">
+          <div className="p-6 sm:p-8 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-md space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-border-subtle)] pb-4">
               <div>
                 <span className="text-[10px] font-mono text-[var(--color-accent)] uppercase tracking-wider font-bold">
@@ -404,7 +404,7 @@ export const ArchitecturePage: React.FC = () => {
                 <p className="text-xs text-[var(--color-text-secondary)] mt-1">{activeStep.shortDesc}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono px-3 py-1.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-bold">
+                <span className="text-xs font-mono px-3 py-1.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-bold">
                   Actor: <strong className="text-[var(--color-text-primary)]">{activeStep.actor}</strong>
                 </span>
               </div>
@@ -417,7 +417,7 @@ export const ArchitecturePage: React.FC = () => {
                 <span className="text-[10px] font-mono text-[var(--color-text-muted)] uppercase tracking-wider font-bold block">
                   Input Telemetry / Context:
                 </span>
-                <pre className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[11px] font-mono text-slate-300 dark:text-slate-300 overflow-x-auto leading-relaxed">
+                <pre className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[11px] font-mono text-slate-300 dark:text-slate-300 overflow-x-auto leading-relaxed">
                   <code>{activeStep.inputPayload}</code>
                 </pre>
               </div>
@@ -427,7 +427,7 @@ export const ArchitecturePage: React.FC = () => {
                 <span className="text-[10px] font-mono text-[var(--color-accent)] uppercase tracking-wider font-bold block">
                   Deterministic Execution / State Transition:
                 </span>
-                <pre className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-accent-border)] text-[11px] font-mono text-emerald-600 dark:text-emerald-400 overflow-x-auto leading-relaxed">
+                <pre className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-accent-border)] text-[11px] font-mono text-emerald-600 dark:text-emerald-400 overflow-x-auto leading-relaxed">
                   <code>{activeStep.outputPayload}</code>
                 </pre>
               </div>
@@ -442,7 +442,7 @@ export const ArchitecturePage: React.FC = () => {
                 {activeStep.guarantees.map((g, gIdx) => (
                   <div
                     key={gIdx}
-                    className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-start gap-2.5 text-xs text-[var(--color-text-secondary)]"
+                    className="p-3.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-start gap-2.5 text-xs text-[var(--color-text-secondary)]"
                   >
                     <CheckCircle2 className="w-4 h-4 text-[var(--color-accent)] shrink-0 mt-0.5" />
                     <span className="leading-relaxed">{g}</span>
@@ -467,9 +467,9 @@ export const ArchitecturePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Primary Model */}
-            <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+            <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
                   PRIMARY AGENT
                 </span>
                 <span className="text-xs font-mono text-[var(--color-text-muted)]">Mean: 380ms</span>
@@ -488,9 +488,9 @@ export const ArchitecturePage: React.FC = () => {
             </div>
 
             {/* Standby Fallback */}
-            <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+            <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-bold border border-[var(--color-accent-border)]">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-bold border border-[var(--color-accent-border)]">
                   HOT STANDBY
                 </span>
                 <span className="text-xs font-mono text-[var(--color-text-muted)]">Mean: 410ms</span>
@@ -509,9 +509,9 @@ export const ArchitecturePage: React.FC = () => {
             </div>
 
             {/* Deterministic Rule Engine */}
-            <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+            <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/30">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold border border-purple-500/30">
                   SAFETY INVARIANT
                 </span>
                 <span className="text-xs font-mono text-emerald-500 font-bold">&lt; 1ms Latency</span>
@@ -532,10 +532,10 @@ export const ArchitecturePage: React.FC = () => {
         </section>
 
         {/* SECTION 3: CRYPTOGRAPHIC SHA-256 AUDIT LEDGER */}
-        <section className="p-8 rounded-3xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-md">
+        <section className="p-8 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-md">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-border-subtle)] pb-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-xs font-bold border border-amber-500/30">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-xs font-bold border border-amber-500/30">
                 <Lock className="w-3.5 h-3.5" />
                 <span>TAMPER-EVIDENT LEDGER</span>
               </div>
@@ -548,7 +548,7 @@ export const ArchitecturePage: React.FC = () => {
             </div>
             <Link
               to="/audit"
-              className="px-4 py-2 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-text-primary)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-text-primary)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <span>Explore Live Audit Log</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -556,7 +556,7 @@ export const ArchitecturePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
+            <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
               <span className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <FileCheck className="w-4 h-4 text-emerald-500" />
                 <span>Append-Only Integrity</span>
@@ -566,7 +566,7 @@ export const ArchitecturePage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
+            <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
               <span className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <KeyRound className="w-4 h-4 text-[var(--color-accent)]" />
                 <span>HMAC Webhook Provenance</span>
@@ -576,7 +576,7 @@ export const ArchitecturePage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
+            <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
               <span className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-purple-500" />
                 <span>SOC-2 & PCI-DSS-Informed Architecture</span>
@@ -589,7 +589,7 @@ export const ArchitecturePage: React.FC = () => {
         </section>
 
         {/* SECTION 4: RECRUITER & STAFF ENGINEER QUICK LINKS */}
-        <section className="p-8 rounded-3xl bg-gradient-to-r from-[var(--color-bg-surface)] to-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] flex flex-col md:flex-row items-center justify-between gap-6 shadow-premium-md">
+        <section className="p-8 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] flex flex-col md:flex-row items-center justify-between gap-6 shadow-premium-sm">
           <div className="space-y-2">
             <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
               Explore the Codebase & Interactive Sandbox
@@ -602,7 +602,7 @@ export const ArchitecturePage: React.FC = () => {
           <div className="flex items-center gap-3 flex-wrap">
             <Link
               to="/cases/RV-10291"
-              className="px-5 py-2.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-2.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span>Inspect Demo Case RV-10291</span>
               <ArrowRight className="w-4 h-4" />
@@ -610,7 +610,7 @@ export const ArchitecturePage: React.FC = () => {
 
             <Link
               to="/simulation"
-              className="px-5 py-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] font-semibold text-xs transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] font-semibold text-xs transition-colors cursor-pointer"
             >
               <span>Simulation Lab</span>
             </Link>

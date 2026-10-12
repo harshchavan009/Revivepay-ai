@@ -80,8 +80,7 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-canvas)] text-[var(--color-text-primary)] selection:bg-[var(--color-accent)] selection:text-white font-sans antialiased overflow-x-hidden transition-colors">
-      {/* Background ambient lighting */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(79,95,240,0.15),rgba(0,0,0,0))] pointer-events-none" />
+      {/* Main Container */}
 
       {/* TOP NAVIGATION BAR */}
       <nav className="h-20 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)]/90 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between transition-colors">
@@ -110,7 +109,7 @@ export const LandingPage: React.FC = () => {
               How It Works
             </a>
             <a href="#signals-engine" className="hover:text-[var(--color-text-primary)] transition-colors">
-              200+ ML Signals
+              Payment Signals
             </a>
             <a href="#roi-calculator" className="hover:text-[var(--color-text-primary)] transition-colors">
               ROI Calculator
@@ -127,8 +126,8 @@ export const LandingPage: React.FC = () => {
             <Link to="/about" className="hover:text-[var(--color-text-primary)] transition-colors">
               About
             </Link>
-            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30 text-xs font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/30 text-xs font-semibold">
+              <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500"></span>
               <span>Razorpay Test Sandbox Ready</span>
             </div>
           </div>
@@ -145,7 +144,7 @@ export const LandingPage: React.FC = () => {
 
           <Link
             to="/demo"
-            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-border-hover)] bg-[var(--color-bg-canvas)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-sm"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-md border border-[var(--color-border)] hover:border-[var(--color-border-hover)] bg-[var(--color-bg-canvas)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-sm"
           >
             <PlayCircle className="w-3.5 h-3.5 text-[var(--color-accent)]" />
             <span>Start Demo</span>
@@ -153,7 +152,7 @@ export const LandingPage: React.FC = () => {
 
           <Link
             to="/dashboard"
-            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-premium-sm transition-all hover:scale-102 active:scale-98 text-xs sm:text-sm font-bold"
+            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-premium-sm transition-all text-xs sm:text-sm font-bold"
           >
             Open Command Center
           </Link>
@@ -165,9 +164,9 @@ export const LandingPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           {/* Left Column: Headline, Description & CTAs */}
           <div className="lg:col-span-6 space-y-6 sm:space-y-7 text-left">
-            {/* Top Pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono font-medium tracking-wide">
-              <CircleDot className="w-3.5 h-3.5 text-[var(--color-accent)] animate-pulse" />
+            {/* Top Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono font-medium tracking-wide">
+              <CircleDot className="w-3.5 h-3.5 text-[var(--color-accent)]" />
               <span>POLICY-GATED AUTONOMOUS PAYMENT RECOVERY</span>
             </div>
 
@@ -175,20 +174,17 @@ export const LandingPage: React.FC = () => {
             <div className="space-y-1">
               <p className="text-xs font-mono font-bold tracking-[0.25em] text-[var(--color-text-muted)] uppercase">REVIVE AI</p>
               <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.1]">
-                Recover Revenue{" "}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-accent)] to-violet-500">
-                  Before It's Lost.
-                </span>
+                Autonomous Payment Recovery for Razorpay.
               </h1>
             </div>
 
             {/* Subheadline & Description */}
             <div className="space-y-3 text-[var(--color-text-secondary)] text-sm sm:text-base leading-relaxed max-w-xl">
               <p className="font-medium text-[var(--color-text-primary)] text-base">
-                AI-assisted revenue recovery with policy-governed automation and verified financial outcomes.
+                Policy-governed payment retry automation with deterministic rules and cryptographic verification.
               </p>
               <p className="text-xs sm:text-sm text-[var(--color-text-muted)] leading-relaxed">
-                Integrated with Razorpay's billing engine and webhook stream, Revive makes context-aware retry decisions rather than dumb cron loops — with strict merchant limits, human approvals for high-value cases, and an immutable cryptographic audit trail.
+                Integrated with Razorpay's billing engine and webhook stream, Revive executes context-aware recovery decisions under strict merchant limits, requiring operator approval for high-value cases and logging all state transitions to an immutable hash chain.
               </p>
             </div>
 
@@ -196,7 +192,7 @@ export const LandingPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link
                 to="/demo"
-                className="flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-md transition-all hover:scale-102 active:scale-98 group"
+                className="flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-md transition-all group"
               >
                 <PlayCircle className="w-4 h-4" />
                 <span>Start Demo</span>
@@ -205,7 +201,7 @@ export const LandingPage: React.FC = () => {
 
               <Link
                 to="/architecture"
-                className="flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-semibold text-sm transition-all shadow-premium-sm group"
+                className="flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-md bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-semibold text-sm transition-all shadow-premium-sm group"
               >
                 <span>Explore Architecture</span>
                 <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:translate-x-1 transition-transform" />
@@ -220,11 +216,11 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
-                <span>Zero Black-Box Risk</span>
+                <span>Deterministic Policy Guardrails</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-purple-500 shrink-0" />
-                <span>100% Auditable Ledger</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>SHA-256 Audit Log</span>
               </div>
             </div>
           </div>
@@ -273,13 +269,13 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 2 */}
-            <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 hover:border-emerald-500/50 transition-all group shadow-premium-sm">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 group-hover:scale-105 transition-transform">
+            <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 hover:border-emerald-500/50 transition-all group shadow-premium-sm">
+              <div className="w-10 h-10 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 group-hover:scale-105 transition-transform">
                 <Cpu className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">200+ ML Signals Timing</h3>
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Payment Signal Timing</h3>
               <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Calculates the exact window of peak cardholder liquidity based on payroll cycles, time zone heuristics, and bank switch reliability models.
+                Calculates the window of cardholder liquidity based on payroll cycles, time zone heuristics, and bank switch reliability models.
               </p>
               <Link
                 to="/simulation"
@@ -291,13 +287,13 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Card 3 */}
-            <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 hover:border-purple-500/50 transition-all group shadow-premium-sm">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-500 group-hover:scale-105 transition-transform">
+            <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 hover:border-purple-500/50 transition-all group shadow-premium-sm">
+              <div className="w-10 h-10 rounded-md bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-500 group-hover:scale-105 transition-transform">
                 <Lock className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Strict Policy Governance</h3>
               <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Ramp-grade safety rules ensure AI acts autonomously only within strict merchant limits. High-value amounts route to human operators with full audit trails.
+                Rules ensure AI acts autonomously only within merchant-defined limits. High-value amounts route to human operators with full audit trails.
               </p>
               <Link
                 to="/approvals"
@@ -311,14 +307,14 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* SECTION 3: 200+ SIGNALS ENGINE EXPLORER */}
+      {/* SECTION 3: SIGNALS ENGINE EXPLORER */}
       <section id="signals-engine" className="py-20 px-4 sm:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
           <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
             MULTI-SIGNAL RECOVERY INTELLIGENCE
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[var(--color-text-primary)] tracking-tight">
-            How Revive Reads 200+ Signals to Time Every Retry
+            How Revive Reads Multi-Signal Telemetry to Time Every Retry
           </h2>
           <p className="text-[var(--color-text-secondary)] text-sm sm:text-base">
             Gateways only see isolated transaction errors. Revive joins gateway telemetry with subscriber billing history, recurring invoice cycles, and banking health.
@@ -333,7 +329,7 @@ export const LandingPage: React.FC = () => {
               <button
                 key={idx}
                 onClick={() => setActiveSignalTab(idx)}
-                className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer ${
+                className={`w-full text-left p-4 rounded-md border transition-all cursor-pointer ${
                   activeSignalTab === idx
                     ? "bg-[var(--color-accent-subtle)] border-[var(--color-accent)] shadow-premium-sm text-[var(--color-text-primary)]"
                     : "bg-[var(--color-bg-surface)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] text-[var(--color-text-secondary)]"
@@ -351,7 +347,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Right: Active Tab Breakdown Display */}
-          <div className="lg:col-span-7 p-6 sm:p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-md relative overflow-hidden">
+          <div className="lg:col-span-7 p-6 sm:p-8 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-md relative overflow-hidden">
             <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-4 mb-6">
               <div>
                 <span className="text-[10px] font-mono text-[var(--color-accent)] tracking-wider uppercase font-bold">
@@ -361,8 +357,8 @@ export const LandingPage: React.FC = () => {
                   {signalCategories[activeSignalTab].title}
                 </h3>
               </div>
-              <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
-                Active in Risk Engine v1.2
+              <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
+                Active in Risk Engine
               </span>
             </div>
 
@@ -496,11 +492,11 @@ export const LandingPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-left">
-                <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
-                  <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-mono">Topline Added</p>
+                <div className="p-3 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+                  <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-mono">Simulated Topline Boost</p>
                   <p className="text-base font-bold text-[var(--color-text-primary)]">+4.8%</p>
                 </div>
-                <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+                <div className="p-3 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
                   <p className="text-[10px] text-[var(--color-text-muted)] uppercase font-mono">Integration</p>
                   <p className="text-base font-bold text-emerald-500">Razorpay Ready</p>
                 </div>
@@ -508,7 +504,7 @@ export const LandingPage: React.FC = () => {
 
               <Link
                 to="/cases/RV-10291"
-                className="w-full py-3.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-sm flex items-center justify-center gap-2 transition-all hover:scale-102 active:scale-98"
+                className="w-full py-3.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-sm flex items-center justify-center gap-2 transition-all"
               >
                 <span>Test Recovery on Demo Case</span>
                 <ArrowRight className="w-4 h-4" />
@@ -532,7 +528,7 @@ export const LandingPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto overflow-x-auto rounded-2xl border border-[var(--color-border)] shadow-premium-sm bg-[var(--color-bg-surface)]">
+        <div className="max-w-4xl mx-auto overflow-x-auto rounded-lg border border-[var(--color-border)] shadow-premium-sm bg-[var(--color-bg-surface)]">
           <table className="w-full text-left text-xs sm:text-sm border-collapse">
             <thead>
               <tr className="border-b border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-mono">
@@ -548,7 +544,7 @@ export const LandingPage: React.FC = () => {
                 {
                   cap: "Retry Execution Timing",
                   dumb: "Fixed clock intervals (24h, 48h, 72h)",
-                  revive: "Dynamic timing based on 200+ signals"
+                  revive: "Dynamic timing based on payment and banking signals"
                 },
                 {
                   cap: "Bank Switch Outage Handling",
@@ -557,7 +553,7 @@ export const LandingPage: React.FC = () => {
                 },
                 {
                   cap: "Salary & Payday Alignment",
-                  dumb: "Ignored — retries middle of month when empty",
+                  dumb: "Ignored: retries mid-month regardless of liquidity",
                   revive: "Aligns retries with payroll credit windows"
                 },
                 {
@@ -595,7 +591,7 @@ export const LandingPage: React.FC = () => {
       {/* SECTION 6: BOTTOM CALL TO ACTION */}
       <section className="py-20 px-4 sm:px-8 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] text-center transition-colors">
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-[var(--color-accent)] flex items-center justify-center shadow-premium-md text-white">
+          <div className="w-12 h-12 mx-auto rounded-lg bg-[var(--color-accent)] flex items-center justify-center shadow-premium-md text-white">
             <Zap className="w-6 h-6 fill-current" />
           </div>
 
@@ -611,7 +607,7 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <Link
               to="/cases/RV-10291"
-              className="flex items-center gap-2 px-8 py-4 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-md transition-all hover:scale-102 active:scale-98"
+              className="flex items-center gap-2 px-8 py-4 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-md transition-all"
             >
               <PlayCircle className="w-4 h-4" />
               <span>Launch Demo Case RV-10291</span>
@@ -620,7 +616,7 @@ export const LandingPage: React.FC = () => {
 
             <Link
               to="/dashboard"
-              className="flex items-center gap-2 px-8 py-4 rounded-xl bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-semibold text-sm transition-all shadow-sm"
+              className="flex items-center gap-2 px-8 py-4 rounded-md bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-semibold text-sm transition-all shadow-sm"
             >
               <span>Open Executive Dashboard</span>
             </Link>
@@ -632,7 +628,7 @@ export const LandingPage: React.FC = () => {
       <Footer />
 
       {/* BOTTOM-LEFT TEST MODE BADGE */}
-      <div className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-surface)]/90 border border-[var(--color-border)] text-[var(--color-text-secondary)] text-[11px] backdrop-blur-md shadow-premium-sm">
+      <div className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-[var(--color-bg-surface)]/90 border border-[var(--color-border)] text-[var(--color-text-secondary)] text-[11px] backdrop-blur-md shadow-premium-sm">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
         <span className="font-mono">{environmentLabel}</span>
       </div>

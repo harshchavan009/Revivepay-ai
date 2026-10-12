@@ -42,7 +42,7 @@ export const SimulationCenterPage: React.FC = () => {
             <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
               FAILURE SIMULATION LAB
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
               UNIFIED DOMAIN ENGINE
             </span>
           </div>
@@ -57,35 +57,35 @@ export const SimulationCenterPage: React.FC = () => {
       </div>
 
       {/* Dual Ingress Pipeline Architectural Clarity Card */}
-      <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] shadow-premium-sm space-y-3">
+      <div className="p-5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] shadow-premium-sm space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-mono font-bold text-[var(--color-text-primary)] uppercase tracking-wider flex items-center gap-2">
             <span>Dual Ingress Architecture: Razorpay Test vs. Simulation</span>
           </h2>
-          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold">
+          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold">
             Unified Recovery Pipeline
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 space-y-2">
+          <div className="p-4 rounded-md bg-indigo-500/5 border border-indigo-500/20 space-y-2">
             <div className="flex items-center gap-2 font-mono font-bold text-indigo-700 dark:text-indigo-300">
               <Zap className="w-4 h-4 text-indigo-500" />
               <span>Razorpay Test Mode (RAZORPAY_TEST)</span>
             </div>
             <p className="text-[11px] text-[var(--color-text-secondary)] font-mono leading-relaxed">
-              Razorpay Test Mode ➔ HTTPS Webhook (<code>/api/webhooks/razorpay</code>) ➔ HMAC-SHA256 Signature Verification ➔ Idempotency Check ➔ Event Storage ➔ Recovery Pipeline
+              Razorpay Test Mode -&gt; HTTPS Webhook (<code>/api/webhooks/razorpay</code>) -&gt; HMAC-SHA256 Signature Verification -&gt; Idempotency Check -&gt; Event Storage -&gt; Recovery Pipeline
             </p>
             <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
               Provenance: Verified cryptographic webhook from Razorpay test environment.
             </div>
           </div>
-          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+          <div className="p-4 rounded-md bg-amber-500/5 border border-amber-500/20 space-y-2">
             <div className="flex items-center gap-2 font-mono font-bold text-amber-800 dark:text-amber-300">
               <FlaskConical className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>Simulation Lab (SIMULATION)</span>
             </div>
             <p className="text-[11px] text-[var(--color-text-secondary)] font-mono leading-relaxed">
-              Simulation Button ➔ Backend Simulation Endpoint (<code>/api/simulation/trigger</code>) ➔ Synthetic Provenance Tagging ➔ Same Recovery Pipeline
+              Simulation Button -&gt; Backend Simulation Endpoint (<code>/api/simulation/trigger</code>) -&gt; Synthetic Provenance Tagging -&gt; Same Recovery Pipeline
             </p>
             <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
               Provenance: Synthetic failure scenario for training, chaos testing, and policy stress tests.
@@ -96,10 +96,10 @@ export const SimulationCenterPage: React.FC = () => {
 
       {/* Live Simulation Result Display Box */}
       {activeSimulation && (
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-accent)] shadow-premium-md space-y-4 animate-in fade-in duration-200">
+        <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-accent)] shadow-premium-md space-y-4 animate-in fade-in duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span className="font-mono font-bold text-[var(--color-text-primary)] text-sm">
                 Simulation Telemetry: {activeSimulation.case_id || activeSimulation.checkout_id || "Active"}
               </span>
@@ -110,7 +110,7 @@ export const SimulationCenterPage: React.FC = () => {
             {activeSimulation.case_id && (
               <Link
                 to={`/cases/${activeSimulation.case_id}`}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all self-start sm:self-auto"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all self-start sm:self-auto"
               >
                 <span>Deep Dive into Case</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -149,21 +149,21 @@ export const SimulationCenterPage: React.FC = () => {
 
           {/* B.1: Demonstrable Policy Override Banner */}
           {activeSimulation.overrode_ai_recommendation && (
-            <div className="p-4 rounded-xl bg-amber-500/10 border-2 border-amber-500/50 text-xs text-amber-900 dark:text-amber-200 space-y-2 shadow-premium-sm">
+            <div className="p-4 rounded-md bg-amber-500/10 border-2 border-amber-500/50 text-xs text-amber-900 dark:text-amber-200 space-y-2 shadow-premium-sm">
               <div className="flex items-center gap-2 font-bold text-sm text-amber-800 dark:text-amber-300">
                 <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0" />
                 <span>Deterministic Policy Overrode AI Recommendation</span>
               </div>
               <p className="font-mono text-[11px] leading-relaxed">
                 {activeSimulation.ai_override_reason ||
-                  "AI recommended auto-retry (94% confidence) — blocked by policy: exceeds ₹10,000 automated-action limit. Routed to Human-in-the-Loop regardless of model confidence."}
+                  "AI recommended auto-retry (94% confidence): blocked by policy: exceeds ₹10,000 automated-action limit. Routed to Human-in-the-Loop regardless of model confidence."}
               </p>
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 font-mono text-[10px] font-bold text-amber-900 dark:text-amber-200 border border-amber-500/30">
+                <span className="px-2.5 py-1 rounded bg-amber-500/20 font-mono text-[10px] font-bold text-amber-900 dark:text-amber-200 border border-amber-500/30">
                   AI Proposal: {activeSimulation.ai_original_recommendation || "retry_payment (94% conf)"}
                 </span>
-                <span className="text-amber-500 font-bold">➔</span>
-                <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-800 dark:text-rose-200 font-mono text-[10px] font-bold border border-rose-500/30">
+                <ArrowRight className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="px-2.5 py-1 rounded bg-rose-500/20 text-rose-800 dark:text-rose-200 font-mono text-[10px] font-bold border border-rose-500/30">
                   Policy Gate Decision: REVIEW_REQUIRED (Human-in-the-Loop)
                 </span>
                 <span className="text-[10px] font-mono text-[var(--color-text-muted)] ml-auto">
@@ -175,23 +175,23 @@ export const SimulationCenterPage: React.FC = () => {
 
           {/* B.2: Demonstrable Multi-Tier Fallback Attribution */}
           {activeSimulation.model_name?.includes("gemini") && (
-            <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-700 dark:text-indigo-300 flex items-center justify-between gap-2 shadow-premium-sm flex-wrap">
+            <div className="p-3.5 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-700 dark:text-indigo-300 flex items-center justify-between gap-2 shadow-premium-sm flex-wrap">
               <span className="font-medium flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
                 <span>Reasoning generated by: <strong className="font-mono font-bold text-indigo-600 dark:text-indigo-400">Gemini 1.5 Pro (fallback)</strong></span>
               </span>
-              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-500/30">
+              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-500/30">
                 Primary Claude Provider Latency / Timeout Failover Trigger
               </span>
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
-            <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+            <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
               <span className="text-[var(--color-text-muted)] font-bold uppercase text-[10px] block">AI Root Cause</span>
               <span className="font-semibold text-[var(--color-text-primary)] mt-0.5 block">{activeSimulation.root_cause || "Temporary Bank Switch Outage"}</span>
             </div>
-            <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+            <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
               <span className="text-[var(--color-text-muted)] font-bold uppercase text-[10px] block mb-1.5">Recommended Action</span>
               <ActionBadge action={activeSimulation.recommended_action} />
             </div>
@@ -210,7 +210,7 @@ export const SimulationCenterPage: React.FC = () => {
           return (
             <div
               key={p.id}
-              className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] flex flex-col justify-between space-y-4 shadow-premium-sm transition-all"
+              className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] flex flex-col justify-between space-y-4 shadow-premium-sm transition-all"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -228,7 +228,7 @@ export const SimulationCenterPage: React.FC = () => {
               <button
                 onClick={() => handleRunSimulation(p.type || p.id, p.default_amount)}
                 disabled={isRunning}
-                className="w-full py-2.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
+                className="w-full py-2.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
               >
                 {isRunning ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />

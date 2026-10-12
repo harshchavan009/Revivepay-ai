@@ -5,7 +5,7 @@ import {
   Clock, ShieldCheck, ShieldAlert, Sparkles, AlertTriangle, FlaskConical,
   BarChart3, Lock, Activity, Hash, ChevronRight, User, CreditCard,
   TrendingUp, Cpu, Eye, FileText, RotateCcw, ChevronDown, ChevronUp,
-  CheckCheck, ExternalLink, Terminal, Layers
+  CheckCheck, ExternalLink, Terminal, Layers, Check, X
 } from "lucide-react";
 import { simulationService, recoveryService, auditService, mlService, dashboardService } from "../services";
 import { RecoveryCase, AuditLogEntry } from "../types";
@@ -46,7 +46,7 @@ const SCENARIOS: DemoScenario[] = [
   {
     id: "bank_failure",
     backendId: "bank_failure",
-    label: "Scenario A — Bank Failure",
+    label: "Scenario A: Bank Failure",
     tagline: "Returning customer · ₹4,999 · Transient gateway timeout",
     amount: 4999,
     badge: "HAPPY PATH",
@@ -57,7 +57,7 @@ const SCENARIOS: DemoScenario[] = [
   {
     id: "retry_exhaustion",
     backendId: "retry_exhaustion_escalation",
-    label: "Scenario B — Retry Exhaustion",
+    label: "Scenario B: Retry Exhaustion",
     tagline: "Persistent decline · ₹6,200 · Max retries reached",
     amount: 6200,
     badge: "POLICY BLOCK",
@@ -68,7 +68,7 @@ const SCENARIOS: DemoScenario[] = [
   {
     id: "high_value",
     backendId: "high_value",
-    label: "Scenario C — High Value",
+    label: "Scenario C: High Value",
     tagline: "Enterprise client · ₹85,000 · Human approval gate",
     amount: 85000,
     badge: "HUMAN APPROVAL",
@@ -79,7 +79,7 @@ const SCENARIOS: DemoScenario[] = [
   {
     id: "ai_fallback",
     backendId: "gemini_fallback",
-    label: "Scenario D — AI Fallback",
+    label: "Scenario D: AI Fallback",
     tagline: "Claude timeout · Gemini 1.5 Pro failover",
     amount: 14500,
     badge: "AI RESILIENCE",
@@ -90,7 +90,7 @@ const SCENARIOS: DemoScenario[] = [
   {
     id: "duplicate",
     backendId: "bank_failure",
-    label: "Scenario E — Duplicate Event",
+    label: "Scenario E: Duplicate Event",
     tagline: "Same payment event replayed · Idempotency enforcement",
     amount: 4999,
     badge: "IDEMPOTENCY",
@@ -133,7 +133,7 @@ function formatTime(iso?: string): string {
 }
 
 function formatDate(iso?: string): string {
-  if (!iso) return "–";
+  if (!iso) return "-";
   return new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", hour12: false });
 }
 
@@ -216,7 +216,8 @@ const PipelineTracker: React.FC<{ activeIndex: number }> = ({ activeIndex }) => 
             active ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/40 text-[var(--color-accent)] animate-pulse" :
             "bg-[var(--color-bg-canvas)] border-[var(--color-border-subtle)] text-[var(--color-text-muted)]"
           }`}>
-            {done ? "✓ " : ""}{s.label}
+            {done && <Check className="w-3 h-3 inline mr-1 shrink-0" />}
+            {s.label}
           </div>
           {idx < PIPELINE_STEPS.length - 1 && (
             <ChevronRight className={`w-3 h-3 shrink-0 ${done ? "text-emerald-500/60" : "text-[var(--color-border)]"}`} />
@@ -485,7 +486,7 @@ export const DemoJourneyPage: React.FC = () => {
                 {
                   icon: <TrendingUp className="w-5 h-5 text-rose-500" />,
                   title: "WHY",
-                  body: "Payment failures cause merchants to silently lose revenue they've already earned — usually due to transient bank or network issues."
+                  body: "Payment failures cause merchants to silently lose revenue they've already earned: usually due to transient bank or network issues."
                 },
                 {
                   icon: <Layers className="w-5 h-5 text-emerald-500" />,
@@ -576,7 +577,7 @@ export const DemoJourneyPage: React.FC = () => {
                 className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm shadow-premium-md transition-all hover:scale-102 active:scale-98 disabled:opacity-60 cursor-pointer"
               >
                 {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
-                <span>Launch Demo: {selectedScenario.label.split("—")[1]?.trim() || selectedScenario.label}</span>
+                <span>Launch Demo: {selectedScenario.label.split(":")[1]?.trim() || selectedScenario.label}</span>
               </button>
             </div>
           </div>
@@ -599,7 +600,7 @@ export const DemoJourneyPage: React.FC = () => {
               <div className="p-5 rounded-2xl bg-violet-500/10 border-2 border-violet-500/30 space-y-3">
                 <div className="flex items-center gap-2 font-bold text-violet-700 dark:text-violet-300">
                   <Lock className="w-5 h-5 text-violet-500" />
-                  <span>Duplicate Event — Idempotency Enforced</span>
+                  <span>Duplicate Event: Idempotency Enforced</span>
                 </div>
                 <p className="text-xs text-violet-700/80 dark:text-violet-300/80 font-mono leading-relaxed">
                   This event was already processed (same payment_id / provider_event_id). The recovery engine returned <code className="font-bold">duplicate_ignored</code> with HTTP 200. Zero new recovery cases created. No double-counted revenue.
@@ -613,7 +614,7 @@ export const DemoJourneyPage: React.FC = () => {
             ) : (
               <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-2">
                 <FieldRow label="Case ID" value={<span className="font-mono font-bold text-[var(--color-accent)]">{caseData?.case_id || simResult?.case_id || "Generating…"}</span>} />
-                <FieldRow label="Payment ID" value={<span className="font-mono text-[11px]">{caseData?.payment_id || simResult?.payment_id || "–"}</span>} />
+                <FieldRow label="Payment ID" value={<span className="font-mono text-[11px]">{caseData?.payment_id || simResult?.payment_id || "-"}</span>} />
                 <FieldRow label="Customer" value={caseData?.customer_name || "Returning Customer"} />
                 <FieldRow label="Amount" value={<span className="text-rose-600 dark:text-rose-400 font-bold text-sm">{formatINR(caseData?.amount || selectedScenario.amount)}</span>} highlight />
                 <FieldRow label="Payment Method" value={(caseData as any)?.payment_method || "CARD"} mono />
@@ -694,7 +695,7 @@ export const DemoJourneyPage: React.FC = () => {
                   {mlPrediction ? (
                     <>
                       <div className="text-5xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
-                        {mlPrediction.recovery_likelihood_pct?.toFixed(0) ?? "–"}%
+                        {mlPrediction.recovery_likelihood_pct?.toFixed(0) ?? "-"}%
                       </div>
                       <div className="text-xs text-[var(--color-text-muted)] font-mono mt-1">Recovery Probability</div>
                       <div className={`inline-block mt-2 px-3 py-1 rounded-lg text-xs font-mono font-bold border ${badgeClasses("emerald")}`}>
@@ -746,7 +747,7 @@ export const DemoJourneyPage: React.FC = () => {
 
             {/* Trust disclaimer */}
             <div className="p-3.5 rounded-xl bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/20 text-xs text-[var(--color-text-secondary)] font-mono">
-              <strong className="text-[var(--color-text-primary)]">AI RECOMMENDS — not executes.</strong>{" "}
+              <strong className="text-[var(--color-text-primary)]">AI RECOMMENDS, not executes.</strong>{" "}
               The AI provides root-cause reasoning and a recovery recommendation. Execution is governed by the deterministic policy engine below.
             </div>
 
@@ -806,7 +807,7 @@ export const DemoJourneyPage: React.FC = () => {
             {(caseData as any)?.model_name?.includes("gemini") && (
               <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
-                <span>Fallback active: <strong>Gemini 1.5 Pro</strong> — Primary Claude provider exceeded latency threshold. Deterministic rules engine remains in control.</span>
+                <span>Fallback active: <strong>Gemini 1.5 Pro</strong>: Primary Claude provider exceeded latency threshold. Deterministic rules engine remains in control.</span>
               </div>
             )}
 
@@ -914,7 +915,7 @@ export const DemoJourneyPage: React.FC = () => {
               <div className="p-5 rounded-2xl bg-rose-500/10 border-2 border-rose-500/30 space-y-2">
                 <div className="flex items-center gap-2 font-bold text-rose-700 dark:text-rose-300">
                   <ShieldAlert className="w-5 h-5 text-rose-500" />
-                  <span>AUTOMATION STOPPED — ESCALATED</span>
+                  <span>AUTOMATION STOPPED: ESCALATED</span>
                 </div>
                 <p className="text-xs text-rose-700/80 dark:text-rose-300/80 font-mono">
                   Retry Limit ({(caseData as any)?.max_retry_count ?? 2}/{(caseData as any)?.max_retry_count ?? 2}) reached. Deterministic policy permanently blocked further automated action. Case escalated for human review.
@@ -1060,7 +1061,7 @@ export const DemoJourneyPage: React.FC = () => {
                   <>
                     <div className="flex items-center gap-2 font-bold text-rose-700 dark:text-rose-300">
                       <AlertTriangle className="w-5 h-5 text-rose-500" />
-                      <span>ESCALATED — Human Review Required</span>
+                      <span>ESCALATED: Human Review Required</span>
                     </div>
                     <p className="text-xs font-mono text-rose-700/80 dark:text-rose-300/80">
                       Automated actions exhausted or blocked. Case is in the operator review queue.
@@ -1069,7 +1070,7 @@ export const DemoJourneyPage: React.FC = () => {
                 ) : (
                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-mono text-xs">
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>State: {terminalCase.recovery_status} — Verifying…</span>
+                    <span>State: {terminalCase.recovery_status} (Verifying…)</span>
                   </div>
                 )}
               </div>
@@ -1197,7 +1198,7 @@ export const DemoJourneyPage: React.FC = () => {
             {/* Updated dashboard KPIs */}
             {dashMetrics && (
               <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3">
-                <span className="text-[10px] font-mono font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Live Dashboard — Updated from Backend</span>
+                <span className="text-[10px] font-mono font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Live Dashboard: Updated from Backend</span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
                     { label: "Recovered Revenue", value: formatINR(dashMetrics.recovered_revenue || 0), color: "emerald" },
@@ -1219,7 +1220,7 @@ export const DemoJourneyPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] font-mono text-[var(--color-text-muted)]">Values retrieved live from GET /api/dashboard/summary — not hardcoded.</p>
+                <p className="text-[10px] font-mono text-[var(--color-text-muted)]">Values retrieved live from GET /api/dashboard/summary: not hardcoded.</p>
               </div>
             )}
 
@@ -1310,9 +1311,10 @@ export const DemoJourneyPage: React.FC = () => {
           </Link>
           <button
             onClick={resetAll}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer flex items-center gap-1"
           >
-            ✕ Exit
+            <X className="w-3.5 h-3.5" />
+            <span>Exit</span>
           </button>
         </div>
       </nav>

@@ -78,7 +78,7 @@ export const SubscriptionsPage: React.FC = () => {
             <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
               SUBSCRIPTION DUNNING & E-MANDATE ENGINE
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
               {subs.length} Active Mandates
             </span>
           </div>
@@ -93,7 +93,7 @@ export const SubscriptionsPage: React.FC = () => {
 
         <button
           onClick={loadSubs}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
           <span>Refresh</span>
@@ -101,7 +101,7 @@ export const SubscriptionsPage: React.FC = () => {
       </div>
 
       {/* RBI e-Mandate Framework Notice Card */}
-      <div className="p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] flex items-start gap-3 shadow-premium-sm">
+      <div className="p-4 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] flex items-start gap-3 shadow-premium-sm">
         <ShieldCheck className="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" />
         <div className="space-y-1">
           <p className="font-bold text-[var(--color-text-primary)]">
@@ -115,7 +115,7 @@ export const SubscriptionsPage: React.FC = () => {
 
       {/* Error Alert Banner with Retry */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm">
+        <div className="p-4 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
             <span className="font-semibold">{error}</span>
@@ -123,7 +123,7 @@ export const SubscriptionsPage: React.FC = () => {
           <button
             type="button"
             onClick={loadSubs}
-            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 cursor-pointer shrink-0"
+            className="px-3.5 py-1.5 rounded-md bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 cursor-pointer shrink-0"
           >
             Retry Connection
           </button>
@@ -132,7 +132,7 @@ export const SubscriptionsPage: React.FC = () => {
 
       {/* Active Toast Notification */}
       {activeMessage && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm animate-in fade-in">
+        <div className="p-4 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm animate-in fade-in">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span className="font-semibold">{activeMessage}</span>
@@ -144,7 +144,7 @@ export const SubscriptionsPage: React.FC = () => {
       )}
 
       {/* Desktop Table View */}
-      <div className="hidden md:block bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-premium-sm">
+      <div className="hidden md:block bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden shadow-premium-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[var(--color-bg-canvas)] border-b border-[var(--color-border-subtle)] text-[var(--color-text-muted)] uppercase font-mono text-[10px]">
@@ -179,7 +179,7 @@ export const SubscriptionsPage: React.FC = () => {
                 <tr>
                   <td colSpan={9} className="p-12 text-center text-[var(--color-text-muted)] font-sans">
                     <div className="max-w-sm mx-auto space-y-3">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
+                      <div className="w-10 h-10 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
                         <RefreshCw className="w-5 h-5" />
                       </div>
                       <p className="font-bold text-[var(--color-text-primary)] text-sm">No subscription mandates found</p>
@@ -210,22 +210,22 @@ export const SubscriptionsPage: React.FC = () => {
                       </td>
                       <td className="p-4">
                         {isAfa ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
                             AFA Required (₹15k+)
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-500/10 text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-500/10 text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">
                             Standard Mandate
                           </span>
                         )}
                       </td>
                       <td className="p-4">
                         {isOptedOut ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30">
                             Customer Opted Out
                           </span>
                         ) : isNotified ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1 w-fit">
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1 w-fit">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>24h Alert Sent (Valid)</span>
                           </span>
@@ -233,7 +233,7 @@ export const SubscriptionsPage: React.FC = () => {
                           <button
                             onClick={() => handleSendPreDebitAlert(s.id || s.subscription_id)}
                             disabled={actionInProgress === (s.id || s.subscription_id)}
-                            className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold font-mono hover:bg-amber-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                            className="px-2.5 py-1 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold font-mono hover:bg-amber-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                           >
                             <Bell className="w-3 h-3" />
                             <span>Send 24h Alert</span>
@@ -264,7 +264,7 @@ export const SubscriptionsPage: React.FC = () => {
                                 <button
                                   onClick={() => handleRetry(s.id || s.subscription_id)}
                                   disabled={actionInProgress === (s.id || s.subscription_id)}
-                                  className="px-3 py-1.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                                  className="px-3 py-1.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
                                 >
                                   <Zap className="w-3 h-3" />
                                   <span>Smart Retry</span>
@@ -272,7 +272,7 @@ export const SubscriptionsPage: React.FC = () => {
                                 <button
                                   onClick={() => handleOptOut(s.id || s.subscription_id)}
                                   title="Simulate customer opting out of this recurring charge"
-                                  className="p-1.5 rounded-lg border border-[var(--color-border)] hover:bg-rose-500/10 hover:border-rose-500/30 text-[var(--color-text-muted)] hover:text-rose-600 transition-colors cursor-pointer"
+                                  className="p-1.5 rounded border border-[var(--color-border)] hover:bg-rose-500/10 hover:border-rose-500/30 text-[var(--color-text-muted)] hover:text-rose-600 transition-colors cursor-pointer"
                                 >
                                   <UserX className="w-3.5 h-3.5" />
                                 </button>
@@ -298,7 +298,7 @@ export const SubscriptionsPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span>
-                <strong>Pre-Debit Failure Prevention:</strong> Enforces statutory 24-hour pre-debit notifications and auto-pauses dunning upon customer opt-out — eliminating bank mandate revocations and involuntary churn before debit failure occurs.
+                <strong>Pre-Debit Failure Prevention:</strong> Enforces statutory 24-hour pre-debit notifications and auto-pauses dunning upon customer opt-out: eliminating bank mandate revocations and involuntary churn before debit failure occurs.
               </span>
             </div>
             <span className="font-mono text-[10px] text-[var(--color-text-muted)]">RBI e-Mandate Framework</span>
@@ -315,7 +315,7 @@ export const SubscriptionsPage: React.FC = () => {
           const isMaxRetried = (s.retry_count ?? 0) >= (s.max_retries ?? 2);
 
           return (
-            <div key={s.id || s.subscription_id} className="p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-3">
+            <div key={s.id || s.subscription_id} className="p-4 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-3">
               <div className="flex justify-between items-start">
                 <div>
                   <span className="font-mono font-bold text-xs text-[var(--color-accent)]">{s.subscription_id}</span>
@@ -328,17 +328,17 @@ export const SubscriptionsPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--color-border-subtle)] text-xs">
                 <StatusBadge status={s.current_status || "ACTIVE"} type="recovery" />
                 {isAfa && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
                     AFA Tier
                   </span>
                 )}
                 {isOptedOut && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30">
                     Opted Out
                   </span>
                 )}
                 {isMaxRetried && s.current_status === "PAST_DUE" && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                     Max Retries
                   </span>
                 )}
@@ -349,14 +349,14 @@ export const SubscriptionsPage: React.FC = () => {
                   {!isNotified && isAfa && (
                     <button
                       onClick={() => handleSendPreDebitAlert(s.id || s.subscription_id)}
-                      className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-bold font-mono border border-amber-500/30"
+                      className="px-2.5 py-1.5 rounded bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs font-bold font-mono border border-amber-500/30"
                     >
                       Send 24h Alert
                     </button>
                   )}
                   <button
                     onClick={() => handleRetry(s.id || s.subscription_id)}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm cursor-pointer"
+                    className="px-3 py-1.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm cursor-pointer"
                   >
                     Smart Retry
                   </button>

@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           {budget?.deterministic_fallback_active ? (
             <div
               onClick={() => navigate("/ai-activity")}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-mono font-bold cursor-pointer animate-pulse"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-mono font-bold cursor-pointer"
               title="Daily AI budget reached. Safe deterministic rules floor active. Click to view."
             >
               <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
@@ -107,18 +107,18 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           ) : (
             <div
               onClick={() => navigate("/ai-activity")}
-              className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono cursor-pointer hover:border-[var(--color-accent)] transition-colors"
-              title="Daily LLM Call Budget. Click to view 200+ signals."
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono cursor-pointer hover:border-[var(--color-accent)] transition-colors"
+              title="Daily LLM Call Budget. Click to view ML signals."
             >
               <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)]" />
               <span className="text-[var(--color-text-secondary)]">AI Calls Today:</span>
-              <span className="text-[var(--color-text-primary)] font-bold">{budget?.used ?? 42} / {budget?.total ?? 100}</span>
+              <span className="text-[var(--color-text-primary)] font-bold">{budget ? `${budget.used} / ${budget.total}` : "0 / 100"}</span>
             </div>
           )}
 
           {/* Autonomous Engine Live Status */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono">
+            <span className="w-2 h-2 rounded-sm bg-emerald-500"></span>
             <span className="text-[var(--color-text-secondary)]">Autonomous Retries:</span>
             <span className="text-[var(--color-accent)] font-bold">
               {isLoading ? "--.-%" : `${recoveryRate.toFixed(1)}%`} Rate
@@ -129,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           <button
             onClick={() => navigate("/evaluation")}
             aria-label="View System Evaluation"
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] hover:border-[var(--color-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-bold text-xs shadow-premium-sm transition-all cursor-pointer shrink-0"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] hover:border-[var(--color-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-bold text-xs shadow-premium-sm transition-all cursor-pointer shrink-0"
           >
             <Cpu className="w-3.5 h-3.5 text-[var(--color-accent)]" />
             <span>System Evaluation</span>
@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           <button
             onClick={() => navigate("/simulation")}
             aria-label="Simulate payment failure scenario"
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none shrink-0"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none shrink-0"
           >
             <PlayCircle className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Simulate Failure</span>
@@ -151,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
             onClick={toggleTheme}
             aria-label={`Switch to ${effectiveTheme === "dark" ? "Light" : "Dark"} mode`}
             title={`Switch to ${effectiveTheme === "dark" ? "Light" : "Dark"} mode`}
-            className="w-9 h-9 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
+            className="w-9 h-9 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center transition-all cursor-pointer shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
           >
             {effectiveTheme === "dark" ? (
               <Sun className="w-4 h-4 text-amber-400" />
@@ -166,11 +166,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
               onClick={() => setIsNotifOpen(!isNotifOpen)}
               aria-label="Notifications"
               title="Notifications"
-              className="w-9 h-9 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center relative transition-colors cursor-pointer shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
+              className="w-9 h-9 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center justify-center relative transition-colors cursor-pointer shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--color-accent)] text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-sm bg-[var(--color-accent)] text-white text-[10px] font-bold flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
@@ -178,14 +178,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
 
             {/* Notification Popover Dropdown */}
             {isNotifOpen && (
-              <div className="absolute right-0 mt-2 w-72 sm:w-96 rounded-2xl bg-[var(--color-bg-surface-raised)] border border-[var(--color-border)] shadow-premium-lg z-50 overflow-hidden font-sans animate-in fade-in">
+              <div className="absolute right-0 mt-2 w-72 sm:w-96 rounded-lg bg-[var(--color-bg-surface-raised)] border border-[var(--color-border)] shadow-premium-lg z-50 overflow-hidden font-sans">
                 {/* Header */}
                 <div className="p-3.5 border-b border-[var(--color-border-subtle)] flex items-center justify-between bg-[var(--color-bg-surface)]">
                   <div className="flex items-center gap-2">
                     <Bell className="w-4 h-4 text-[var(--color-accent)]" />
                     <span className="font-bold text-xs text-[var(--color-text-primary)]">Real-Time Dispatches</span>
                     {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] text-[10px] font-mono font-bold">
+                      <span className="px-2 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] text-[10px] font-mono font-bold">
                         {unreadCount} new
                       </span>
                     )}

@@ -21,22 +21,22 @@ export const RecoveryFunnelChart: React.FC<RecoveryFunnelChartProps> = ({ data }
         return (
           <div key={item.stage} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-300">{item.stage}</span>
+              <span className="font-semibold text-[var(--color-text-secondary)]">{item.stage}</span>
               <div className="flex items-center gap-2 font-mono">
-                <span className="text-slate-100 font-bold">{item.count}</span>
+                <span className="text-[var(--color-text-primary)] font-bold">{item.count}</span>
                 {idx > 0 && (
-                  <span className="text-[10px] text-rose-400 bg-rose-500/10 px-1 rounded">
+                  <span className="text-[10px] text-rose-600 dark:text-rose-400 bg-rose-500/10 px-1 rounded border border-rose-500/20">
                     -{item.dropoff}
                   </span>
                 )}
               </div>
             </div>
-            <div className="h-4 w-full bg-slate-900 rounded overflow-hidden p-0.5 border border-slate-800">
+            <div className="h-4 w-full bg-[var(--color-bg-canvas)] rounded overflow-hidden p-0.5 border border-[var(--color-border-subtle)]">
               <div
-                className={`h-full rounded transition-all duration-700 ${
+                className={`h-full rounded transition-all duration-300 ${
                   idx === data.length - 1
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-400"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-500"
+                    ? "bg-emerald-600"
+                    : "bg-[var(--color-accent)]"
                 }`}
                 style={{ width: `${Math.max(8, percentage)}%` }}
               ></div>

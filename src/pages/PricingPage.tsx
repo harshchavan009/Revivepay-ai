@@ -50,7 +50,7 @@ export const PricingPage: React.FC = () => {
           </Link>
           <Link
             to="/login"
-            className="px-4 py-2 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all"
+            className="px-4 py-2 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all"
           >
             Launch Console
           </Link>
@@ -60,7 +60,7 @@ export const PricingPage: React.FC = () => {
       {/* Main Pricing Content */}
       <main className="flex-1 max-w-6xl mx-auto px-6 py-16 space-y-16">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono font-bold">
             <Zap className="w-3.5 h-3.5" />
             <span>VALUE-ALIGNED PRICING</span>
           </div>
@@ -75,7 +75,7 @@ export const PricingPage: React.FC = () => {
         {/* Pricing Tier Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Starter Plan */}
-          <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-sm flex flex-col justify-between">
+          <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-sm flex flex-col justify-between">
             <div className="space-y-4">
               <div>
                 <span className="text-xs font-mono font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Starter</span>
@@ -105,15 +105,15 @@ export const PricingPage: React.FC = () => {
 
             <Link
               to="/login"
-              className="w-full py-2.5 rounded-xl bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] font-bold text-xs border border-[var(--color-border)] text-center transition-colors block"
+              className="w-full py-2.5 rounded-md bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] font-bold text-xs border border-[var(--color-border)] text-center transition-colors block"
             >
               Get Started Free
             </Link>
           </div>
 
           {/* Growth Plan (Highlighted) */}
-          <div className="p-6 rounded-2xl bg-[var(--color-bg-surface-raised)] border-2 border-[var(--color-accent)] space-y-6 shadow-premium-lg relative flex flex-col justify-between">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[var(--color-accent)] text-white text-[10px] font-extrabold uppercase font-mono shadow-sm">
+          <div className="p-6 rounded-lg bg-[var(--color-bg-surface-raised)] border-2 border-[var(--color-accent)] space-y-6 shadow-premium-lg relative flex flex-col justify-between">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded bg-[var(--color-accent)] text-white text-[10px] font-extrabold uppercase font-mono shadow-sm">
               Most Popular
             </div>
 
@@ -153,14 +153,14 @@ export const PricingPage: React.FC = () => {
 
             <Link
               to="/login"
-              className="w-full py-2.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-extrabold text-xs text-center shadow-premium-sm transition-all block"
+              className="w-full py-2.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-extrabold text-xs text-center shadow-premium-sm transition-all block"
             >
               Start Free Trial
             </Link>
           </div>
 
           {/* Enterprise Plan */}
-          <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-sm flex flex-col justify-between">
+          <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-sm flex flex-col justify-between">
             <div className="space-y-4">
               <div>
                 <span className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Enterprise</span>
@@ -190,7 +190,7 @@ export const PricingPage: React.FC = () => {
 
             <Link
               to="/login"
-              className="w-full py-2.5 rounded-xl bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] font-bold text-xs border border-[var(--color-border)] text-center transition-colors block"
+              className="w-full py-2.5 rounded-md bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] font-bold text-xs border border-[var(--color-border)] text-center transition-colors block"
             >
               Contact Enterprise Sales
             </Link>
@@ -198,7 +198,7 @@ export const PricingPage: React.FC = () => {
         </div>
 
         {/* Interactive ROI Calculator */}
-        <div id="roi-calculator" className="p-8 rounded-3xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-md">
+        <div id="roi-calculator" className="p-8 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-md">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-[var(--color-accent)]" />
@@ -231,7 +231,7 @@ export const PricingPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-3">
+            <div className="p-5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-3">
               <div className="flex justify-between text-xs">
                 <span className="text-[var(--color-text-secondary)]">Projected Revenue Recovered ({recoveryRate.toFixed(1)}%):</span>
                 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{formatINR(estimatedRecovery)}</span>

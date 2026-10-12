@@ -10,6 +10,7 @@ import {
   Zap,
   TrendingUp,
   CheckCircle2,
+  AlertTriangle,
   Cpu,
   Eye,
   EyeOff
@@ -79,13 +80,10 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-canvas)] text-[var(--color-text-primary)] selection:bg-[var(--color-accent)] selection:text-white font-sans flex flex-col justify-between p-4 sm:p-6 relative overflow-hidden transition-colors">
-      {/* Background ambient lighting */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(79,95,240,0.15),rgba(0,0,0,0))] pointer-events-none" />
-
       {/* Top Bar Header */}
       <div className="max-w-7xl w-full mx-auto flex items-center justify-between z-10 py-2">
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm group-hover:scale-105 transition-transform text-white">
+          <div className="w-8 h-8 rounded-md bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm group-hover:scale-105 transition-transform text-white">
             <Zap className="w-4 h-4 fill-current" />
           </div>
           <span className="font-bold text-xl tracking-tight text-[var(--color-text-primary)] flex items-center gap-1.5">
@@ -109,22 +107,22 @@ export const LoginPage: React.FC = () => {
       <div className="max-w-4xl w-full mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 items-center my-auto z-10 py-6">
         {/* Left Side: Revive AI Highlights & Problem Context */}
         <div className="md:col-span-5 space-y-6 hidden md:block text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono font-medium">
+            <span className="w-1.5 h-1.5 rounded-sm bg-[var(--color-accent)]"></span>
             <span>AUTONOMOUS REVENUE RECOVERY</span>
           </div>
 
           <h2 className="text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight leading-snug">
-            Recover up to <span className="text-[var(--color-accent)]">{recoveryRate.toFixed(1)}%</span> of failed payments automatically.
+            Automated payment recovery and policy enforcement for Razorpay.
           </h2>
 
-          <div className="p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-2 text-xs shadow-premium-sm">
+          <div className="p-4 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-2 text-xs shadow-premium-sm">
             <div className="flex items-center justify-between text-[var(--color-text-muted)] font-mono text-[10px] uppercase font-bold">
               <span>PROBLEM STATEMENT</span>
               <span className="text-[var(--color-accent)]">REVIVE SOLUTION</span>
             </div>
             <p className="text-[var(--color-text-secondary)] leading-relaxed">
-              Merchants lose significant revenue every day to transient bank switch glitches, expired cards, and checkout abandonment. Revive reads 200+ signals per payment to execute retries at peak liquidity windows.
+              Merchants lose significant revenue every day to transient bank switch glitches, expired cards, and checkout abandonment. Revive evaluates real-time payment telemetry to execute retries at peak liquidity windows.
             </p>
           </div>
 
@@ -135,11 +133,11 @@ export const LoginPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[var(--color-accent)] flex-shrink-0" />
-              <span>200+ ML Signals Timing & Cascading Engine</span>
+              <span>ML Payment Timing & Gateway Cascade Engine</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-purple-500 flex-shrink-0" />
-              <span>Ramp-Grade Policy Gates & Operator Approvals</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <span>Policy Gates & Operator Approval Workflows</span>
             </div>
           </div>
         </div>
@@ -234,14 +232,14 @@ export const LoginPage: React.FC = () => {
 
             {/* Feedback Banners */}
             {errorMessage && (
-              <div className="p-3 mb-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
-                <span className="font-bold">⚠️</span>
+              <div className="p-3 mb-4 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
             {successMessage && (
-              <div className="p-3 mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
-                <span className="font-bold">✅</span>
+              <div className="p-3 mb-4 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>{successMessage}</span>
               </div>
             )}
@@ -257,7 +255,7 @@ export const LoginPage: React.FC = () => {
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="Jane Doe"
-                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-md px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
                   />
                 </div>
               )}
@@ -272,7 +270,7 @@ export const LoginPage: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="name@company.com"
-                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-md pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
                   />
                 </div>
               </div>
@@ -298,7 +296,7 @@ export const LoginPage: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••••••"
-                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl pl-10 pr-10 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-md pl-10 pr-10 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
                   />
                   <button
                     type="button"
@@ -321,7 +319,7 @@ export const LoginPage: React.FC = () => {
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans cursor-pointer"
+                    className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-md px-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans cursor-pointer"
                   >
                     <option value="REVENUE_OPERATOR">Revenue Operator (Recovery Operations)</option>
                     <option value="SUPPORT_OPERATOR">Customer Support (Direct Customer Outreach)</option>
@@ -333,7 +331,7 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs sm:text-sm shadow-premium-sm transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 mt-2 cursor-pointer"
+                className="w-full py-3 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs sm:text-sm shadow-premium-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2 cursor-pointer"
               >
                 <span>
                   {isLoading
@@ -361,10 +359,10 @@ export const LoginPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
           <Link to="/security" className="hover:text-[var(--color-text-primary)] transition-colors">
-            Built with SOC-2-aligned access controls · PCI-DSS-informed data handling patterns · 256-bit TLS
+            HMAC-SHA256 webhook verification · SHA-256 audit chaining · TLS 1.3 encryption
           </Link>
         </div>
-        <p>© 2026 RevivePay AI — a project by Harsh Chavan</p>
+        <p>© 2026 RevivePay AI, by Harsh Chavan.</p>
       </div>
     </div>
   );

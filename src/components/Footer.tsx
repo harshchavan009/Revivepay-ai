@@ -22,13 +22,13 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-10 border-b border-[var(--color-border-subtle)] flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-sm bg-emerald-500"></span>
             <span className="font-mono text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold">
               Autonomous Revenue Protection
             </span>
           </div>
           <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
-            Ready to recover up to {recoveryRate.toFixed(1)}% of failed payments?
+            Automate payment recovery under merchant-defined policy limits.
           </h3>
           <p className="text-[var(--color-text-secondary)] text-xs">
             Deploy RevivePay in under 10 minutes with native Razorpay test mode webhooks.
@@ -38,13 +38,13 @@ export const Footer: React.FC = () => {
         <div className="flex items-center gap-3 flex-wrap">
           <Link
             to="/login"
-            className="px-5 py-2.5 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all cursor-pointer"
           >
             Launch Live Demo
           </Link>
           <Link
             to="/pricing"
-            className="px-5 py-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] font-semibold text-xs transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] font-semibold text-xs transition-colors cursor-pointer"
           >
             View Pricing
           </Link>
@@ -56,7 +56,7 @@ export const Footer: React.FC = () => {
         {/* Brand & Security Stamp */}
         <div className="col-span-2 space-y-4">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm">
+            <div className="w-8 h-8 rounded-md bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-lg tracking-tight text-[var(--color-text-primary)] flex items-center gap-1.5">
@@ -67,32 +67,32 @@ export const Footer: React.FC = () => {
             </span>
           </Link>
           <p className="text-[var(--color-text-secondary)] text-xs leading-relaxed max-w-sm">
-            Autonomous revenue recovery engine for India's payment ecosystem. Powered by 200+ ML timing signals and deterministic policy guardrails.
+            Autonomous revenue recovery engine for India's payment ecosystem. Powered by multi-signal telemetry and deterministic policy guardrails.
           </p>
 
           <div className="flex items-center gap-2.5 pt-2 flex-wrap">
             <Link
               to="/security"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[10px] font-mono text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent-border)] transition-colors"
-              title="Built with SOC-2-aligned access controls"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[10px] font-mono text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent-border)] transition-colors"
+              title="Webhook signatures verified with HMAC-SHA256"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>SOC-2 Aligned</span>
+              <span>HMAC-SHA256 Verified</span>
             </Link>
             <Link
               to="/security"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[10px] font-mono text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent-border)] transition-colors"
-              title="PCI-DSS-informed data handling patterns"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[10px] font-mono text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent-border)] transition-colors"
+              title="Vault tokenization: zero raw cardholder data stored"
             >
               <Lock className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-              <span>PCI-DSS Informed</span>
+              <span>Zero Card Data Stored</span>
             </Link>
             <Link
               to="/status"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>100% Uptime</span>
+              <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500"></span>
+              <span>100% Test Sandbox Health</span>
             </Link>
           </div>
         </div>
@@ -127,7 +127,7 @@ export const Footer: React.FC = () => {
             </li>
             <li>
               <Link to="/#signals-engine" className="hover:text-[var(--color-accent)] transition-colors">
-                200+ ML Signals
+                Payment Signals
               </Link>
             </li>
             <li>
@@ -235,11 +235,11 @@ export const Footer: React.FC = () => {
       {/* Bottom Sub-footer */}
       <div className="max-w-7xl mx-auto px-6 py-5 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[var(--color-text-secondary)]">
         <div>
-          RevivePay AI — an open-source engineering project by <strong className="text-[var(--color-text-primary)]">Harsh Chavan</strong>. Built for Razorpay test mode exploration.
+          RevivePay AI, an open-source engineering project by <strong className="text-[var(--color-text-primary)]">Harsh Chavan</strong>. Built for Razorpay test mode exploration.
         </div>
         <div className="flex items-center gap-4 font-mono text-[10px]">
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]"></span>
+            <span className="w-1.5 h-1.5 rounded-sm bg-[var(--color-accent)]"></span>
             <span>v2.5 Architecture</span>
           </span>
           <span>•</span>

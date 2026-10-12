@@ -63,7 +63,7 @@ export const PaymentsPage: React.FC = () => {
             <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
               TRANSACTION LEDGER
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
               {payments.length} Transactions
             </span>
           </div>
@@ -78,7 +78,7 @@ export const PaymentsPage: React.FC = () => {
 
         <button
           onClick={loadPayments}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
           <span>Refresh Ledger</span>
@@ -86,7 +86,7 @@ export const PaymentsPage: React.FC = () => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
+      <div className="p-4 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-3" />
@@ -95,7 +95,7 @@ export const PaymentsPage: React.FC = () => {
               placeholder="Search by Payment ID (pay_20001), customer name, or failure reason..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
+              className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-md pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
             />
           </div>
 
@@ -103,7 +103,7 @@ export const PaymentsPage: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl px-3 py-2.5 outline-none font-sans cursor-pointer"
+              className="bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-md px-3 py-2.5 outline-none font-sans cursor-pointer"
             >
               <option value="ALL">All Statuses</option>
               <option value="FAILED">FAILED</option>
@@ -115,7 +115,7 @@ export const PaymentsPage: React.FC = () => {
             <select
               value={categoryFilter}
               onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-              className="bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl px-3 py-2.5 outline-none font-sans cursor-pointer"
+              className="bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-md px-3 py-2.5 outline-none font-sans cursor-pointer"
             >
               <option value="ALL">All Failure Categories</option>
               <option value="temporary_bank_failure">Temporary Bank Failure</option>
@@ -130,7 +130,7 @@ export const PaymentsPage: React.FC = () => {
 
       {/* Error Alert Banner with Retry */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm">
+        <div className="p-4 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm">
           <div className="flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-rose-500 shrink-0" />
             <span className="font-semibold">{error}</span>
@@ -138,7 +138,7 @@ export const PaymentsPage: React.FC = () => {
           <button
             type="button"
             onClick={loadPayments}
-            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 cursor-pointer shrink-0"
+            className="px-3.5 py-1.5 rounded-md bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 cursor-pointer shrink-0"
           >
             Retry Connection
           </button>
@@ -146,7 +146,7 @@ export const PaymentsPage: React.FC = () => {
       )}
 
       {/* Payments Data Table */}
-      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-premium-sm">
+      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden shadow-premium-sm">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[var(--color-bg-canvas)] border-b border-[var(--color-border-subtle)] text-[var(--color-text-muted)] uppercase font-mono text-[10px]">
@@ -181,7 +181,7 @@ export const PaymentsPage: React.FC = () => {
                 <tr>
                   <td colSpan={9} className="p-12 text-center text-[var(--color-text-muted)] font-sans">
                     <div className="max-w-sm mx-auto space-y-3">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
+                      <div className="w-10 h-10 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
                         <CreditCard className="w-5 h-5" />
                       </div>
                       <p className="font-bold text-[var(--color-text-primary)] text-sm">No payment records found</p>
@@ -289,7 +289,7 @@ export const PaymentsPage: React.FC = () => {
         <div className="p-4 bg-[var(--color-bg-canvas)] border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3 text-[var(--color-text-secondary)]">
             <span>
-              Showing <strong className="text-[var(--color-text-primary)]">{totalItems === 0 ? 0 : startIndex + 1}</strong>–<strong className="text-[var(--color-text-primary)]">{endIndex}</strong> of <strong className="text-[var(--color-text-primary)]">{totalItems}</strong> transactions
+              Showing <strong className="text-[var(--color-text-primary)]">{totalItems === 0 ? 0 : startIndex + 1}</strong> to <strong className="text-[var(--color-text-primary)]">{endIndex}</strong> of <strong className="text-[var(--color-text-primary)]">{totalItems}</strong> transactions
             </span>
             <div className="flex items-center gap-1.5">
               <span className="text-[11px]">Rows:</span>
@@ -340,7 +340,7 @@ export const PaymentsPage: React.FC = () => {
       {/* Payment Details Drawer Modal */}
       {selectedPayment && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-[var(--color-bg-surface-raised)] border border-[var(--color-border)] rounded-2xl shadow-premium-lg overflow-hidden p-6 space-y-4">
+          <div className="w-full max-w-lg bg-[var(--color-bg-surface-raised)] border border-[var(--color-border)] rounded-lg shadow-premium-lg overflow-hidden p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3">
               <div>
                 <h3 className="font-bold text-[var(--color-text-primary)] text-base font-mono">{selectedPayment.payment_id || "PAY-UNKNOWN"}</h3>
@@ -387,7 +387,7 @@ export const PaymentsPage: React.FC = () => {
             <div className="pt-3 border-t border-[var(--color-border-subtle)] flex justify-end">
               <button
                 onClick={() => setSelectedPayment(null)}
-                className="px-4 py-2 rounded-xl bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold border border-[var(--color-border)] cursor-pointer shadow-sm"
+                className="px-4 py-2 rounded-md bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold border border-[var(--color-border)] cursor-pointer shadow-sm"
               >
                 Close Payload
               </button>
