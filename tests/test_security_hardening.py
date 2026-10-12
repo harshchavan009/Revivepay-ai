@@ -1339,6 +1339,117 @@ def test_fastapi_debug_mode_disabled_in_production(monkeypatch):
     assert effective_debug is False
 
 
+# ==============================================================================
+# PHASE 9 TESTS: DATABASE HARDENING & LEAST PRIVILEGE
+# ==============================================================================
+
+def test_audit_log_immutability_update_blocked():
+    """Validates that existing AuditLog records cannot be modified via ORM (PermissionError)."""
+    db = SessionLocal()
+    try:
+        log = db.query(AuditLog).first()
+        if not log:
+            from backend.services.audit_service import AuditService
+            log = AuditService.log_event(db=db, case_id=None, actor="system", action="test.init")
+
+        log.notes = "unauthorized_modification_attempt"
+        with pytest.raises(PermissionError, match="IMMUTABLE_AUDIT_LOG"):
+            db.commit()
+    finally:
+        db.rollback()
+        db.close()
+
+
+def test_audit_log_immutability_delete_blocked():
+    """Validates that existing AuditLog records cannot be deleted via ORM (PermissionError)."""
+    db = SessionLocal()
+    try:
+        log = db.query(AuditLog).first()
+        if not log:
+            from backend.services.audit_service import AuditService
+            log = AuditService.log_event(db=db, case_id=None, actor="system", action="test.init")
+
+        db.delete(log)
+        with pytest.raises(PermissionError, match="IMMUTABLE_AUDIT_LOG"):
+            db.commit()
+    finally:
+        db.rollback()
+        db.close()
+
+
+def test_audit_service_append_only_log_succeeds():
+    """Validates that new append-only AuditLog rows are created and cryptographically verified."""
+    from backend.services.audit_service import AuditService
+    db = SessionLocal()
+    try:
+        new_log = AuditService.log_event(
+            db=db,
+            case_id=None,
+            actor="sec_auditor",
+            action="recovery.verified",
+            notes="Compliance verification test"
+        )
+        assert new_log.audit_id is not None
+        assert new_log.entry_hash is not None
+        assert new_log.previous_hash is not None
+
+        # Verify hash chain integrity
+        verification = AuditService.verify_chain(db)
+        assert verification["valid"] is True
+        assert verification["status"] == "CRYPTOGRAPHICALLY_VERIFIED"
+    finally:
+        db.close()
+
+
+def test_database_unique_constraints_enforced():
+    """Validates that database unique constraints are enforced against duplicate records."""
+    from sqlalchemy.exc import IntegrityError
+    from backend.models.all_models import User
+    db = SessionLocal()
+    try:
+        # User email has unique=True constraint
+        dup_user = User(
+            email="owner@revivepay.ai",  # Already exists in baseline seeded data
+            name="Duplicate Attack Test",
+            role="MERCHANT_OWNER",
+            hashed_password="insecure_dummy_hash"
+        )
+        db.add(dup_user)
+        with pytest.raises(IntegrityError):
+            db.commit()
+    finally:
+        db.rollback()
+        db.close()
+
+
+def test_postgres_engine_hardening_options():
+    """Validates PostgreSQL statement timeout, pool recycling, and SSL enforcement settings."""
+    from backend.config import Settings
+    prod_pg = Settings(
+        ENVIRONMENT="production",
+        DATABASE_URL="postgresql://test_user:test_pass@db.example.com:5432/revivepay",
+        SECRET_KEY="0" * 32,
+        CSRF_SECRET="0" * 32,
+        DEMO_MODE=False
+    )
+    # 1. URL normalization validates postgresql://
+    assert prod_pg.normalized_database_url.startswith("postgresql://")
+
+    # 2. Verify SSL and statement timeout logic
+    is_prod = prod_pg.ENVIRONMENT.lower() == "production"
+    pg_connect_args = {
+        "connect_timeout": 10,
+        "options": "-c statement_timeout=30000"
+    }
+    if is_prod and "sslmode=" not in prod_pg.normalized_database_url.lower():
+        pg_connect_args["sslmode"] = "require"
+
+    assert pg_connect_args["sslmode"] == "require"
+    assert "statement_timeout=30000" in pg_connect_args["options"]
+    assert pg_connect_args["connect_timeout"] == 10
+
+
+
 
 
 

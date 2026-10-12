@@ -1,7 +1,7 @@
 import uuid
 import datetime
 from sqlalchemy import (
-    Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, JSON, UniqueConstraint
+    Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, JSON, UniqueConstraint, event
 )
 from sqlalchemy.orm import relationship
 from backend.database import Base
@@ -172,7 +172,7 @@ class RecoveryCase(Base):
     recovery_actions = relationship("RecoveryAction", back_populates="recovery_case", cascade="all, delete-orphan")
     policy_evaluations = relationship("PolicyEvaluation", back_populates="recovery_case", cascade="all, delete-orphan")
     approvals = relationship("Approval", back_populates="recovery_case", cascade="all, delete-orphan")
-    audit_logs = relationship("AuditLog", back_populates="recovery_case", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="recovery_case", cascade="save-update, merge")
     notifications = relationship("Notification", back_populates="recovery_case", cascade="all, delete-orphan")
 
 
@@ -292,6 +292,23 @@ class AuditLog(Base):
     decision = Column(JSON, nullable=True)
 
     recovery_case = relationship("RecoveryCase", back_populates="audit_logs")
+
+
+# ==========================================
+# AUDIT LOG IMMUTABILITY EVENT LISTENERS
+# Enforces write-once, append-only regulatory compliance (RBI / ISO 27001)
+# ==========================================
+@event.listens_for(AuditLog, "before_update")
+def prevent_audit_log_update(mapper, connection, target):
+    if getattr(target, "_allow_audit_update", False):
+        return
+    raise PermissionError("IMMUTABLE_AUDIT_LOG: AuditLog entries are append-only and cannot be modified.")
+
+
+@event.listens_for(AuditLog, "before_delete")
+def prevent_audit_log_delete(mapper, connection, target):
+    raise PermissionError("IMMUTABLE_AUDIT_LOG: AuditLog entries are append-only and cannot be deleted.")
+
 
 
 # ==========================================

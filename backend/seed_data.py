@@ -908,6 +908,7 @@ def seed_database(force_reseed: bool = False):
     from backend.services.audit_service import AuditService, GENESIS_HASH
     prev_h = GENESIS_HASH
     for log_item in all_logs:
+        log_item._allow_audit_update = True
         log_item.previous_hash = prev_h
         log_item.entry_hash = AuditService._compute_hash(
             prev_hash=prev_h,

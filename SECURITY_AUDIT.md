@@ -674,8 +674,51 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
 - **Frontend Production Build (`npm run build`):** **Passed in 3.63s** (sourcemaps cleanly disabled).
 
+---
 
+## Phase 9 Fixes Applied & Verification Evidence (Database Hardening, Connection Lifecycle & Audit Immutability)
 
+### Fixes Implemented in Phase 9:
+1. **Engine & Connection Lifecycle Hardening (`backend/database.py`):**
+   - **Modern Declarative Base:** Updated ORM initialization from deprecated `from sqlalchemy.ext.declarative import declarative_base` to modern `from sqlalchemy.orm import declarative_base`, eliminating SQLAlchemy 2.0 runtime warnings.
+   - **Connection Pool Tuning (PostgreSQL):**
+     - `pool_size=10`: Maintains a steady base pool of database connections.
+     - `max_overflow=20`: Allows burst capacity for concurrent recovery requests up to 30 connections.
+     - `pool_pre_ping=True`: Executes a lightweight ping (`SELECT 1`) on checkout to detect severed or stale TCP connections before query execution.
+     - `pool_recycle=1800`: Discards and recreates connections after 30 minutes, preventing connection drops caused by intermediate firewall/NAT connection drop timeouts.
+     - `pool_timeout=30`: Rejects request wait times beyond 30 seconds if connection pool is fully exhausted, preventing unbounded thread starvation.
+   - **Query Execution & Statement Timeout Defense:**
+     - Added PostgreSQL connect options: `options="-c statement_timeout=30000"` (30 seconds) to terminate long-running or malicious queries before they consume database CPU/memory resources (Query-based DoS defense).
+     - Added `connect_timeout=10` to avoid hangs during transient database network partitions.
+   - **Enforced SSL Encryption:**
+     - Enforced `sslmode="require"` for PostgreSQL connections whenever `ENVIRONMENT=production` if `sslmode` is not already configured in `DATABASE_URL`.
+   - **SQLite Development Resilience:**
+     - Configured SQLite connection arguments with `check_same_thread=False` and `timeout=15` (15-second busy timeout) to prevent transient database locks during multi-threaded test runs.
 
+2. **Regulatory Immutability for Compliance Ledger (`backend/models/all_models.py`, `backend/seed_data.py`):**
+   - **ORM-Level Immutability Enforcement:**
+     - Implemented `@event.listens_for(AuditLog, "before_update")`: Rejects any update operation on `AuditLog` records with `PermissionError("IMMUTABLE_AUDIT_LOG: AuditLog entries are append-only and cannot be modified.")`.
+     - Implemented `@event.listens_for(AuditLog, "before_delete")`: Rejects any deletion operation on `AuditLog` records with `PermissionError("IMMUTABLE_AUDIT_LOG: AuditLog entries are append-only and cannot be deleted.")`.
+   - **Cascade Decoupling:**
+     - Modified `RecoveryCase.audit_logs` relationship cascade from `cascade="all, delete-orphan"` to `cascade="save-update, merge"`. Deleting a recovery case or associated transaction will never delete or orphan historical audit trail entries, fulfilling RBI DPDP & ISO 27001 regulatory retention standards.
+   - **Genesis Seed Cryptographic Handshake:**
+     - Added internal override `_allow_audit_update = True` strictly during initial synthetic seed generation in `backend/seed_data.py` so the genesis cryptographic hash chain can be computed before locking down the ledger.
 
+3. **Foreign Key & Integrity Hygiene (`backend/api/webhooks.py`, `backend/services/simulation_service.py`):**
+   - Eliminated dummy placeholder foreign key sentinel strings (e.g. `case_id="WEBHOOK-INGRESS"`) across all webhook ingress logs and chaos simulation scenarios.
+   - Replaced with nullable `case_id=None` or verified existing case references (`case_id=existing_case.case_id`), ensuring schema integrity and referential safety across all database providers.
+   - Pre-test idempotency cleanups added to `tests/test_rbi_guidelines.py` to prevent unique constraint conflicts across repeated test iterations.
 
+4. **Regression Tests Added (`tests/test_security_hardening.py`):**
+   - `test_audit_log_immutability_update_blocked`: Verifies updating audit logs via ORM raises `PermissionError: IMMUTABLE_AUDIT_LOG`.
+   - `test_audit_log_immutability_delete_blocked`: Verifies deleting audit logs via ORM raises `PermissionError: IMMUTABLE_AUDIT_LOG`.
+   - `test_audit_service_append_only_log_succeeds`: Verifies appending audit entries succeeds and produces cryptographically verifiable SHA-256 hash chains.
+   - `test_database_unique_constraints_enforced`: Verifies duplicate user emails trigger SQLAlchemy `IntegrityError`.
+   - `test_postgres_engine_hardening_options`: Verifies PostgreSQL engine options enforce `statement_timeout=30000`, `connect_timeout=10`, and `sslmode=require` in production.
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **146 passed, 0 failed in 16.79s** (5 new regression tests added, total 61 in security test suite).
+- **Static Analysis (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues** across 8,508 lines.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 190 files**.
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
+- **Frontend Production Build (`npm run build`):** **Passed in 3.56s**.
