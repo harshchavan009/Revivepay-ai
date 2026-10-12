@@ -4,7 +4,7 @@ Exposes real empirical ML classification metrics and system-level telemetry.
 """
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models.all_models import RecoveryCase, AuditLog, PaymentEvent, PolicyEvaluation, AgentDecision, Approval
@@ -14,16 +14,16 @@ from ml.predict import predict_recovery_likelihood
 router = APIRouter(prefix="/ml", tags=["ML Evaluation & System Metrics"])
 
 class MLPredictionRequest(BaseModel):
-    amount: float
-    failure_category: str
-    payment_method: str = "upi"
-    customer_success_count: int = 5
-    customer_failure_count: int = 1
-    retry_count: int = 0
-    customer_tenure_days: int = 120
+    amount: float = Field(..., gt=0.0, le=10_000_000.0, description="Transaction amount in INR")
+    failure_category: str = Field(..., min_length=1, max_length=50)
+    payment_method: str = Field("upi", min_length=1, max_length=50)
+    customer_success_count: int = Field(5, ge=0, le=100_000)
+    customer_failure_count: int = Field(1, ge=0, le=100_000)
+    retry_count: int = Field(0, ge=0, le=20)
+    customer_tenure_days: int = Field(120, ge=0, le=36500)
     is_subscription: bool = False
     previous_recovery_success: bool = True
-    checkout_intent_score: float = 0.85
+    checkout_intent_score: float = Field(0.85, ge=0.0, le=1.0)
 
 @router.get("/evaluation")
 def get_ml_evaluation_metrics():

@@ -426,10 +426,26 @@ class RecoveryDecisionOutput(BaseModel):
     policy_overrides_applied: List[str] = Field(default_factory=list)
 
 class RecoveryApprovalRequest(BaseModel):
-    action: str = "APPROVE"
-    rejection_reason: Optional[str] = None
-    notes: Optional[str] = None
-    step_up_token: Optional[str] = None
+    action: str = Field("APPROVE", max_length=20)
+    rejection_reason: Optional[str] = Field(None, max_length=500)
+    notes: Optional[str] = Field(None, max_length=1000)
+    step_up_token: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, v: str) -> str:
+        clean = v.strip().upper()
+        if clean not in ["APPROVE", "REJECT"]:
+            raise ValueError("Action must be either 'APPROVE' or 'REJECT'")
+        return clean
+
+    @field_validator("notes", "rejection_reason")
+    @classmethod
+    def sanitize_strings(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        from backend.services.sanitizer import sanitize_text
+        return sanitize_text(v, max_length=1000, escape_html=True)
 
 class RecoveryExecutionResponse(BaseModel):
     case_id: str
@@ -456,16 +472,36 @@ class PolicyConfigResponse(BaseModel):
     class Config:
         from_attributes = True
 
+ALLOWED_POLICY_ACTIONS = {
+    "retry_payment",
+    "create_payment_link",
+    "send_customer_notification",
+    "trigger_checkout_reminder",
+    "request_payment_method_update",
+    "escalate_to_merchant",
+    "stop_recovery"
+}
+
 class PolicyConfigUpdate(BaseModel):
-    max_auto_retries: Optional[int] = None
-    max_auto_amount: Optional[float] = None
-    high_value_approval_threshold: Optional[float] = None
-    min_ai_confidence: Optional[float] = None
+    max_auto_retries: Optional[int] = Field(None, ge=0, le=10)
+    max_auto_amount: Optional[float] = Field(None, ge=0.0, le=10_000_000.0)
+    high_value_approval_threshold: Optional[float] = Field(None, ge=0.0, le=10_000_000.0)
+    min_ai_confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
     allow_customer_contact: Optional[bool] = None
-    recovery_time_window_hours: Optional[int] = None
-    mandate_afa_threshold: Optional[float] = None
+    recovery_time_window_hours: Optional[int] = Field(None, ge=1, le=720)
+    mandate_afa_threshold: Optional[float] = Field(None, ge=0.0, le=10_000_000.0)
     tat_auto_escalate: Optional[bool] = None
     allowed_actions: Optional[List[str]] = None
+
+    @field_validator("allowed_actions")
+    @classmethod
+    def validate_allowed_actions(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return None
+        for action in v:
+            if action not in ALLOWED_POLICY_ACTIONS:
+                raise ValueError(f"Invalid policy action '{action}'. Must be one of: {sorted(list(ALLOWED_POLICY_ACTIONS))}")
+        return v
 
 class SubscriptionResponse(BaseModel):
     id: str
@@ -525,10 +561,18 @@ class DashboardSummaryResponse(BaseModel):
     autonomous_recovery_rate: float
 
 class SimulationTriggerRequest(BaseModel):
-    scenario: str
-    amount: Optional[float] = None
-    customer_type: Optional[str] = "returning"
-    payment_method: Optional[str] = "card"
+    scenario: str = Field(..., max_length=100)
+    amount: Optional[float] = Field(None, gt=0, le=10_000_000.0)
+    customer_type: Optional[str] = Field("returning", max_length=50)
+    payment_method: Optional[str] = Field("card", max_length=50)
+
+    @field_validator("amount")
+    @classmethod
+    def validate_simulation_amount(cls, v: Optional[float]) -> Optional[float]:
+        if v is None:
+            return None
+        from backend.services.sanitizer import validate_amount
+        return validate_amount(v)
 
 class SimulationResponse(BaseModel):
     scenario: str

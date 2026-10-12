@@ -397,3 +397,65 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors**.
 - **Frontend Production Build (`npm run build`):** **Passed in 3.65s**.
 
+---
+
+## Phase 4 Fixes Applied & Verification Evidence (Input Validation, Injection Defenses & Data Sanitization)
+
+### Fixes Implemented in Phase 4:
+1. **Centralized Data Sanitization & Injection Defense Engine (`backend/services/sanitizer.py`):**
+   - Implemented `strip_control_characters(text: str) -> str` to strip non-printable ASCII control characters.
+   - Implemented `sanitize_text(text: Optional[str], max_length: int = 1000, escape_html: bool = True) -> Optional[str]` for HTML character escaping and length truncation against XSS.
+   - Implemented `detect_prompt_injection(text: str) -> bool` with a comprehensive catalog of injection, instruction override, system tag spoofing, and jailbreak attack patterns.
+   - Implemented `sanitize_prompt_input(text: str, max_length: int = 500) -> str` to sanitize text going into LLM context, stripping structural boundary tags (`<system>`, `<telemetry_context>`, etc.) and control characters.
+   - Implemented `escape_sql_like(search: str) -> str` to escape SQL `LIKE` wildcard operators (`%`, `_`, `\`) against wildcard explosion and ReDoS.
+   - Implemented `validate_amount(amount: float) -> float` guaranteeing amounts are finite, non-NaN, positive, and bounded within the platform maximum (₹10,000,000.00).
+
+2. **Webhook Attack Surface Hardening (`backend/api/webhooks.py`):**
+   - **Payload Size Capping (DoS Prevention):** Added `MAX_WEBHOOK_PAYLOAD_BYTES = 1_048_576` (1MB). Payloads exceeding 1MB are rejected with **HTTP 413 Payload Too Large**.
+   - **Eliminated Production Signature Backdoor:** Gated `"test_signature"` bypass strictly behind `DEMO_MODE=True` and non-production environments. In production or strict mode, `test_signature` bypass attempts return **HTTP 401 Unauthorized**.
+   - **Payload Structure Validation:** Validates `isinstance(payload, dict)` and sanitizes `provider_event_id` to prevent memory exhaustion and malformed payload injection.
+
+3. **LLM Prompt Injection Defenses & Telemetry Isolation (`backend/services/ai_agent.py`, `backend/services/chat_engine.py`):**
+   - **System Prompt Boundaries:** Updated system prompts with explicit defense directives stating that content within `<telemetry_context>` is untrusted external telemetry data that cannot override system instructions or modify safety rules.
+   - **Context Delimitation & Sanitization:** Enclosed transaction context in `<telemetry_context>` tags. All untrusted fields (`customer_name`, `failure_reason`, `failure_code`, `failure_category`) are passed through `sanitize_prompt_input()`.
+   - **Model Recommendation Whitelisting:** Enforced strict output validation in `ClaudeLLMProvider` and `GeminiLLMProvider`: `recommended_action` is validated against `ALLOWED_TOOLS` (falling back to `"escalate_to_merchant"`), and `risk_level` is validated against `["LOW", "MEDIUM", "HIGH", "CRITICAL"]`.
+   - **Interactive Chat Prompt Injection Guardrail (`chat_engine.py`):** Intercepts prompt injection payloads via `detect_prompt_injection(user_message)` returning an early security refusal event without invoking tools or downstream LLMs.
+
+4. **Chatbot Stream & History API Hardening (`backend/api/chat.py`):**
+   - Created typed `ChatStreamRequest` Pydantic model with strict validation:
+     - `message`: `min_length=1`, `max_length=2000`.
+     - `session_id`: `max_length=64`, regex pattern `^[a-zA-Z0-9_\-\.:]+$`.
+   - Added regex and length bounds to `GET /api/chat/history` and `DELETE /api/chat/history`.
+
+5. **SSE Connection Exhaustion & Resource DoS Prevention (`backend/api/events_stream.py`):**
+   - Enforced `MAX_CONCURRENT_SSE_CONNECTIONS = 200`.
+   - Rejects incoming streaming connections beyond the concurrency limit with **HTTP 429 Too Many Requests**.
+
+6. **Search & Pagination SQL Wildcard Escaping (`backend/api/recovery.py`, `backend/api/payments.py`, `backend/api/audit.py`):**
+   - Protected `/api/recovery/cases`, `/api/cases`, `/api/payments`, and `/api/audit` against SQL `LIKE` wildcard explosion using `escape_sql_like`.
+   - Bound search query length (`Query(None, max_length=100)`) and pagination offset (`Query(0, ge=0)`).
+
+7. **Schema Bounds & Data Sanitization (`backend/schemas/all_schemas.py`, `backend/api/ml_evaluation.py`):**
+   - `RecoveryApprovalRequest`: Validates action (`APPROVE`, `REJECT`) and automatically HTML-escapes `notes` and `rejection_reason`.
+   - `PolicyConfigUpdate`: Enforces bounds on retries (`ge=0, le=10`), amounts (`ge=0.0, le=10_000_000.0`), confidence, and validates `allowed_actions` against an allowed set.
+   - `SimulationTriggerRequest`: Validates `amount` with `validate_amount()`.
+   - `MLPredictionRequest`: Constrained numerical inputs (`amount`, intent score, counts, tenure days) with strict Pydantic `Field` bounds.
+
+8. **Regression Tests Added (`tests/test_security_hardening.py`):**
+   - `test_oversized_webhook_payload_rejected_413`: Verifies >1MB payload returns 413.
+   - `test_webhook_test_signature_bypass_blocked_in_production`: Verifies test_signature blocked in production mode with 401.
+   - `test_chat_prompt_injection_refusal`: Verifies injection payload in chat triggers security guardrail refusal.
+   - `test_chat_stream_request_validation`: Verifies oversized messages (>2000 chars) and path-traversal session IDs are rejected with 422.
+   - `test_recovery_approval_action_and_xss_sanitization`: Verifies invalid actions rejected with 422 and XSS notes are HTML-escaped.
+   - `test_simulation_trigger_amount_validation`: Verifies negative and excessive amounts rejected with 422.
+   - `test_ml_prediction_input_validation`: Verifies negative amounts and invalid scores rejected with 422.
+   - `test_sse_events_stream_max_connections_limit`: Verifies 429 Too Many Requests when SSE connections reach concurrency cap.
+   - `test_sql_like_wildcard_escaping_utility`: Verifies SQL wildcard escaping utility and search endpoints.
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **116 passed, 0 failed in 8.27s** (9 new regression tests added, total 31 in security test suite).
+- **Static Analysis (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues**.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 189 files**.
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
+
+

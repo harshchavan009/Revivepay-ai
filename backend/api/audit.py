@@ -5,16 +5,17 @@ from backend.database import get_db
 from backend.models.all_models import AuditLog, RecoveryCase, Payment, User
 from backend.schemas.all_schemas import AuditLogResponse
 from backend.services.auth_service import get_current_user_optional, enforce_tenant_ownership
+from backend.services.sanitizer import escape_sql_like
 
 router = APIRouter(prefix="/audit", tags=["Audit Trail"])
 
 @router.get("", response_model=List[AuditLogResponse])
 def get_audit_logs(
-    case_id: Optional[str] = None,
-    action: Optional[str] = None,
-    actor: Optional[str] = None,
+    case_id: Optional[str] = Query(None, max_length=100),
+    action: Optional[str] = Query(None, max_length=100),
+    actor: Optional[str] = Query(None, max_length=100),
     limit: int = Query(100, ge=1, le=500),
-    offset: int = 0,
+    offset: int = Query(0, ge=0),
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
@@ -40,7 +41,8 @@ def get_audit_logs(
     if action and action != "ALL":
         query = query.filter(AuditLog.action == action)
     if actor and actor != "ALL":
-        query = query.filter(AuditLog.actor.ilike(f"%{actor}%"))
+        actor_fmt = f"%{escape_sql_like(actor)}%"
+        query = query.filter(AuditLog.actor.ilike(actor_fmt))
 
     return query.order_by(AuditLog.timestamp.desc()).offset(offset).limit(limit).all()
 

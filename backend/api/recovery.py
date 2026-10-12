@@ -11,6 +11,7 @@ from backend.config import settings
 from backend.services.auth_service import (
     require_role, verify_step_up_token, get_current_user_optional, enforce_tenant_ownership
 )
+from backend.services.sanitizer import escape_sql_like
 
 router = APIRouter(prefix="/recovery", tags=["Recovery Cases"])
 
@@ -92,9 +93,9 @@ def get_recovery_cases(
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
     approval_status: Optional[str] = None,
-    search: Optional[str] = None,
-    limit: int = 1000,
-    offset: int = 0,
+    search: Optional[str] = Query(None, max_length=100),
+    limit: int = Query(1000, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
@@ -109,7 +110,7 @@ def get_recovery_cases(
     if approval_status and approval_status != "ALL":
         query = query.filter(RecoveryCase.approval_status == approval_status)
     if search:
-        search_fmt = f"%{search}%"
+        search_fmt = f"%{escape_sql_like(search)}%"
         query = query.join(Customer, isouter=True).filter(
             (RecoveryCase.case_id.ilike(search_fmt)) |
             (RecoveryCase.failure_type.ilike(search_fmt)) |
@@ -283,9 +284,9 @@ def get_cases_direct(
     status: Optional[str] = None,
     risk_level: Optional[str] = None,
     approval_status: Optional[str] = None,
-    search: Optional[str] = None,
-    limit: int = 1000,
-    offset: int = 0,
+    search: Optional[str] = Query(None, max_length=100),
+    limit: int = Query(1000, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):

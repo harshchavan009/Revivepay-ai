@@ -11,9 +11,13 @@ from backend.models.all_models import PaymentEvent, Payment, Customer, Merchant,
 from backend.events.taxonomy import PaymentEventType, RecoveryEventType
 from backend.services.razorpay_service import RazorpayService
 from backend.services.recovery_engine import RecoveryEngine
+from backend.services.sanitizer import sanitize_text
+from backend.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
+
+MAX_WEBHOOK_PAYLOAD_BYTES = 1_048_576  # 1MB limit to protect against OOM / DoS
 
 @router.post("/razorpay")
 @router.post("/v1/razorpay")
@@ -28,10 +32,18 @@ async def handle_razorpay_webhook(
     """
     received_at = datetime.datetime.utcnow()
     raw_body = await request.body()
+
+    # 1. Payload size check (prevent buffer / memory exhaustion DoS)
+    if len(raw_body) > MAX_WEBHOOK_PAYLOAD_BYTES:
+        logger.warning(f"Rejected oversized webhook payload: {len(raw_body)} bytes.")
+        raise HTTPException(
+            status_code=413,
+            detail="Webhook payload exceeds maximum allowable size limit of 1MB"
+        )
+
     body_str = raw_body.decode("utf-8") if raw_body else "{}"
 
-    # 1. HMAC-SHA256 Signature Verification
-    # Razorpay sends raw hex signature in 'X-Razorpay-Signature' header
+    # 2. HMAC-SHA256 Signature Verification
     if not x_razorpay_signature:
         logger.warning("Rejected Razorpay webhook with missing X-Razorpay-Signature header.")
         from backend.models.all_models import AuditLog
@@ -57,7 +69,17 @@ async def handle_razorpay_webhook(
             pass
         raise HTTPException(status_code=401, detail="Missing X-Razorpay-Signature header")
 
-    if x_razorpay_signature != "test_signature":
+    # Gated check: 'test_signature' is strictly forbidden in production or when DEMO_MODE is False
+    allow_sandbox_test_sig = settings.DEMO_MODE and settings.ENVIRONMENT.lower() != "production"
+
+    if x_razorpay_signature == "test_signature" and not allow_sandbox_test_sig:
+        logger.warning("Rejected 'test_signature' bypass attempt in production/strict mode.")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Razorpay webhook signature (test bypass prohibited in production)"
+        )
+
+    if x_razorpay_signature != "test_signature" or not allow_sandbox_test_sig:
         is_valid = RazorpayService.verify_webhook_signature(raw_body, x_razorpay_signature)
         if not is_valid:
             logger.warning("Rejected Razorpay webhook with invalid/tampered HMAC-SHA256 signature.")
@@ -84,17 +106,17 @@ async def handle_razorpay_webhook(
                 pass
             raise HTTPException(status_code=401, detail="Invalid Razorpay webhook signature (HMAC-SHA256 verification failed)")
 
+    # 3. Payload validation
     try:
         payload = json.loads(body_str)
+        if not isinstance(payload, dict):
+            raise ValueError("Payload must be a JSON object")
     except Exception:
-        raise HTTPException(status_code=400, detail="Malformed JSON payload")
+        raise HTTPException(status_code=400, detail="Malformed JSON payload: must be a valid JSON object")
 
     # Extract Razorpay canonical event identifiers
-    provider_event_id = (
-        payload.get("event_id") or 
-        payload.get("id") or 
-        f"event_rzp_{hashlib.sha256(raw_body).hexdigest()[:16]}"
-    )
+    raw_event_id = payload.get("event_id") or payload.get("id") or f"event_rzp_{hashlib.sha256(raw_body).hexdigest()[:16]}"
+    provider_event_id = sanitize_text(str(raw_event_id), max_length=100, escape_html=False)
     event_type = payload.get("event", PaymentEventType.PAYMENT_FAILED.value)
 
     # 2. Idempotency Check: UNIQUE(provider, provider_event_id)

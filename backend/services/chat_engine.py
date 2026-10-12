@@ -11,6 +11,7 @@ from backend.models.all_models import (
 )
 from backend.services.audit_service import AuditService
 from backend.services.broadcaster import notify_live_event
+from backend.services.sanitizer import detect_prompt_injection, sanitize_text
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +192,15 @@ class GroundedChatEngine:
         msg_lower = user_message.lower().strip()
         citations: List[Dict[str, str]] = []
         tool_call_info = None
+
+        # Prompt Injection & Guardrail Bypass Defense
+        if detect_prompt_injection(user_message):
+            logger.warning(f"Blocked prompt injection attempt in chat session {session_id}")
+            refusal_text = "RevivePay Security Defense: Prompt injection or instruction override attempt detected. Your request was blocked in accordance with platform security guardrails."
+            yield f"event: token\ndata: {json.dumps({'token': refusal_text})}\n\n"
+            yield f"event: done\ndata: {json.dumps({'citations': []})}\n\n"
+            cls._save_bot_message(db, thread.id, refusal_text, citations=[])
+            return
 
         # Check for Out-of-Scope Requests (General financial advice, stock trading, unrelated queries)
         out_of_scope_keywords = ["stock", "bitcoin", "crypto", "weather", "recipe", "election", "invest in", "buy shares", "legal advice"]
