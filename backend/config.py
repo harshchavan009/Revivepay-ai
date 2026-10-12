@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
     RATE_LIMIT_AUTH_PER_MINUTE: int = Field(default=15)
     RATE_LIMIT_WEBHOOK_PER_MINUTE: int = Field(default=120)
+    RATE_LIMIT_AI_PER_MINUTE: int = Field(default=30)
+    RATE_LIMIT_API_PER_MINUTE: int = Field(default=120)
+    RATE_LIMIT_USER_PER_MINUTE: int = Field(default=300)
+    MAX_REQUEST_BODY_BYTES: int = Field(default=10_485_760)  # 10MB default
     HIGH_VALUE_THRESHOLD: float = Field(default=50000.0)
 
     # RBI Guideline Reference Framework Settings

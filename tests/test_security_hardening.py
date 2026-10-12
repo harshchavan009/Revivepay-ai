@@ -1036,5 +1036,97 @@ def test_webhook_raw_bytes_normalization():
     assert RazorpayService.verify_webhook_signature(12345, valid_sig, secret=secret) is False
 
 
+# ==============================================================================
+# PHASE 6 TESTS: RATE LIMITING & DENIAL-OF-SERVICE DEFENSES
+# ==============================================================================
+
+def test_rate_limit_response_headers_on_success():
+    """Validates that standard X-RateLimit headers are attached to API responses."""
+    rate_limiter.requests.clear()
+    res = client.get("/api/recovery/count")
+    assert res.status_code == 200
+    assert "X-RateLimit-Limit" in res.headers
+    assert "X-RateLimit-Remaining" in res.headers
+    assert "X-RateLimit-Reset" in res.headers
+    assert int(res.headers["X-RateLimit-Remaining"]) >= 0
+
+
+def test_user_rate_limit_higher_than_unauthenticated_ip():
+    """Validates that authenticated users get a higher rate limit tier (300) than unauthenticated IPs (120)."""
+    rate_limiter.requests.clear()
+
+    # 1. Unauthenticated request to general API -> Limit = 120
+    res_unauth = client.get("/api/recovery/count")
+    assert res_unauth.status_code == 200
+    assert res_unauth.headers.get("X-RateLimit-Limit") == "120"
+
+    # 2. Authenticated request with Bearer token -> Limit = 300
+    login_res = client.post("/api/auth/demo-login", json={"persona": "revenue_operator"})
+    token = login_res.json()["access_token"]
+    res_auth = client.get("/api/recovery/count", headers={"Authorization": f"Bearer {token}"})
+    assert res_auth.status_code == 200
+    assert res_auth.headers.get("X-RateLimit-Limit") == "300"
+
+
+def test_ai_endpoint_rate_limiting_exceeded():
+    """Validates that AI reasoning & simulation endpoints enforce a 30 req/min rate limit."""
+    rate_limiter.requests.clear()
+
+    # Send 30 allowed requests to AI budget endpoint
+    for i in range(30):
+        res = client.get("/api/agent/budget")
+        assert res.status_code == 200, f"Request {i+1} failed"
+
+    # 31st request must trigger 429
+    blocked_res = client.get("/api/agent/budget")
+    assert blocked_res.status_code == 429
+    assert blocked_res.json()["error_code"] == "AI_RATE_LIMIT_EXCEEDED"
+    assert "Retry-After" in blocked_res.headers
+    assert blocked_res.headers.get("X-RateLimit-Remaining") == "0"
+
+
+def test_oversized_payload_rejected_413():
+    """Validates that request payloads exceeding MAX_REQUEST_BODY_BYTES (10MB) are rejected with HTTP 413."""
+    res = client.post(
+        "/api/recovery/cases",
+        headers={"Content-Length": "15728640"}  # 15MB > 10MB limit
+    )
+    assert res.status_code == 413
+    assert res.json()["error_code"] == "PAYLOAD_TOO_LARGE"
+    assert "Payload Too Large" in res.json()["detail"]
+
+
+def test_health_check_exempt_from_rate_limits():
+    """Validates that health check probes are never rate limited, ensuring uptime monitoring stability."""
+    rate_limiter.requests.clear()
+
+    # Saturate rate limiter for the client
+    for _ in range(150):
+        client.get("/api/recovery/count")
+
+    # Health check must still succeed with 200
+    res_health = client.get("/health")
+    assert res_health.status_code == 200
+    assert res_health.json()["status"] == "ok"
+
+    res_api_health = client.get("/api/health")
+    assert res_api_health.status_code == 200
+    assert res_api_health.json()["status"] == "ok"
+
+
+def test_production_mode_disables_docs_and_openapi(monkeypatch):
+    """Validates that /docs, /redoc, and /openapi.json are disabled in production environment."""
+    from backend.config import settings
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+
+    res = client.get("/")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["docs_url"] is None
+    assert body["redoc_url"] is None
+    assert body["openapi_url"] is None
+
+
+
 
 

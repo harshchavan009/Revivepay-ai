@@ -512,5 +512,52 @@ git log -p -S "REDACTED_HISTORICAL"
 - **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 189 files**.
 - **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
 
+---
+
+## Phase 6 Fixes Applied & Verification Evidence (Rate Limiting, DoS Protection & API Documentation Gating)
+
+### Fixes Implemented in Phase 6:
+1. **Tiered Sliding-Window Rate Limiting (`backend/main.py`, `backend/config.py`):**
+   - Configured granular limits based on endpoint criticality and caller authentication:
+     - **Tier A (Auth Routes):** `/api/auth/*` (except public `/environment`) capped at **15 requests/minute** (`AUTH_RATE_LIMIT_EXCEEDED`).
+     - **Tier B (Webhook Ingestion):** `/api/webhooks/*` capped at **120 requests/minute** (`WEBHOOK_RATE_LIMIT_EXCEEDED`).
+     - **Tier C (LLM & Simulation Routes):** `/api/chat`, `/api/simulation`, `/api/agent` capped at **30 requests/minute** (`AI_RATE_LIMIT_EXCEEDED`).
+     - **Tier D (General API Routes):** `/api/*` (exempting health checks) capped at **300 requests/minute** for authenticated users (`user_{token_sig}`) and **120 requests/minute** for unauthenticated IPs (`API_RATE_LIMIT_EXCEEDED`).
+     - **Health Check Exemption:** `/health` and `/api/health` are explicitly exempt from rate limiting to prevent load-balancer false-negatives during traffic bursts.
+
+2. **Standard Rate Limit Response Headers (`backend/main.py`):**
+   - Injected standard RFC rate-limiting headers on all managed API responses:
+     - `X-RateLimit-Limit`: Maximum allowable requests in current sliding window.
+     - `X-RateLimit-Remaining`: Count of remaining permitted requests in current window.
+     - `X-RateLimit-Reset`: Unix epoch timestamp when rate limiter refreshes.
+   - When requests exceed limits, returned **HTTP 429 Too Many Requests** with standard `Retry-After: <seconds>` header computed using ceiling rounding to ensure exact integer cooldown guarantees.
+
+3. **Memory Bounding & Eviction for In-Memory Rate Limiter (`backend/main.py`):**
+   - Implemented memory cleanup guard: when unique tracking keys exceed 10,000, stale timestamps and empty buckets are automatically evicted, preventing unbounded memory growth under distributed IP scans.
+
+4. **Global Request Body Size Ceiling (`backend/main.py`, `backend/config.py`):**
+   - Added `MAX_REQUEST_BODY_BYTES = 10_485_760` (10MB).
+   - In middleware, incoming requests exceeding 10MB `Content-Length` are immediately rejected with **HTTP 413 Payload Too Large** (`PAYLOAD_TOO_LARGE`) before downstream parsing.
+
+5. **Production API Documentation Gating (`backend/main.py`):**
+   - Enforced conditional documentation URLs based on `settings.ENVIRONMENT`:
+     - When `settings.ENVIRONMENT == "production"`, `docs_url`, `redoc_url`, and `openapi_url` are set to `None`, closing finding `SEC-11` and preventing schema recon by external actors.
+     - When running in development, staging, or demo mode, interactive documentation remains accessible for developer productivity.
+
+6. **Regression Tests Added (`tests/test_security_hardening.py`):**
+   - `test_rate_limit_response_headers_on_success`: Verifies `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers on compliant requests.
+   - `test_user_rate_limit_higher_than_unauthenticated_ip`: Verifies authenticated bearer tokens receive higher limit (300 req/min) vs unauthenticated IP (120 req/min).
+   - `test_ai_endpoint_rate_limiting_exceeded`: Verifies 30 req/min limit on AI routes triggers HTTP 429 with `AI_RATE_LIMIT_EXCEEDED` and `Retry-After` header.
+   - `test_oversized_payload_rejected_413`: Verifies requests with `Content-Length` > 10MB receive HTTP 413.
+   - `test_health_check_exempt_from_rate_limits`: Verifies health check endpoints remain responsive regardless of rate limiting state.
+   - `test_production_mode_disables_docs_and_openapi`: Verifies OpenAPI, Swagger UI, and ReDoc are disabled in production environment.
+
+### Verification Evidence:
+- **Pytest Suite (`PYTHONPATH=. pytest tests/`):** **128 passed, 0 failed in 8.59s** (6 new regression tests added, total 43 in security test suite).
+- **Static Analysis (`bandit -r backend ml -ll`):** **0 High, 0 Medium issues**.
+- **Secrets Audit (`python3 scripts/audit_secrets.py`):** **Zero secrets detected across 189 files**.
+- **Frontend Typecheck (`npx tsc --noEmit`):** **0 errors** (exit code 0).
+
+
 
 
