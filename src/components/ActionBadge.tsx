@@ -34,7 +34,7 @@ export const ActionBadge: React.FC<ActionBadgeProps> = ({ action }) => {
   };
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-xs font-medium shadow-sm">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[var(--color-text-primary)] text-xs font-medium shadow-sm">
       {getIcon()}
       <span className="font-mono text-[11px]">{formatLabel(norm)}</span>
     </span>

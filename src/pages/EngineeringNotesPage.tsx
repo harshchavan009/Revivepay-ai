@@ -253,7 +253,7 @@ export const EngineeringNotesPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* B.4: Architecture Decision — Model Choice Rationale */}
+              {/* B.4: Architecture Decision: Model Choice Rationale */}
               <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2 text-xs text-[var(--color-text-secondary)]">
                 <p className="font-bold text-[var(--color-text-primary)]">Architecture Rationale: Multi-Tier LLMs vs. Static Classification</p>
                 <p className="leading-relaxed text-[11px]">

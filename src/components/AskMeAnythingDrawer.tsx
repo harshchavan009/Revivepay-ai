@@ -80,7 +80,7 @@ export const AskMeAnythingDrawer: React.FC = () => {
             {
               id: "msg_init",
               sender: "bot",
-              text: "👋 Hi there! I'm RevivePay AI. Ask me about live payment failures, specific cases (e.g. `RV-10291`), platform revenue telemetry, or policy guardrail rules.",
+              text: "Hi there. I am RevivePay AI. Ask me about live payment failures, specific cases (e.g. `RV-10291`), platform revenue telemetry, or policy guardrail rules.",
               citations: []
             }
           ]);
@@ -91,7 +91,7 @@ export const AskMeAnythingDrawer: React.FC = () => {
           {
             id: "msg_init",
             sender: "bot",
-            text: "👋 Hi there! I'm RevivePay AI. Ask me about live payment failures, specific cases (e.g. `RV-10291`), platform revenue telemetry, or policy guardrail rules.",
+            text: "Hi there. I am RevivePay AI. Ask me about live payment failures, specific cases (e.g. `RV-10291`), platform revenue telemetry, or policy guardrail rules.",
             citations: []
           }
         ]);
@@ -254,30 +254,30 @@ export const AskMeAnythingDrawer: React.FC = () => {
         <button
           onClick={() => setIsOpen(true)}
           aria-label="Ask Revive AI Assistant"
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-md hover:scale-105 active:scale-95 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-md transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
         >
-          <Sparkles className="w-4 h-4 animate-pulse text-white shrink-0" />
+          <Sparkles className="w-4 h-4 text-white shrink-0" />
           <span>Ask Revive AI</span>
         </button>
       )}
 
       {/* Floating Drawer Modal */}
       {isOpen && (
-        <div className="fixed inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-6 sm:right-6 z-50 w-auto sm:w-[420px] max-w-full h-[540px] sm:h-[580px] bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 font-sans">
+        <div className="fixed inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-6 sm:right-6 z-50 w-auto sm:w-[420px] max-w-full h-[540px] sm:h-[580px] bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg shadow-2xl flex flex-col overflow-hidden font-sans">
           {/* Header */}
           <div className="px-5 py-4 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[var(--color-accent)] flex items-center justify-center text-white font-bold shadow-sm">
+              <div className="w-8 h-8 rounded-md bg-[var(--color-accent)] flex items-center justify-center text-white font-bold shadow-sm">
                 <Bot className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-sm text-[var(--color-text-primary)]">Revive AI Assistant</h3>
-                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                     LIVE GROUNDED
                   </span>
                 </div>
-                <p className="text-[10px] text-[var(--color-text-muted)]">Zero Hallucination Telemetry Agent</p>
+                <p className="text-[10px] text-[var(--color-text-muted)]">Payment Telemetry Assistant</p>
               </div>
             </div>
 
@@ -285,13 +285,13 @@ export const AskMeAnythingDrawer: React.FC = () => {
               <button
                 onClick={handleClearHistory}
                 title="Clear Chat History"
-                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-rose-500 hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
+                className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-rose-500 hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
+                className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -306,13 +306,13 @@ export const AskMeAnythingDrawer: React.FC = () => {
                 className={`flex gap-2.5 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.sender === "bot" && (
-                  <div className="w-6 h-6 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] flex items-center justify-center text-[var(--color-accent)] shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-md bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] flex items-center justify-center text-[var(--color-accent)] shrink-0 mt-0.5">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[85%] rounded-2xl p-3.5 space-y-2.5 leading-relaxed ${
+                  className={`max-w-[85%] rounded-lg p-3.5 space-y-2.5 leading-relaxed ${
                     msg.sender === "user"
                       ? "bg-[var(--color-accent)] text-white rounded-br-none shadow-sm"
                       : "bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-bl-none shadow-sm"
@@ -334,7 +334,7 @@ export const AskMeAnythingDrawer: React.FC = () => {
                             key={cIdx}
                             to={c.link || "#"}
                             onClick={() => c.link && setIsOpen(false)}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[10px] font-mono font-bold text-[var(--color-accent)] transition-colors"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[10px] font-mono font-bold text-[var(--color-accent)] transition-colors"
                           >
                             <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
                             <span>{c.title}</span>
@@ -347,7 +347,7 @@ export const AskMeAnythingDrawer: React.FC = () => {
                 </div>
 
                 {msg.sender === "user" && (
-                  <div className="w-6 h-6 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] shrink-0 mt-0.5">
                     <User className="w-3.5 h-3.5" />
                   </div>
                 )}
@@ -356,7 +356,7 @@ export const AskMeAnythingDrawer: React.FC = () => {
 
             {/* Active Tool Execution Indicator */}
             {activeToolMessage && (
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono animate-pulse">
+              <div className="flex items-center gap-2 p-2.5 rounded-md bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] text-xs font-mono">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--color-accent)]" />
                 <span>{activeToolMessage}</span>
               </div>
@@ -376,7 +376,7 @@ export const AskMeAnythingDrawer: React.FC = () => {
                   <button
                     key={pIdx}
                     onClick={() => handleSend(prompt)}
-                    className="text-[10px] px-2.5 py-1 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-left cursor-pointer"
+                    className="text-[10px] px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-left cursor-pointer"
                   >
                     {prompt}
                   </button>

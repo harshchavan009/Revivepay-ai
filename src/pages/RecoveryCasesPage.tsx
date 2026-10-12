@@ -70,7 +70,7 @@ export const RecoveryCasesPage: React.FC = () => {
             <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
               CASE INVESTIGATION QUEUE
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
               {filteredCases.length !== cases.length
                 ? `Showing ${filteredCases.length} of ${cases.length} Cases (Filtered)`
                 : `${cases.length} Total Cases`}
@@ -87,7 +87,7 @@ export const RecoveryCasesPage: React.FC = () => {
 
         <button
           onClick={loadCases}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
           <span>Refresh Queue</span>
@@ -95,7 +95,7 @@ export const RecoveryCasesPage: React.FC = () => {
       </div>
 
       {/* Filter & Provenance Segment Bar */}
-      <div className="p-4 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
+      <div className="p-4 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
         {/* Source Provenance Switcher */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-3">
           <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
@@ -104,7 +104,7 @@ export const RecoveryCasesPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setSourceFilter("ALL"); setCurrentPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 sourceFilter === "ALL"
                   ? "bg-[var(--color-accent)] text-white shadow-sm"
                   : "bg-[var(--color-bg-canvas)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -114,7 +114,7 @@ export const RecoveryCasesPage: React.FC = () => {
             </button>
             <button
               onClick={() => { setSourceFilter("RAZORPAY_TEST"); setCurrentPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 sourceFilter === "RAZORPAY_TEST"
                   ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500 shadow-sm"
                   : "bg-[var(--color-bg-canvas)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -125,7 +125,7 @@ export const RecoveryCasesPage: React.FC = () => {
             </button>
             <button
               onClick={() => { setSourceFilter("SIMULATION"); setCurrentPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 sourceFilter === "SIMULATION"
                   ? "bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500 shadow-sm"
                   : "bg-[var(--color-bg-canvas)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -146,14 +146,14 @@ export const RecoveryCasesPage: React.FC = () => {
               placeholder="Search by Case ID, Customer Name, Failure Type, or Amount..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
+              className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-md pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-xl px-3 py-2.5 outline-none font-sans cursor-pointer"
+            className="bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-md px-3 py-2.5 outline-none font-sans cursor-pointer"
           >
             <option value="ALL">All Recovery Statuses</option>
             <option value="NEW">New Ingress</option>
@@ -168,7 +168,7 @@ export const RecoveryCasesPage: React.FC = () => {
 
       {/* Error Alert Banner with Retry */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm">
+        <div className="p-4 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-3 shadow-premium-sm">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
             <span className="font-semibold">{error}</span>
@@ -176,7 +176,7 @@ export const RecoveryCasesPage: React.FC = () => {
           <button
             type="button"
             onClick={loadCases}
-            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 cursor-pointer shrink-0"
+            className="px-3.5 py-1.5 rounded-md bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-premium-sm transition-all active:scale-95 cursor-pointer shrink-0"
           >
             Retry Connection
           </button>
@@ -184,7 +184,7 @@ export const RecoveryCasesPage: React.FC = () => {
       )}
 
       {/* Cases Data Table with Desktop/Mobile Views */}
-      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-premium-sm">
+      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden shadow-premium-sm">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[var(--color-bg-canvas)] border-b border-[var(--color-border-subtle)] text-[var(--color-text-muted)] uppercase font-mono text-[10px]">
@@ -225,7 +225,7 @@ export const RecoveryCasesPage: React.FC = () => {
                 <tr>
                   <td colSpan={11} className="p-12 text-center text-[var(--color-text-muted)] font-sans">
                     <div className="max-w-sm mx-auto space-y-3">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
+                      <div className="w-10 h-10 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
                         <ShieldAlert className="w-5 h-5" />
                       </div>
                       <p className="font-bold text-[var(--color-text-primary)] text-sm">No recovery cases found</p>
@@ -307,7 +307,7 @@ export const RecoveryCasesPage: React.FC = () => {
                     <td className="p-4 pr-6 text-right">
                       <Link
                         to={`/cases/${c.case_id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-accent)] font-semibold text-xs transition-all shadow-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] hover:border-[var(--color-accent)] text-[var(--color-accent)] font-semibold text-xs transition-all shadow-sm"
                       >
                         <span>Investigate</span>
                         <ArrowRight className="w-3 h-3" />
@@ -324,7 +324,7 @@ export const RecoveryCasesPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />
               <span>
-                <strong>Failure Recovery Safety Net:</strong> If an autonomous recovery attempt doesn't resolve within statutory TAT (T+5 Card / T+1 UPI), the system automatically escalates to senior operators and calculates ₹100/day customer compensation — serving as the platform's self-governing safety net.
+                <strong>Failure Recovery Safety Net:</strong> If an autonomous recovery attempt doesn't resolve within statutory TAT (T+5 Card / T+1 UPI), the system automatically escalates to senior operators and calculates ₹100/day customer compensation: serving as the platform's self-governing safety net.
               </span>
             </div>
             <span className="font-mono text-[10px] text-[var(--color-text-muted)]">RBI/2019-20/67 Reference Implementation</span>
@@ -377,7 +377,7 @@ export const RecoveryCasesPage: React.FC = () => {
                 <div className="pt-2 border-t border-[var(--color-border-subtle)] flex justify-end">
                   <Link
                     to={`/cases/${c.case_id}`}
-                    className="w-full py-2 rounded-xl bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-semibold text-xs text-center border border-[var(--color-accent-border)] flex items-center justify-center gap-1.5"
+                    className="w-full py-2 rounded-md bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-semibold text-xs text-center border border-[var(--color-accent-border)] flex items-center justify-center gap-1.5"
                   >
                     <span>Inspect Case Details</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -392,7 +392,7 @@ export const RecoveryCasesPage: React.FC = () => {
         <div className="p-4 bg-[var(--color-bg-canvas)] border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3 text-[var(--color-text-secondary)]">
             <span>
-              Showing <strong className="text-[var(--color-text-primary)]">{totalItems === 0 ? 0 : startIndex + 1}</strong>–<strong className="text-[var(--color-text-primary)]">{endIndex}</strong> of <strong className="text-[var(--color-text-primary)]">{totalItems}</strong> cases
+              Showing <strong className="text-[var(--color-text-primary)]">{totalItems === 0 ? 0 : startIndex + 1}</strong> to <strong className="text-[var(--color-text-primary)]">{endIndex}</strong> of <strong className="text-[var(--color-text-primary)]">{totalItems}</strong> cases
             </span>
             <div className="flex items-center gap-1.5">
               <span className="text-[11px]">Rows:</span>

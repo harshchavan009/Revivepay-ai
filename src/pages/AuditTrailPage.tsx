@@ -64,7 +64,7 @@ export const AuditTrailPage: React.FC = () => {
             <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
               IMMUTABLE AUDIT RECORD
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
               <Lock className="w-2.5 h-2.5" />
               <span>SHA-256 HASH CHAINED</span>
             </span>
@@ -82,7 +82,7 @@ export const AuditTrailPage: React.FC = () => {
           <button
             onClick={handleVerifyChain}
             disabled={verifyingChain}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-bold shadow-premium-sm transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-bold shadow-premium-sm transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
           >
             {verifyingChain ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -94,7 +94,7 @@ export const AuditTrailPage: React.FC = () => {
 
           <button
             onClick={loadLogs}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold transition-colors cursor-pointer shadow-premium-sm"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold transition-colors cursor-pointer shadow-premium-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
             <span>Refresh</span>
@@ -104,7 +104,7 @@ export const AuditTrailPage: React.FC = () => {
 
       {/* Verification Banner */}
       {chainResult && (
-        <div className={`p-5 rounded-2xl border ${chainResult.valid ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-200" : "bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-200"} space-y-3 shadow-premium-sm animate-in fade-in`}>
+        <div className={`p-5 rounded-lg border ${chainResult.valid ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-200" : "bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-200"} space-y-3 shadow-premium-sm animate-in fade-in`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {chainResult.valid ? (
@@ -115,18 +115,18 @@ export const AuditTrailPage: React.FC = () => {
               <span className="font-bold text-sm text-[var(--color-text-primary)]">
                 {chainResult.valid ? "Cryptographic Chain Verified Valid" : "Audit Chain Verification Failed"}
               </span>
-              <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+              <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
                 {chainResult.total_blocks} Blocks Validated
               </span>
             </div>
             <span className="text-[10px] font-mono text-[var(--color-text-muted)]">Zero-Knowledge Integrity Check</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-[11px] font-mono text-[var(--color-text-secondary)] pt-1">
-            <div className="p-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] truncate">
+            <div className="p-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] truncate">
               <span className="text-[var(--color-text-muted)] mr-2 font-bold">GENESIS HASH:</span>
               <span className="text-[var(--color-accent)]">{chainResult.genesis_hash}</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] truncate">
+            <div className="p-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] truncate">
               <span className="text-[var(--color-text-muted)] mr-2 font-bold">HEAD HASH:</span>
               <span className="text-emerald-600 dark:text-emerald-400">{chainResult.head_hash}</span>
             </div>
@@ -216,7 +216,7 @@ export const AuditTrailPage: React.FC = () => {
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-[var(--color-text-muted)] font-sans">
                     <div className="max-w-sm mx-auto space-y-3">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
+                      <div className="w-10 h-10 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border)] flex items-center justify-center mx-auto text-[var(--color-text-muted)]">
                         <ShieldCheck className="w-5 h-5" />
                       </div>
                       <p className="font-bold text-[var(--color-text-primary)] text-sm">No audit logs found</p>
@@ -305,7 +305,7 @@ export const AuditTrailPage: React.FC = () => {
       {/* Mobile Card View */}
       <div className="block md:hidden space-y-3">
         {logs.map((log) => (
-          <div key={log.id} className="p-4 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-2">
+          <div key={log.id} className="p-4 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="font-mono font-bold text-[var(--color-accent)]">{log.case_id || "System Event"}</span>
               <span className="text-[10px] text-[var(--color-text-muted)] font-mono">

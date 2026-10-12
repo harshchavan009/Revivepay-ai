@@ -37,7 +37,7 @@ const MetricsContext = createContext<MetricsContextType | undefined>(undefined);
 
 export const MetricsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [metrics, setMetrics] = useState<DashboardMetrics>(ZERO_METRICS);
-  const [environmentLabel, setEnvironmentLabel] = useState<string>("Sandbox Environment — Razorpay Test Mode");
+  const [environmentLabel, setEnvironmentLabel] = useState<string>("Sandbox Environment: Razorpay Test Mode");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLiveSynced, setIsLiveSynced] = useState<boolean>(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);

@@ -126,7 +126,7 @@ export const authService = {
     } catch {
       return {
         environment: "sandbox",
-        environment_label: "Sandbox Environment — Razorpay Test Mode",
+        environment_label: "Sandbox Environment: Razorpay Test Mode",
         rbi_framework_active: true,
         tat_framework: "RBI/2019-20/67 Harmonisation of TAT",
         max_retries_allowed: 2,
@@ -859,7 +859,7 @@ export const agentService = {
         reasoning_summary: "[Gemini 1.5 Pro Fallback Active] Primary provider timed out. Evaluated transient switch error and recommended automated retry in 30s.",
         risk_level: "LOW",
         model_provider: "google",
-        model_name: "gemini-1.5-pro (fallback — primary provider timeout)"
+        model_name: "gemini-1.5-pro (fallback: primary provider timeout)"
       };
     }
   }

@@ -13,17 +13,15 @@ interface ActivityItem {
   caseId?: string;
 }
 
-const INITIAL_ACTIVITIES: ActivityItem[] = [
-  { id: "1", time: "Just now", type: "recovered", text: "Autonomous recovery executed for pay_89231 (HDFC Switch Restored)", amount: "+₹4,999", caseId: "RV-10291" },
-  { id: "2", time: "1m ago", type: "analyzed", text: "AI root-cause diagnosed 504 gateway timeout · Auto-rerouted via Axis Bank", amount: "₹18,500", caseId: "RV-10295" },
-  { id: "3", time: "3m ago", type: "retry", text: "Smart retry dispatched for monthly payroll credit window", amount: "₹12,499", caseId: "RV-10292" },
-  { id: "4", time: "5m ago", type: "escalated", text: "High-value enterprise tier payment escalated to operator for policy approval", amount: "₹65,200", caseId: "RV-10294" },
-  { id: "5", time: "8m ago", type: "recovered", text: "Customer completed checkout via 1-Click WhatsApp recovery token", amount: "+₹6,999", caseId: "chk_70001" },
-  { id: "6", time: "11m ago", type: "recovered", text: "Instant retry triggered on issuer timeout · Recovered successfully", amount: "+₹45,000", caseId: "RV-10293" }
-];
+const IDLE_ACTIVITY: ActivityItem = {
+  id: "idle",
+  time: "Sandbox",
+  type: "webhook",
+  text: "Recovery engine listening for Razorpay test webhooks. Trigger a simulation or send an event to begin.",
+};
 
 export const LiveActivityTicker: React.FC = () => {
-  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
+  const [activities, setActivities] = useState<ActivityItem[]>([IDLE_ACTIVITY]);
   const [index, setIndex] = useState(0);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
 
@@ -50,7 +48,7 @@ export const LiveActivityTicker: React.FC = () => {
             amount: data.amount ? formatINR(data.amount) : undefined,
             caseId: data.case_id
           };
-          setActivities(prev => [newAct, ...prev.slice(0, 15)]);
+          setActivities(prev => [newAct, ...prev.filter(a => a.id !== "idle").slice(0, 15)]);
           setIndex(0);
         } catch {
           // ignore
@@ -69,7 +67,7 @@ export const LiveActivityTicker: React.FC = () => {
             amount: data.amount ? `+${formatINR(data.amount)}` : undefined,
             caseId: data.case_id
           };
-          setActivities(prev => [newAct, ...prev.slice(0, 15)]);
+          setActivities(prev => [newAct, ...prev.filter(a => a.id !== "idle").slice(0, 15)]);
           setIndex(0);
         } catch {
           // ignore
@@ -84,11 +82,11 @@ export const LiveActivityTicker: React.FC = () => {
             id: `evt_${Date.now()}`,
             time: "Just now",
             type: "approval",
-            text: `Human operator ${data.actor || "Operator"} ${data.decision?.toLowerCase() || "reviewed"} case ${data.case_id}`,
+            text: `Operator ${data.actor || "Operator"} ${data.decision?.toLowerCase() || "reviewed"} case ${data.case_id}`,
             amount: data.amount ? formatINR(data.amount) : undefined,
             caseId: data.case_id
           };
-          setActivities(prev => [newAct, ...prev.slice(0, 15)]);
+          setActivities(prev => [newAct, ...prev.filter(a => a.id !== "idle").slice(0, 15)]);
           setIndex(0);
         } catch {
           // ignore
@@ -111,13 +109,14 @@ export const LiveActivityTicker: React.FC = () => {
 
   // Cycle through current activities
   useEffect(() => {
+    if (activities.length <= 1) return;
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % activities.length);
     }, 4500);
     return () => clearInterval(timer);
   }, [activities.length]);
 
-  const current = activities[index] || activities[0];
+  const current = activities[index] || activities[0] || IDLE_ACTIVITY;
 
   return (
     <div
@@ -126,9 +125,9 @@ export const LiveActivityTicker: React.FC = () => {
       className="bg-[var(--color-bg-canvas)] border-b border-[var(--color-border-subtle)] px-6 py-2 flex items-center justify-between text-xs text-[var(--color-text-secondary)] select-none transition-colors"
     >
       <div className="flex items-center gap-3 overflow-hidden">
-        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-mono text-[10px] font-bold tracking-wider uppercase shrink-0 border border-[var(--color-accent-border)]">
-          <span className={`w-1.5 h-1.5 rounded-full ${isLiveConnected ? "bg-emerald-500 animate-ping" : "bg-[var(--color-accent)]"}`}></span>
-          <span>{isLiveConnected ? "Live SSE Stream" : "Live ML Stream"}</span>
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-mono text-[10px] font-bold tracking-wider uppercase shrink-0 border border-[var(--color-accent-border)]">
+          <span className={`w-1.5 h-1.5 rounded-sm ${isLiveConnected ? "bg-emerald-500" : "bg-[var(--color-accent)]"}`}></span>
+          <span>{isLiveConnected ? "Live SSE Stream" : "Live Event Stream"}</span>
         </div>
 
         <div className="flex items-center gap-2 truncate text-xs">

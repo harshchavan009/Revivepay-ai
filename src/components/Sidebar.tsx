@@ -66,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
     {
       group: "AI & GOVERNANCE",
       items: [
-        { label: "200+ ML Signals Feed", icon: Sparkles, path: "/ai-activity" },
+        { label: "ML Signals Feed", icon: Sparkles, path: "/ai-activity" },
         { label: "System Evaluation", icon: Cpu, path: "/evaluation" },
         { label: "Hardening Log", icon: Wrench, path: "/hardening-log" },
         { label: "Immutable Audit Log", icon: Clock, path: "/audit" },
@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
         {/* Brand Logo */}
         <div className="px-5 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 rounded-md bg-[var(--color-accent)] flex items-center justify-center shadow-premium-sm group-hover:scale-105 transition-transform">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div className="flex flex-col">
@@ -104,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
             <Link
               to="/"
               title="View Public Website"
-              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] transition-colors"
+              className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
             </Link>
@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
             {onCloseMobile && (
               <button
                 onClick={onCloseMobile}
-                className="md:hidden p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
+                className="md:hidden p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)] transition-colors cursor-pointer"
                 aria-label="Close mobile sidebar"
               >
                 <X className="w-4 h-4" />
@@ -142,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
                       key={iIdx}
                       to={item.path}
                       onClick={onCloseMobile}
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all group ${
+                      className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold transition-all group ${
                         isActive
                           ? "bg-[var(--color-accent)] text-white shadow-premium-sm"
                           : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)]"
@@ -150,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <IconComponent
-                          className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
+                          className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${
                             isActive ? "text-white" : "text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]"
                           }`}
                         />
@@ -158,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
                       </div>
                       {item.badge && (
                         <span
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full border shrink-0 font-bold ${
+                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0 font-bold ${
                             item.badgeColor || "bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border-[var(--color-accent-border)]"
                           }`}
                         >
@@ -180,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
         <button
           type="button"
           onClick={() => setIsTourOpen(true)}
-          className="w-full px-2.5 py-1.5 rounded-xl bg-[var(--color-accent-subtle)] hover:bg-[var(--color-accent-subtle)]/80 text-[var(--color-accent)] border border-[var(--color-accent-border)] flex items-center justify-between text-xs font-semibold shadow-premium-sm transition-all cursor-pointer group focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
+          className="w-full px-2.5 py-1.5 rounded-md bg-[var(--color-accent-subtle)] hover:bg-[var(--color-accent-subtle)]/80 text-[var(--color-accent)] border border-[var(--color-accent-border)] flex items-center justify-between text-xs font-semibold shadow-premium-sm transition-all cursor-pointer group focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
         >
           <div className="flex items-center gap-2">
             <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
@@ -192,9 +192,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
         </button>
 
         {/* Single Environment Source of Truth Badge */}
-        <div className="px-2.5 py-1.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between text-[11px] font-mono">
+        <div className="px-2.5 py-1.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between text-[11px] font-mono">
           <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold truncate">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+            <span className="w-2 h-2 rounded-sm bg-amber-500 shrink-0"></span>
             <span className="truncate">{environmentLabel}</span>
           </div>
         </div>
@@ -204,7 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
           type="button"
           onClick={() => setShowResetConfirm(true)}
           disabled={isResetting}
-          className="w-full px-2.5 py-1.5 rounded-xl bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)] flex items-center justify-between text-xs font-semibold shadow-premium-sm transition-all cursor-pointer group focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
+          className="w-full px-2.5 py-1.5 rounded-md bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)] flex items-center justify-between text-xs font-semibold shadow-premium-sm transition-all cursor-pointer group focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none"
         >
           <div className="flex items-center gap-2">
             <RotateCcw className={`w-3.5 h-3.5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors ${isResetting ? "animate-spin" : ""}`} />

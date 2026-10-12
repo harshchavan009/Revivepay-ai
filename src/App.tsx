@@ -40,8 +40,7 @@ import { AskMeAnythingDrawer } from "./components/AskMeAnythingDrawer";
 
 const FULL_SCREEN_PATHS = new Set([
   "/", "/login", "/register", "/about", "/pricing", "/status",
-  "/terms", "/privacy", "/security", "/architecture", "/engineering",
-  "/evaluation", "/changelog", "/engineering-notes", "/hardening-log", "/demo"
+  "/terms", "/privacy", "/security", "/architecture", "/engineering", "/demo"
 ]);
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

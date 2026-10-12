@@ -18,7 +18,7 @@ export const EventSourceBadge: React.FC<EventSourceBadgeProps> = ({
     return (
       <div className="inline-flex flex-col items-start gap-0.5">
         <span
-          className={`inline-flex items-center gap-1 font-mono font-bold uppercase tracking-wider rounded-full border transition-colors ${
+          className={`inline-flex items-center gap-1 font-mono font-bold uppercase tracking-wider rounded border transition-colors ${
             size === "lg"
               ? "px-3 py-1 text-xs bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 shadow-premium-sm"
               : size === "md"
@@ -42,7 +42,7 @@ export const EventSourceBadge: React.FC<EventSourceBadgeProps> = ({
   return (
     <div className="inline-flex flex-col items-start gap-0.5">
       <span
-        className={`inline-flex items-center gap-1 font-mono font-bold uppercase tracking-wider rounded-full border transition-colors ${
+        className={`inline-flex items-center gap-1 font-mono font-bold uppercase tracking-wider rounded border transition-colors ${
           size === "lg"
             ? "px-3 py-1 text-xs bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30 shadow-premium-sm"
             : size === "md"

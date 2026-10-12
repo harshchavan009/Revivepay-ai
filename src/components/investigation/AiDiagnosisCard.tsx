@@ -36,7 +36,7 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
   const getProviderBadge = () => {
     if (modelProvider === "anthropic" || modelName?.includes("claude")) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-[10px] font-mono font-bold">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-[10px] font-mono font-bold">
           <Sparkles className="w-3 h-3" />
           <span>Claude 3.5 Sonnet (Primary)</span>
         </span>
@@ -44,14 +44,14 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
     }
     if (modelProvider === "google" || modelName?.includes("gemini")) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[10px] font-mono font-bold">
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[10px] font-mono font-bold">
           <Sparkles className="w-3 h-3" />
           <span>Gemini 1.5 Pro (Fallback)</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-mono font-bold">
         <Cpu className="w-3 h-3" />
         <span>Deterministic Rules Engine (Safe Fallback)</span>
       </span>
@@ -59,10 +59,10 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
   };
 
   return (
-    <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-premium-sm space-y-5 font-sans">
+    <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-lg p-6 shadow-premium-sm space-y-5 font-sans">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)]">
+          <div className="p-2 rounded-md bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)]">
             <BrainCircuit className="w-4 h-4" />
           </div>
           <div>
@@ -77,7 +77,7 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
       </div>
 
       {/* Architectural Division of Labor Banner */}
-      <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500/5 via-[var(--color-accent-subtle)] to-emerald-500/5 border border-[var(--color-border-subtle)]">
+      <div className="p-3 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-semibold text-[var(--color-text-primary)]">
             <Layers className="w-3.5 h-3.5 text-[var(--color-accent)]" />
@@ -128,11 +128,11 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
 
       {/* 1 & 2: Root Cause & Recommendation Badges */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+        <div className="p-3.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
           <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">1. Diagnosed Root Cause</p>
           <p className="font-bold text-[var(--color-text-primary)] text-sm">{rootCause || "Temporary Bank Gateway Disconnect"}</p>
         </div>
-        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+        <div className="p-3.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
           <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">2. Recommended Recovery Action</p>
           <div className="pt-0.5">
             <ActionBadge action={recommendedAction} />
@@ -150,7 +150,7 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
             evidence.map((ev, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-2.5 text-xs text-[var(--color-text-secondary)] p-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]"
+                className="flex items-start gap-2.5 text-xs text-[var(--color-text-secondary)] p-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]"
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{ev}</span>
@@ -164,7 +164,7 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
 
       {/* 3. Contextual Reasoning Summary */}
       {reasoningSummary && (
-        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-1">
+        <div className="p-3.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-1">
           <p className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider font-mono">3. AI Reasoning</p>
           <p className="leading-relaxed">{reasoningSummary}</p>
         </div>
@@ -172,7 +172,7 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
 
       {/* 4. Operator Explanation */}
       {explanation && (
-        <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/20 text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-1">
+        <div className="p-3.5 rounded-md bg-blue-500/5 border border-blue-500/20 text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-1">
           <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wider font-mono">
             <FileText className="w-3.5 h-3.5" />
             <span>4. Operator Explanation (Financial Review Context)</span>
@@ -183,7 +183,7 @@ export const AiDiagnosisCard: React.FC<AiDiagnosisCardProps> = ({
 
       {/* 5. Generated Customer Message */}
       {customerMessage && (
-        <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20 text-xs leading-relaxed space-y-2">
+        <div className="p-3.5 rounded-md bg-purple-500/5 border border-purple-500/20 text-xs leading-relaxed space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-bold text-[10px] uppercase tracking-wider font-mono">
               <MessageSquare className="w-3.5 h-3.5" />
