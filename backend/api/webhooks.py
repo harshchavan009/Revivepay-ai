@@ -93,7 +93,7 @@ async def handle_razorpay_webhook(
     provider_event_id = (
         payload.get("event_id") or 
         payload.get("id") or 
-        f"event_rzp_{hashlib.md5(raw_body).hexdigest()[:12]}"
+        f"event_rzp_{hashlib.sha256(raw_body).hexdigest()[:16]}"
     )
     event_type = payload.get("event", PaymentEventType.PAYMENT_FAILED.value)
 

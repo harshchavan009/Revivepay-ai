@@ -31,8 +31,8 @@ htmlcov/
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Database (optional local sqlite)
 *.db

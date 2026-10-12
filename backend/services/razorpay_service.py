@@ -23,7 +23,11 @@ class RazorpayService:
         Verify incoming Razorpay webhook signature using HMAC-SHA256.
         Razorpay sends signature in the 'X-Razorpay-Signature' header.
         """
-        secret = secret or settings.RAZORPAY_WEBHOOK_SECRET or "sandbox_test_webhook_secret"
+        if not secret:
+            if settings.ENVIRONMENT.lower() == "production":
+                logger.error("RAZORPAY_WEBHOOK_SECRET is not configured in production mode.")
+                return False
+            secret = "sandbox_test_webhook_secret"
         
         if not received_signature or not secret:
             return False
@@ -63,7 +67,7 @@ class RazorpayService:
         """
         Generate a Razorpay payment link in test mode.
         """
-        link_id = f"plink_rzp_{hashlib.md5(f'{amount}{customer_email}'.encode()).hexdigest()[:8]}"
+        link_id = f"plink_rzp_{hashlib.sha256(f'{amount}{customer_email}'.encode()).hexdigest()[:8]}"
         short_url = f"https://rzp.io/i/{link_id}"
         return {
             "id": link_id,
@@ -95,7 +99,7 @@ class RazorpayService:
                 }
             }
         
-        rzp_pay_id = f"pay_rzp_test_{hashlib.md5(payment_id.encode()).hexdigest()[:10]}"
+        rzp_pay_id = f"pay_rzp_test_{hashlib.sha256(payment_id.encode()).hexdigest()[:10]}"
         return True, rzp_pay_id, {
             "id": rzp_pay_id,
             "entity": "payment",

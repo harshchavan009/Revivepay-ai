@@ -215,3 +215,68 @@ def test_low_value_case_approves_without_step_up():
     )
     assert approve_res.status_code == 200
     assert approve_res.json()["approval_status"] == "APPROVED"
+
+
+def test_production_readiness_rejects_insecure_secrets():
+    """Validates that Settings.validate_production_readiness fails fast on insecure secrets in production."""
+    from backend.config import Settings
+    
+    # 1. Insecure default SECRET_KEY must raise ValueError
+    prod_insecure = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="dev-non-secret-jwt-placeholder-key",
+        CSRF_SECRET="a" * 32,
+        DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+    )
+    with pytest.raises(ValueError, match="SECRET_KEY"):
+        prod_insecure.validate_production_readiness()
+
+    # 2. Insecure default CSRF_SECRET must raise ValueError
+    prod_insecure_csrf = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="a" * 32,
+        CSRF_SECRET="insecure-dev-csrf-salt-change-in-production",
+        DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+    )
+    with pytest.raises(ValueError, match="CSRF_SECRET"):
+        prod_insecure_csrf.validate_production_readiness()
+
+    # 3. SQLite database in production must raise ValueError
+    prod_sqlite = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="a" * 32,
+        CSRF_SECRET="b" * 32,
+        DATABASE_URL="sqlite:///./revivepay.db"
+    )
+    with pytest.raises(ValueError, match="SQLite"):
+        prod_sqlite.validate_production_readiness()
+
+    # 4. Wildcard CORS origin in production must raise ValueError
+    prod_cors = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="a" * 32,
+        CSRF_SECRET="b" * 32,
+        DATABASE_URL="postgresql://user:pass@localhost:5432/db",
+        CORS_ORIGINS=["*"]
+    )
+    with pytest.raises(ValueError, match="CORS"):
+        prod_cors.validate_production_readiness()
+
+    # 5. Valid production settings must pass cleanly
+    prod_valid = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="x" * 64,
+        CSRF_SECRET="y" * 64,
+        DATABASE_URL="postgresql://user:pass@localhost:5432/db",
+        CORS_ORIGINS=["https://demo.revivepay.ai"]
+    )
+    assert prod_valid.validate_production_readiness() is True
+
+
+def test_settings_repr_never_leaks_secrets():
+    """Validates that repr(settings) masks secret values and never logs them."""
+    from backend.config import settings
+    rep = repr(settings)
+    assert settings.SECRET_KEY not in rep or len(settings.SECRET_KEY) < 5
+    assert settings.CSRF_SECRET not in rep or len(settings.CSRF_SECRET) < 5
+    assert "SECRET_KEY" not in rep
