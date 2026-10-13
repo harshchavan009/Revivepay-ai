@@ -34,6 +34,17 @@ export const LoginPage: React.FC = () => {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [demoModeEnabled, setDemoModeEnabled] = useState<boolean>(true);
+
+  React.useEffect(() => {
+    authService.getEnvironment().then((env) => {
+      if (typeof env.demo_mode === "boolean") {
+        setDemoModeEnabled(env.demo_mode);
+      }
+    }).catch(() => {
+      setDemoModeEnabled(true);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +155,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Right Side: Auth Card with 1-Click Demo Personas */}
         <div className="md:col-span-7 space-y-4">
-          <div className="p-6 sm:p-8 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-md backdrop-blur-xl">
+          <div className="p-6 sm:p-8 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-md backdrop-blur-xl">
             {/* Header & Tabs */}
             <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-4 mb-6">
               <div>
@@ -155,11 +166,11 @@ export const LoginPage: React.FC = () => {
               </div>
 
               {/* Mode Toggle Pills */}
-              <div className="flex p-1 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-semibold">
+              <div className="flex p-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setAuthMode("signin")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded transition-all cursor-pointer ${
                     authMode === "signin"
                       ? "bg-[var(--color-accent)] text-white font-bold shadow-sm"
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -170,7 +181,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAuthMode("signup")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded transition-all cursor-pointer ${
                     authMode === "signup"
                       ? "bg-[var(--color-accent)] text-white font-bold shadow-sm"
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -182,53 +193,60 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* 1-Click Demo Persona Login Section */}
-            <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2 mb-6">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[var(--color-text-primary)] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-                  <span>1-Click Demo Persona Login</span>
-                </span>
-                <span className="text-[10px] text-[var(--color-accent)] font-mono font-semibold">Signed Session</span>
+            {demoModeEnabled ? (
+              <div className="p-3.5 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2 mb-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[var(--color-text-primary)] uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <UserCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+                    <span>Sandbox Demo Personas</span>
+                  </span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">1-Click Test Access</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => handlePersonaLogin("merchant_owner")}
+                    className="p-2.5 rounded-md bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
+                  >
+                    <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Aditya Sengupta</p>
+                    <p className="text-[10px] text-[var(--color-text-muted)] font-mono">Merchant Owner</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePersonaLogin("revenue_operator")}
+                    className="p-2.5 rounded-md bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
+                  >
+                    <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Rohan Deshmukh</p>
+                    <p className="text-[10px] text-[var(--color-accent)] font-mono">Revenue Operator</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePersonaLogin("support_operator")}
+                    className="p-2.5 rounded-md bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
+                  >
+                    <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Sneha Kulkarni</p>
+                    <p className="text-[10px] text-[var(--color-text-muted)] font-mono">Support Operator</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePersonaLogin("admin")}
+                    className="p-2.5 rounded-md bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
+                  >
+                    <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Harsh Chavan</p>
+                    <p className="text-[10px] text-purple-500 font-mono">Admin / Lead</p>
+                  </button>
+                </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handlePersonaLogin("merchant_owner")}
-                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
-                >
-                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Aditya Sengupta</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] font-mono">Merchant Owner</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handlePersonaLogin("revenue_operator")}
-                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
-                >
-                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Rohan Deshmukh</p>
-                  <p className="text-[10px] text-[var(--color-accent)] font-mono">Revenue Operator</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handlePersonaLogin("support_operator")}
-                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
-                >
-                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Sneha Kulkarni</p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] font-mono">Support Operator</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handlePersonaLogin("admin")}
-                  className="p-2.5 rounded-xl bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-surface-hover)] text-left border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all group cursor-pointer shadow-sm"
-                >
-                  <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)]">Harsh Chavan</p>
-                  <p className="text-[10px] text-purple-500 font-mono">Admin / Lead</p>
-                </button>
+            ) : (
+              <div className="p-3 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)] mb-6 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
+                <span>Production Security Enforced: Sign in using your registered enterprise credentials.</span>
               </div>
-            </div>
+            )}
 
             {/* Feedback Banners */}
             {errorMessage && (

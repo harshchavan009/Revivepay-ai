@@ -1,0 +1,16 @@
+{
+  "name": "RevivePay AI: Autonomous Revenue Recovery",
+  "short_name": "RevivePay",
+  "description": "Policy-gated autonomous payment recovery platform for Razorpay transactions",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

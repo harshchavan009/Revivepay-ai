@@ -114,10 +114,11 @@ export const authService = {
   getEnvironment: async (): Promise<{
     environment: string;
     environment_label: string;
-    rbi_framework_active: boolean;
-    tat_framework: string;
-    max_retries_allowed: number;
-    audit_chain_length: number;
+    demo_mode?: boolean;
+    rbi_framework_active?: boolean;
+    tat_framework?: string;
+    max_retries_allowed?: number;
+    audit_chain_length?: number;
     database_provider?: string;
   }> => {
     try {
@@ -127,6 +128,7 @@ export const authService = {
       return {
         environment: "sandbox",
         environment_label: "Sandbox Environment: Razorpay Test Mode",
+        demo_mode: true,
         rbi_framework_active: true,
         tat_framework: "RBI/2019-20/67 Harmonisation of TAT",
         max_retries_allowed: 2,
