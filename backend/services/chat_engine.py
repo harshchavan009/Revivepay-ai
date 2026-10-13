@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 KNOWLEDGE_BASE = {
     "risk_scoring": """The RevivePay Deterministic Revenue Risk Engine calculates a numerical risk score (0 to 100) using a 4-factor weighted formula:
 Risk Score = 0.35 × Value Factor + 0.25 × Recovery Likelihood + 0.20 × Customer History + 0.20 × Failure Severity
-- 0–29: LOW Risk (Eligible for autonomous execution)
-- 30–59: MEDIUM Risk (Standard policy routing)
-- 60–79: HIGH Risk (Human-in-the-loop review recommended)
-- 80–100: CRITICAL Risk (Mandatory human operator authorization)""",
+- 0 to 29: LOW Risk (Eligible for autonomous execution)
+- 30 to 59: MEDIUM Risk (Standard policy routing)
+- 60 to 79: HIGH Risk (Human-in-the-loop review recommended)
+- 80 to 100: CRITICAL Risk (Mandatory human operator authorization)""",
 
     "policy_guardrails": """RevivePay enforces 7 deterministic safety guardrails that AI cannot bypass:
 1. Bounded Retries: Hard limit of 2 automated retry attempts before mandatory escalation to prevent bank decline penalties.

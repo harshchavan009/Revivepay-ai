@@ -53,7 +53,7 @@ def get_simulation_presets():
         },
         {
             "id": "policy_override",
-            "title": "Policy Override — AI Confidence vs. Deterministic Limits",
+            "title": "Policy Override: AI Confidence vs. Deterministic Limits",
             "tagline": "AI proposed 94% auto-retry • ₹38,500 • Overruled by Policy Gate",
             "description": "Demonstrates the AI reasoning engine proposing auto-retry with 94% confidence, but the deterministic policy layer safely overruling it due to the ₹10,000 automated limit. Case is routed to Human Review regardless of AI confidence.",
             "type": "policy_override",
@@ -61,7 +61,7 @@ def get_simulation_presets():
         },
         {
             "id": "gemini_fallback",
-            "title": "Multi-Tier Fallback — Failover to Gemini 1.5 Pro",
+            "title": "Multi-Tier Fallback: Failover to Gemini 1.5 Pro",
             "tagline": "Primary Claude timeout (>3500ms) • Gemini 1.5 Pro Reasoner Active",
             "description": "Simulates primary LLM latency spike, triggering automatic failover to Gemini 1.5 Pro to complete multi-step payment root-cause diagnosis without dropping the case.",
             "type": "model_fallback",
@@ -69,7 +69,7 @@ def get_simulation_presets():
         },
         {
             "id": "chaos_tampered_webhook",
-            "title": "Chaos Test — Tampered Signature Rejection",
+            "title": "Chaos Test: Tampered Signature Rejection",
             "tagline": "Forged HMAC-SHA256 signature • Real-time ingress defense • HTTP 401",
             "description": "Dispatches a live webhook with an invalid/forged signature to test gateway security defense. Demonstrates immediate 401 Unauthorized rejection, payload dropping, and defensive audit event logging.",
             "type": "chaos_security",

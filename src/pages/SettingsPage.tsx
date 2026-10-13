@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Settings,
   Cpu,
@@ -16,9 +16,23 @@ import {
   Check
 } from "lucide-react";
 import { useMetrics } from "../context/MetricsContext";
+import { agentService } from "../services";
 
 export const SettingsPage: React.FC = () => {
   const { environmentLabel } = useMetrics();
+  const [budget, setBudget] = useState<{
+    primary_model?: string;
+    fallback_model?: string;
+    safe_floor_model?: string;
+    used?: number;
+    total?: number;
+    is_exhausted?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    agentService.getBudget().then(setBudget).catch(() => null);
+  }, []);
+
   const [tunnelUrl, setTunnelUrl] = useState(() => {
     if (typeof window !== "undefined" && window.location.origin && !window.location.origin.includes("localhost")) {
       return `${window.location.origin}/api/webhooks/razorpay`;
@@ -105,32 +119,42 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* CONNECTED AI MODEL PROVIDER STATUS */}
-      <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+      <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
         <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)]">
+            <div className="p-2 rounded-md bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)]">
               <Cpu className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-[var(--color-text-primary)] text-sm">Connected AI Model Providers</h3>
-              <p className="text-xs text-[var(--color-text-secondary)]">Read-only runtime telemetry from backend server</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">Runtime telemetry from GET /api/agent/budget</p>
             </div>
           </div>
-          <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-xs font-mono px-3 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span>All Engines Operational</span>
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
           {/* Primary Model */}
-          <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2">
+          <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono text-[var(--color-text-muted)] uppercase font-semibold">Primary Agent</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             </div>
-            <p className="text-sm font-bold text-[var(--color-text-primary)]">Claude 3.5 Sonnet</p>
+            <p className="text-sm font-bold text-[var(--color-text-primary)]">
+              {budget?.primary_model
+                ? (budget.primary_model.includes("claude") ? "Claude 3.5 Sonnet" : budget.primary_model)
+                : "Claude 3.5 Sonnet"}
+            </p>
             <div className="space-y-1 text-[11px] text-[var(--color-text-secondary)]">
+              <p className="flex justify-between">
+                <span>Model Key:</span>
+                <span className="font-mono text-[var(--color-accent)] text-[10px]">
+                  {budget?.primary_model || "claude-3-5-sonnet-20241022"}
+                </span>
+              </p>
               <p className="flex justify-between">
                 <span>Status:</span>
                 <span className="text-emerald-500 font-semibold">Connected</span>
@@ -147,13 +171,23 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           {/* Secondary Standby Model */}
-          <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2">
+          <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono text-[var(--color-text-muted)] uppercase font-semibold">Fallback Engine</span>
               <span className="w-2 h-2 rounded-full bg-[var(--color-accent)]"></span>
             </div>
-            <p className="text-sm font-bold text-[var(--color-text-primary)]">Google Gemini 1.5 Pro</p>
+            <p className="text-sm font-bold text-[var(--color-text-primary)]">
+              {budget?.fallback_model
+                ? (budget.fallback_model.includes("gemini") ? "Google Gemini 1.5 Pro" : budget.fallback_model)
+                : "Google Gemini 1.5 Pro"}
+            </p>
             <div className="space-y-1 text-[11px] text-[var(--color-text-secondary)]">
+              <p className="flex justify-between">
+                <span>Model Key:</span>
+                <span className="font-mono text-[var(--color-accent)] text-[10px]">
+                  {budget?.fallback_model || "gemini-1.5-pro"}
+                </span>
+              </p>
               <p className="flex justify-between">
                 <span>Status:</span>
                 <span className="text-[var(--color-accent)] font-semibold">Hot Standby</span>
@@ -170,12 +204,14 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           {/* Deterministic Guardrail Engine */}
-          <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2">
+          <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono text-[var(--color-text-muted)] uppercase font-semibold">Policy Guardrail</span>
               <span className="w-2 h-2 rounded-full bg-purple-500"></span>
             </div>
-            <p className="text-sm font-bold text-[var(--color-text-primary)]">Deterministic Rules v1.2</p>
+            <p className="text-sm font-bold text-[var(--color-text-primary)]">
+              {budget?.safe_floor_model || "Deterministic Rules v1.2"}
+            </p>
             <div className="space-y-1 text-[11px] text-[var(--color-text-secondary)]">
               <p className="flex justify-between">
                 <span>Status:</span>
@@ -194,7 +230,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* B.4: Architecture Decision: Model-Choice Rationale */}
-        <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5 text-xs text-[var(--color-text-secondary)]">
+        <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5 text-xs text-[var(--color-text-secondary)]">
           <div className="flex items-center gap-2 font-bold text-[var(--color-text-primary)]">
             <Sparkles className="w-4 h-4 text-[var(--color-accent)]" />
             <span>Architecture Decision: Multi-Tier LLM Reasoning over Fixed Classification</span>
@@ -208,7 +244,7 @@ export const SettingsPage: React.FC = () => {
       {/* DUAL INGESTION ARCHITECTURE */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Mode 1 */}
-        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-2 shadow-premium-sm">
+        <div className="p-5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-2 shadow-premium-sm">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)]">
               <Sparkles className="w-4 h-4" />

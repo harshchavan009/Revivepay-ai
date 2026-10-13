@@ -9,7 +9,7 @@ def test_environment_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["environment"] == "sandbox"
-    assert "Sandbox Environment — Razorpay Test Mode" in data["environment_label"]
+    assert "Sandbox Environment: Razorpay Test Mode" in data["environment_label"]
 
 @pytest.mark.parametrize("persona,expected_role", [
     ("merchant_owner", "MERCHANT_OWNER"),

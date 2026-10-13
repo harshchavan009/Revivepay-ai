@@ -88,7 +88,7 @@ class PolicyGateway:
             "rule": "auto_action_amount_limit",
             "description": f"Transaction amount (₹{payment.amount:,.2f}) must be within auto-action limit (₹{policy.max_auto_amount:,.2f})",
             "passed": within_auto_amount,
-            "details": "Within automated execution threshold" if within_auto_amount else f"Amount ₹{payment.amount:,.2f} exceeds auto limit ₹{policy.max_auto_amount:,.2f} — requires human approval"
+            "details": "Within automated execution threshold" if within_auto_amount else f"Amount ₹{payment.amount:,.2f} exceeds auto limit ₹{policy.max_auto_amount:,.2f}: requires human approval"
         })
         if not within_auto_amount and status != "BLOCKED":
             status = "REVIEW_REQUIRED"
