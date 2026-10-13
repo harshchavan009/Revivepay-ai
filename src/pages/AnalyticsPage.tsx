@@ -114,7 +114,7 @@ export const AnalyticsPage: React.FC = () => {
             <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
               FINANCIAL TELEMETRY
             </span>
-            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold">
               REAL-TIME AGGREGATES
             </span>
           </div>
@@ -128,13 +128,13 @@ export const AnalyticsPage: React.FC = () => {
         </div>
 
         {/* Date Range Selector Header Controls */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm">
+        <div className="flex items-center gap-1.5 p-1 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm">
           <Calendar className="w-4 h-4 text-[var(--color-text-muted)] ml-2 mr-1 shrink-0" />
           {(["7D", "30D", "90D", "YTD"] as DateRange[]).map((range) => (
             <button
               key={range}
               onClick={() => setSelectedRange(range)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
                 selectedRange === range
                   ? "bg-[var(--color-accent)] text-white shadow-premium-sm"
                   : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-hover)]"
@@ -149,10 +149,10 @@ export const AnalyticsPage: React.FC = () => {
       {/* TOP KPI ROW */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metric 1 */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
+        <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Total Recovered Revenue</span>
-            <div className="p-2 rounded-xl bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)]">
+            <div className="p-2 rounded-md bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)]">
               <Zap className="w-4 h-4" />
             </div>
           </div>
@@ -161,15 +161,15 @@ export const AnalyticsPage: React.FC = () => {
           </h3>
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>+4.8% Topline Boost</span>
+            <span>Database Single Source of Truth</span>
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
+        <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Revenue At Risk</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+            <div className="p-2 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
@@ -183,10 +183,10 @@ export const AnalyticsPage: React.FC = () => {
         </div>
 
         {/* Metric 3 */}
-        <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
+        <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-3 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Autonomous Recovery Rate</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+            <div className="p-2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
@@ -195,25 +195,25 @@ export const AnalyticsPage: React.FC = () => {
           </h3>
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>+14.2% vs. Legacy Fixed Retries</span>
+            <span>Calculated from PostgreSQL Invariant</span>
           </div>
         </div>
       </div>
 
       {/* REVENUE CAPTURE TREND CHART WITH DATE RANGE PICKER & INTERACTIVE HOVER */}
-      <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-4">
+      <div className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-[var(--color-text-primary)] tracking-tight">
                 Gross Recovered Volume Trend (INR ₹)
               </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)] font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)] font-bold">
                 {selectedRange} Window
               </span>
             </div>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-              Comparison: Autonomous Multi-Signal Retries vs. Prior Fixed Schedule
+              Simulated sandbox baseline comparing autonomous multi-signal retries against prior fixed schedules.
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs">
@@ -231,12 +231,6 @@ export const AnalyticsPage: React.FC = () => {
         <div className="h-72 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="currentVolumeGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={isDark ? "#4F5FF0" : "#4338CA"} stopOpacity={0.4} />
-                  <stop offset="95%" stopColor={isDark ? "#4F5FF0" : "#4338CA"} stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#1C202A" : "#E2E8F0"} vertical={false} />
               <XAxis dataKey="day" stroke={isDark ? "#475569" : "#94A3B8"} tick={{ fontSize: 11 }} />
               <YAxis stroke={isDark ? "#475569" : "#94A3B8"} tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
@@ -244,18 +238,18 @@ export const AnalyticsPage: React.FC = () => {
               <Area
                 type="monotone"
                 dataKey="current"
-                stroke={isDark ? "#4F5FF0" : "#4338CA"}
-                strokeWidth={2.5}
-                fillOpacity={1}
-                fill="url(#currentVolumeGrad)"
+                stroke="var(--color-accent)"
+                strokeWidth={2}
+                fillOpacity={0.15}
+                fill="var(--color-accent)"
               />
               <Area
                 type="monotone"
                 dataKey="previous"
-                stroke={isDark ? "#343B4A" : "#CBD5E1"}
+                stroke={isDark ? "#4B5563" : "#94A3B8"}
                 strokeWidth={1.5}
-                fillOpacity={0.08}
-                fill={isDark ? "#343B4A" : "#CBD5E1"}
+                fillOpacity={0.05}
+                fill={isDark ? "#374151" : "#CBD5E1"}
               />
             </AreaChart>
           </ResponsiveContainer>

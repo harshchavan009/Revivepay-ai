@@ -1,5 +1,5 @@
 """
-RevivePay AI — ML & System Technical Evaluation Router (Phase 30)
+RevivePay AI: ML & System Technical Evaluation Router (Phase 30)
 Exposes real empirical ML classification metrics and system-level telemetry.
 """
 import logging

@@ -158,3 +158,66 @@ def test_dashboard_summary_strictly_matches_database_source_of_truth(db):
     assert updated_metrics["recovered_revenue"] == round(db_recovered_sum + amount, 2), "Recovered revenue must increment"
     assert updated_metrics["revenue_at_risk"] == round(db_risk_sum - amount, 2), "Revenue at risk must decrement"
 
+
+def test_ai_agent_budget_and_dynamic_model_names():
+    """
+    DYNAMIC MODEL NAMES & BUDGET INVARIANT TEST (Phase 2):
+    Asserts that:
+    1. GET /api/agent/budget returns non-empty model names for primary, fallback, and safe floor.
+    2. Budget arithmetic invariant: used + remaining == total.
+    3. is_exhausted correctly flags budget saturation.
+    4. Model identifiers are valid and non-null strings.
+    """
+    res = client.get("/api/agent/budget")
+    assert res.status_code == 200
+    data = res.json()
+
+    # Model identifiers must be dynamically configured non-empty strings
+    assert isinstance(data.get("primary_model"), str) and len(data["primary_model"]) > 0
+    assert isinstance(data.get("fallback_model"), str) and len(data["fallback_model"]) > 0
+    assert isinstance(data.get("safe_floor_model"), str) and len(data["safe_floor_model"]) > 0
+
+    # Budget arithmetic invariants
+    assert data["used"] >= 0
+    assert data["total"] > 0
+    assert data["remaining"] == max(0, data["total"] - data["used"])
+    assert data["is_exhausted"] == (data["used"] >= data["total"])
+    assert data["deterministic_fallback_active"] == data["is_exhausted"]
+
+
+def test_empty_state_invariants_and_filter_resilience():
+    """
+    HONEST EMPTY STATE & FILTER RESILIENCE TEST (Phase 2):
+    Asserts that when filters match zero items:
+    1. Payment list returns an empty list [] with HTTP 200 (never 500 or null).
+    2. Recovery case list returns [] with HTTP 200.
+    3. Failure reasons endpoint returns a valid list.
+    4. Recruiter evaluation scorecard returns complete structural payload with no NaN values.
+    """
+    # 1. Unmatched payment filter
+    pay_res = client.get("/api/payments?status=NONEXISTENT_FILTER_STATUS_XYZ")
+    assert pay_res.status_code == 200
+    assert pay_res.json() == []
+
+    # 2. Unmatched case filter
+    case_res = client.get("/api/recovery/cases?status=NONEXISTENT_STATUS_XYZ")
+    assert case_res.status_code == 200
+    assert case_res.json() == []
+
+    # 3. Telemetry endpoints return clean lists
+    funnel_res = client.get("/api/dashboard/funnel")
+    assert funnel_res.status_code == 200
+    assert isinstance(funnel_res.json(), list)
+    assert len(funnel_res.json()) == 5
+
+    # 4. System Evaluation Recruiter Scorecard
+    eval_res = client.get("/api/ml/recruiter-evaluation")
+    assert eval_res.status_code == 200
+    eval_data = eval_res.json()
+    assert "benchmark" in eval_data
+    assert "live" in eval_data
+    assert eval_data["benchmark"]["recovery_rate"] == "45.0%"
+    assert "%" in eval_data["live"]["recovery_rate"]
+    assert "₹" in eval_data["live"]["recovered_revenue"]
+
+

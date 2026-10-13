@@ -75,6 +75,7 @@ export default {
         lg: "8px",
         xl: "8px",
         "2xl": "8px",
+        "3xl": "8px",
         full: "6px",
       },
       keyframes: {

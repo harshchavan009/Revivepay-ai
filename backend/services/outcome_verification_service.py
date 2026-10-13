@@ -1,5 +1,5 @@
 """
-RevivePay AI — Dedicated Outcome Verification Service (Phases 17 & 18)
+RevivePay AI: Dedicated Outcome Verification Service (Phases 17 & 18)
 Validates provider payment settlement, transaction references, and amount integrity
 before committing state transitions to RECOVERED and updating recovered revenue metrics.
 """

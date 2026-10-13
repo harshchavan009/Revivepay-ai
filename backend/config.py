@@ -58,7 +58,7 @@ class Settings(BaseSettings):
 
     # Environment Configuration
     ENVIRONMENT: str = Field(default="sandbox")  # "sandbox" | "production" | "development" | "test"
-    ENVIRONMENT_LABEL: str = Field(default="Sandbox Environment — Razorpay Test Mode")
+    ENVIRONMENT_LABEL: str = Field(default="Sandbox Environment: Razorpay Test Mode")
     PUBLIC_APP_URL: str = Field(default="https://demo.revivepay.ai")
 
     # Multi-Tier LLM Settings
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     LLM_MODEL: str = Field(default="gemini-1.5-pro")
     OPENAI_API_KEY: Optional[str] = Field(default=None)
 
-    # CORS Allowlist — Strictly enumerates trusted origins. No wildcard '*' allowed.
+    # CORS Allowlist: Strictly enumerates trusted origins. No wildcard '*' allowed.
     CORS_ORIGINS: List[str] = Field(default_factory=lambda: [
         "http://localhost:5173",
         "http://127.0.0.1:5173",

@@ -498,7 +498,7 @@ class AIAgentService:
                 try:
                     result = self.gemini.analyze_root_cause(context)
                     result.model_provider = "google"
-                    result.model_name = "gemini-1.5-pro (fallback — primary provider timeout)"
+                    result.model_name = "gemini-1.5-pro (fallback: primary provider timeout)"
                     result.reasoning_summary = f"[Gemini 1.5 Pro Fallback] {result.reasoning_summary}"
                     return result
                 except Exception as e:
@@ -507,7 +507,7 @@ class AIAgentService:
             # Contextual simulated Gemini fallback
             fallback_res = self.fallback.analyze_root_cause(context)
             fallback_res.model_provider = "google"
-            fallback_res.model_name = "gemini-1.5-pro (fallback — primary provider timeout)"
+            fallback_res.model_name = "gemini-1.5-pro (fallback: primary provider timeout)"
             fallback_res.reasoning_summary = f"[Gemini 1.5 Pro Multi-Tier Fallback] Primary Anthropic Claude timeout (>3500ms). Secondary reasoner analyzed gateway code {context.get('failure_code', 'N/A')}: {fallback_res.reasoning_summary}"
             return fallback_res
 
@@ -516,7 +516,7 @@ class AIAgentService:
             logger.info(f"Daily LLM budget reached ({getattr(settings, 'DAILY_LLM_CALL_BUDGET', 100)} calls). Routing case {case_id} to Deterministic Rules Engine...")
             result = self.fallback.analyze_root_cause(context)
             result.model_name = "rule-engine-v2.1 (budget-cap-floor)"
-            result.reasoning_summary = f"[Deterministic Fallback Active — Daily Budget Exhausted] {result.reasoning_summary}"
+            result.reasoning_summary = f"[Deterministic Fallback Active: Daily Budget Exhausted] {result.reasoning_summary}"
             return result
 
         # 1. Try Claude Primary
@@ -538,7 +538,7 @@ class AIAgentService:
                 logger.info(f"Routing case {case_id} to Gemini 1.5 Pro (Fallback)...")
                 result = self.gemini.analyze_root_cause(context)
                 result.model_provider = "google"
-                result.model_name = "gemini-1.5-pro (fallback — claude timeout)"
+                result.model_name = "gemini-1.5-pro (fallback: claude timeout)"
                 result.reasoning_summary = f"[Gemini 1.5 Pro Fallback] {result.reasoning_summary}"
                 if result.recommended_action not in ALLOWED_TOOLS:
                     result.recommended_action = "escalate_to_merchant"

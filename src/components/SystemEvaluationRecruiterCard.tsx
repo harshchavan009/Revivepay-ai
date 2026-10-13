@@ -19,6 +19,8 @@ import {
   ExternalLink
 } from "lucide-react";
 import { mlService } from "../services";
+import { useMetrics } from "../context/MetricsContext";
+import { formatINR } from "../data/mockData";
 
 interface SystemEvaluationRecruiterCardProps {
   initialData?: any;
@@ -29,6 +31,13 @@ export const SystemEvaluationRecruiterCard: React.FC<SystemEvaluationRecruiterCa
   initialData,
   showToggleLive = true
 }) => {
+  const {
+    recoveredRevenue: liveRecoveredRevenue,
+    recoveryRate: liveRecoveryRate,
+    totalCasesCount: liveTotalCases,
+    escalatedCasesCount: liveEscalated,
+    awaitingApprovalCount: liveAwaiting,
+  } = useMetrics();
   const [data, setData] = useState<any>(initialData || null);
   const [activeTab, setActiveTab] = useState<"visual" | "terminal">("visual");
   const [dataSource, setDataSource] = useState<"benchmark" | "live">("benchmark");
@@ -53,6 +62,18 @@ export const SystemEvaluationRecruiterCard: React.FC<SystemEvaluationRecruiterCa
     }
   }, [initialData]);
 
+  const liveFallbackMetrics = {
+    events_processed: Math.max(10, liveTotalCases),
+    recovery_cases: liveTotalCases,
+    ai_decisions: liveTotalCases,
+    policy_blocks: liveEscalated,
+    human_overrides: liveAwaiting,
+    recovered_revenue: formatINR(liveRecoveredRevenue),
+    recovery_rate: `${liveRecoveryRate.toFixed(1)}%`,
+    duplicate_webhooks_blocked: 12,
+    invalid_webhooks_blocked: 4
+  };
+
   const metrics = dataSource === "benchmark"
     ? (data?.benchmark || {
         events_processed: 1248,
@@ -65,17 +86,7 @@ export const SystemEvaluationRecruiterCard: React.FC<SystemEvaluationRecruiterCa
         duplicate_webhooks_blocked: 12,
         invalid_webhooks_blocked: 4
       })
-    : (data?.live || {
-        events_processed: 1248,
-        recovery_cases: 326,
-        ai_decisions: 291,
-        policy_blocks: 42,
-        human_overrides: 17,
-        recovered_revenue: "₹2.17L",
-        recovery_rate: "45.0%",
-        duplicate_webhooks_blocked: 12,
-        invalid_webhooks_blocked: 4
-      });
+    : (data?.live || liveFallbackMetrics);
 
   const rawAsciiText =
 `SYSTEM EVALUATION

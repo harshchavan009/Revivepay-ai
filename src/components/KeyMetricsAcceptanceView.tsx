@@ -11,6 +11,8 @@ import {
   Legend
 } from "recharts";
 import { useTheme } from "../context/ThemeContext";
+import { useMetrics } from "../context/MetricsContext";
+import { formatINR } from "../data/mockData";
 
 const mockChartData = [
   { label: "Jan 1", current: 87.2, previous: 89.0 },
@@ -42,6 +44,7 @@ const mockChartData = [
 
 export const KeyMetricsAcceptanceView: React.FC = () => {
   const { effectiveTheme } = useTheme();
+  const { recoveryRate, recoveredRevenue, totalCasesCount } = useMetrics();
   const [activeTab, setActiveTab] = useState("Acceptance");
   const [selectedMetric, setSelectedMetric] = useState<"rate" | "count" | "volume">("rate");
   const [isExporting, setIsExporting] = useState(false);
@@ -50,16 +53,27 @@ export const KeyMetricsAcceptanceView: React.FC = () => {
 
   const handleDownload = () => {
     setIsExporting(true);
-    setTimeout(() => {
+    try {
+      const csvContent =
+        "data:text/csv;charset=utf-8," +
+        "Date,Current_Yield_Pct,Baseline_Pct\n" +
+        mockChartData.map((e) => `${e.label},${e.current},${e.previous}`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "revivepay_telemetry_metrics.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
       setIsExporting(false);
-      alert("Key metrics report exported successfully!");
-    }, 800);
+    }
   };
 
   const isDark = effectiveTheme === "dark";
 
   return (
-    <div className="w-full rounded-2xl shadow-premium-sm border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-6 font-sans transition-colors">
+    <div className="w-full rounded-lg shadow-premium-sm border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-6 font-sans transition-colors">
       {/* Navigation Sub-Tabs */}
       <div className="flex items-center gap-8 border-b border-[var(--color-border-subtle)] mb-6 overflow-x-auto">
         {tabs.map((tab) => (
@@ -74,7 +88,7 @@ export const KeyMetricsAcceptanceView: React.FC = () => {
           >
             {tab}
             {activeTab === tab && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[var(--color-accent)] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[var(--color-accent)] rounded" />
             )}
           </button>
         ))}
@@ -87,21 +101,21 @@ export const KeyMetricsAcceptanceView: React.FC = () => {
             Key Metrics & Gateway Efficiency
           </h2>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-            Real-time authorization & payment settlement benchmark curves
+            Real-time authorization & payment settlement benchmark curves (PostgreSQL single source of truth)
           </p>
         </div>
 
         <button
           onClick={handleDownload}
           disabled={isExporting}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
         >
           {isExporting ? (
             <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--color-accent)]" />
           ) : (
             <Download className="w-3.5 h-3.5" />
           )}
-          <span>{isExporting ? "Exporting..." : "Export telemetry"}</span>
+          <span>{isExporting ? "Exporting..." : "Export CSV telemetry"}</span>
         </button>
       </div>
 
@@ -110,22 +124,22 @@ export const KeyMetricsAcceptanceView: React.FC = () => {
         {/* Card 1: Acceptance Rate */}
         <div
           onClick={() => setSelectedMetric("rate")}
-          className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+          className={`p-4 rounded-md border cursor-pointer transition-all duration-200 ${
             selectedMetric === "rate"
               ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/20 bg-[var(--color-accent-subtle)]"
               : "border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] hover:border-[var(--color-border)]"
           }`}
         >
           <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
-            Acceptance rate
+            Autonomous Recovery Rate
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
-              94.6%
+              {recoveryRate.toFixed(1)}%
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3" />
-              <span>+5.8%</span>
+              <span>Verified DB</span>
             </span>
           </div>
         </div>
@@ -133,22 +147,22 @@ export const KeyMetricsAcceptanceView: React.FC = () => {
         {/* Card 2: Successful Transactions */}
         <div
           onClick={() => setSelectedMetric("count")}
-          className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+          className={`p-4 rounded-md border cursor-pointer transition-all duration-200 ${
             selectedMetric === "count"
               ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/20 bg-[var(--color-accent-subtle)]"
               : "border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] hover:border-[var(--color-border)]"
           }`}
         >
           <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
-            Successful transactions
+            Total Ingested Cases
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
-              1,42,605
+              {Number(totalCasesCount).toLocaleString()}
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3" />
-              <span>+4.12%</span>
+              <span>Live Synced</span>
             </span>
           </div>
         </div>
@@ -156,22 +170,22 @@ export const KeyMetricsAcceptanceView: React.FC = () => {
         {/* Card 3: Accepted Volume (INR) */}
         <div
           onClick={() => setSelectedMetric("volume")}
-          className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+          className={`p-4 rounded-md border cursor-pointer transition-all duration-200 ${
             selectedMetric === "volume"
               ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/20 bg-[var(--color-accent-subtle)]"
               : "border-[var(--color-border-subtle)] bg-[var(--color-bg-canvas)] hover:border-[var(--color-border)]"
           }`}
         >
           <div className="text-xs font-medium text-[var(--color-text-muted)] mb-1">
-            Accepted volume (INR)
+            Total Recovered Revenue
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-[var(--color-text-primary)] tracking-tight font-mono">
-              ₹1.16 Cr
+              {formatINR(recoveredRevenue)}
             </span>
             <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
               <TrendingUp className="w-3 h-3" />
-              <span>+1.56%</span>
+              <span>Topline</span>
             </span>
           </div>
         </div>

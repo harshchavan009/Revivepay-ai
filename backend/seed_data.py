@@ -330,7 +330,7 @@ def seed_database(force_reseed: bool = False):
         ))
 
     # ==========================================
-    # 3b. DETERMINISTIC HIGH-VALUE CASE (₹85,000 — SIMULATION — AWAITING_APPROVAL)
+    # 3b. DETERMINISTIC HIGH-VALUE CASE (₹85,000: SIMULATION: AWAITING_APPROVAL)
     # ==========================================
     highvalue_payment = Payment(
         payment_id="pay_demo_highvalue_85k",
@@ -415,7 +415,7 @@ def seed_database(force_reseed: bool = False):
         decision_reason="Transaction value ₹85,000 exceeds ₹50,000 threshold. Operator approval required."
     ))
 
-    # 3c. DETERMINISTIC RETRY EXHAUSTION CASE (₹6,200 — SIMULATION — POLICY BLOCK -> ESCALATED)
+    # 3c. DETERMINISTIC RETRY EXHAUSTION CASE (₹6,200: SIMULATION: POLICY BLOCK -> ESCALATED)
     exhausted_payment = Payment(
         payment_id="pay_demo_exhausted_6200",
         merchant_id=merchant.merchant_id,
@@ -460,8 +460,8 @@ def seed_database(force_reseed: bool = False):
         root_cause="Insufficient Funds",
         ai_confidence=0.86,
         evidence=[
-            "Retry #1 executed at T+5m — Issuer Response: DECLINE",
-            "Retry #2 executed at T+20m — Issuer Response: DECLINE",
+            "Retry #1 executed at T+5m: Issuer Response: DECLINE",
+            "Retry #2 executed at T+20m: Issuer Response: DECLINE",
             "Max retries limit (2/2) reached. Deterministic policy triggered automation block."
         ],
         recommended_action="stop_recovery",
@@ -469,7 +469,7 @@ def seed_database(force_reseed: bool = False):
         policy_status="REJECTED",
         policy_checklist=[
             {"rule": "action_whitelisted", "description": "Action permitted by policy", "passed": True, "details": "Permitted"},
-            {"rule": "max_retries_limit", "description": "Retry attempt count check (2/2)", "passed": False, "details": "Max retries 2 reached — further retries permanently blocked"},
+            {"rule": "max_retries_limit", "description": "Retry attempt count check (2/2)", "passed": False, "details": "Max retries 2 reached: further retries permanently blocked"},
             {"rule": "rbi_tat_guideline_compliance", "description": "RBI Turn Around Time check", "passed": True, "details": "On Track"}
         ],
         approval_required=False,
