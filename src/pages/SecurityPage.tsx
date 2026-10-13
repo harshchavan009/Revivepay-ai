@@ -41,7 +41,7 @@ export const SecurityPage: React.FC = () => {
       <main className="max-w-4xl mx-auto px-6 py-12 space-y-10 flex-1">
         {/* Title & Badge */}
         <div className="space-y-3 border-b border-[var(--color-border-subtle)] pb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] font-mono text-xs font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)] font-mono text-xs font-bold">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>SECURITY, GOVERNANCE & ARCHITECTURE</span>
           </div>
@@ -54,7 +54,7 @@ export const SecurityPage: React.FC = () => {
         </div>
 
         {/* Section 1: Webhook HMAC-SHA256 Verification */}
-        <section className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+        <section className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2.5">
               <Key className="w-5 h-5 text-[var(--color-accent)] shrink-0" />
@@ -67,7 +67,7 @@ export const SecurityPage: React.FC = () => {
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
             All incoming payment failure and settlement webhooks received at <code className="font-mono text-[var(--color-accent)] bg-[var(--color-bg-canvas)] px-1.5 py-0.5 rounded border border-[var(--color-border-subtle)]">POST /api/webhooks/razorpay</code> are cryptographically verified using HMAC-SHA256 over the raw payload body.
           </p>
-          <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[11px] text-[var(--color-text-secondary)] space-y-1">
+          <div className="p-3.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[11px] text-[var(--color-text-secondary)] space-y-1">
             <p className="text-[var(--color-text-primary)] font-bold">Verification Invariant:</p>
             <p>expected_sig = HMAC_SHA256(webhook_secret, raw_payload_bytes).hexdigest()</p>
             <p className="text-emerald-600 dark:text-emerald-400 font-semibold">assert hmac.compare_digest(expected_sig, x_razorpay_signature) == True</p>
@@ -78,7 +78,7 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         {/* Section 2: Server-Side RBAC Enforcement */}
-        <section className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+        <section className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2.5">
               <Layers className="w-5 h-5 text-indigo-500 shrink-0" />
@@ -92,13 +92,13 @@ export const SecurityPage: React.FC = () => {
             Authorization is strictly enforced in the FastAPI backend service dependencies, not merely hidden in the UI. Every route requiring mutation verifies the caller's verified role:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+            <div className="p-3 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
               <span className="text-xs font-bold text-[var(--color-text-primary)]">Admin & Revenue Operator</span>
               <p className="text-[11px] text-[var(--color-text-secondary)]">
                 Authorized to trigger policy evaluations, sign off on manual approvals, execute retries, and run chaos simulations.
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+            <div className="p-3 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
               <span className="text-xs font-bold text-[var(--color-text-primary)]">Support Operator (Read-Only)</span>
               <p className="text-[11px] text-[var(--color-text-secondary)]">
                 Restricted to read-only customer investigation. Mutation attempts return <code className="font-mono text-rose-500 font-bold">HTTP 403 Forbidden</code>.
@@ -108,7 +108,7 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         {/* Section 3: High-Value Step-Up Governance */}
-        <section className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+        <section className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2.5">
               <KeyRound className="w-5 h-5 text-amber-500 shrink-0" />
@@ -129,7 +129,7 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         {/* Section 4: SHA-256 Cryptographic Hash Chaining */}
-        <section className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+        <section className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2.5">
               <Lock className="w-5 h-5 text-emerald-500 shrink-0" />
@@ -142,7 +142,7 @@ export const SecurityPage: React.FC = () => {
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
             Every audit entry in RevivePay is mathematically linked to its immediate predecessor using a SHA-256 block hash formula:
           </p>
-          <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[11px] text-[var(--color-text-secondary)] space-y-1">
+          <div className="p-3.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] font-mono text-[11px] text-[var(--color-text-secondary)] space-y-1">
             <p>entry_hash = SHA-256(prev_hash + audit_id + timestamp + actor + action + case_id + notes)</p>
           </div>
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
@@ -151,7 +151,7 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         {/* Section 5: Deterministic Policy Floor & Multi-Tier AI */}
-        <section className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+        <section className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2.5">
               <Cpu className="w-5 h-5 text-purple-500 shrink-0" />
@@ -165,15 +165,15 @@ export const SecurityPage: React.FC = () => {
             RevivePay eliminates single-vendor AI dependencies and black-box failures through sequential 3-tier fallback routing:
           </p>
           <div className="space-y-2 pt-1 font-mono text-xs">
-            <div className="p-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between">
+            <div className="p-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between">
               <span className="text-[var(--color-text-primary)] font-bold">1. Primary Tier: Anthropic Claude 3.5 Sonnet</span>
               <span className="text-[10px] text-[var(--color-accent)]">Deep Diagnostic</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between">
+            <div className="p-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between">
               <span className="text-[var(--color-text-primary)] font-bold">2. Fallback Tier: Google Gemini 1.5 Pro</span>
               <span className="text-[10px] text-amber-500">Secondary Route</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between">
+            <div className="p-2.5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] flex items-center justify-between">
               <span className="text-[var(--color-text-primary)] font-bold">3. Safe Floor: Deterministic Rules Engine</span>
               <span className="text-[10px] text-emerald-500">100% Uptime Guarantee</span>
             </div>
@@ -181,7 +181,7 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         {/* Section 6: Transport Security & Anti-Abuse Rate Limiting */}
-        <section className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
+        <section className="p-6 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-4 shadow-premium-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2.5">
               <Activity className="w-5 h-5 text-blue-500 shrink-0" />
