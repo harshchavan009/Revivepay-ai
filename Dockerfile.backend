@@ -15,6 +15,10 @@ RUN chmod +x scripts/entrypoint.sh
 
 ENV PYTHONPATH=/app
 ENV PATH="/usr/local/bin:${PATH}"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONIOENCODING=utf-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # Train ML baseline artifact if missing during container build
 RUN python3 ml/train.py

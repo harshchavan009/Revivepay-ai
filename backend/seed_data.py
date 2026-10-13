@@ -27,7 +27,7 @@ def seed_database(force_reseed: bool = False):
         db.close()
         return
 
-    print("🌱 Seeding RevivePay AI with Canonical Event Taxonomy...")
+    print("[RevivePay AI] Initializing Canonical Event Taxonomy Dataset...")
 
     # Clear existing data if force reseeding
     if force_reseed:
@@ -41,20 +41,24 @@ def seed_database(force_reseed: bool = False):
     # ==========================================
     # 1. MERCHANT ENTITY
     # ==========================================
-    merchant = Merchant(
-        merchant_id="m_apex_tech_2026",
-        name="Apex Cloud Technologies",
-        industry="Enterprise Fintech & SaaS",
-        currency="INR",
-        timezone="Asia/Kolkata",
-        auto_recovery_enabled=True,
-        razorpay_key_id=settings.RAZORPAY_KEY_ID,
-        razorpay_key_secret=None,
-        created_at=datetime.datetime.utcnow() - datetime.timedelta(days=180)
-    )
-    db.add(merchant)
-    db.commit()
-    db.refresh(merchant)
+    existing_merchant = db.query(Merchant).filter(Merchant.merchant_id == "m_apex_tech_2026").first()
+    if not existing_merchant:
+        merchant = Merchant(
+            merchant_id="m_apex_tech_2026",
+            name="Apex Cloud Technologies",
+            industry="Enterprise Fintech & SaaS",
+            currency="INR",
+            timezone="Asia/Kolkata",
+            auto_recovery_enabled=True,
+            razorpay_key_id=settings.RAZORPAY_KEY_ID,
+            razorpay_key_secret=None,
+            created_at=datetime.datetime.utcnow() - datetime.timedelta(days=180)
+        )
+        db.add(merchant)
+        db.commit()
+        db.refresh(merchant)
+    else:
+        merchant = existing_merchant
 
     # Auxiliary Admin Users & Policy Config (Safe environment-configured demo credentials)
     users_data = [
@@ -64,35 +68,38 @@ def seed_database(force_reseed: bool = False):
         {"email": "admin@revivepay.ai", "name": "Harsh Chavan", "role": "ADMIN"},
     ]
     for u in users_data:
-        db.add(User(
-            email=u["email"],
-            name=u["name"],
-            role=u["role"],
-            hashed_password=get_password_hash(settings.DEMO_USER_PASSWORD),
-            merchant_id=merchant.merchant_id,
-            is_active=True
-        ))
-
-    policy = PolicyConfig(
-        merchant_id=merchant.merchant_id,
-        max_auto_retries=2,
-        max_auto_amount=10000.0,
-        high_value_approval_threshold=50000.0,
-        min_ai_confidence=0.85,
-        allow_customer_contact=True,
-        recovery_time_window_hours=72,
-        allowed_actions=[
-            "retry_payment",
-            "create_payment_link",
-            "send_customer_notification",
-            "trigger_checkout_reminder",
-            "request_payment_method_update",
-            "escalate_to_merchant",
-            "stop_recovery"
-        ]
-    )
-    db.add(policy)
+        if not db.query(User).filter(User.email == u["email"]).first():
+            db.add(User(
+                email=u["email"],
+                name=u["name"],
+                role=u["role"],
+                hashed_password=get_password_hash(settings.DEMO_USER_PASSWORD),
+                merchant_id=merchant.merchant_id,
+                is_active=True
+            ))
     db.commit()
+
+    if not db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.merchant_id).first():
+        policy = PolicyConfig(
+            merchant_id=merchant.merchant_id,
+            max_auto_retries=2,
+            max_auto_amount=10000.0,
+            high_value_approval_threshold=50000.0,
+            min_ai_confidence=0.85,
+            allow_customer_contact=True,
+            recovery_time_window_hours=72,
+            allowed_actions=[
+                "retry_payment",
+                "create_payment_link",
+                "send_customer_notification",
+                "trigger_checkout_reminder",
+                "request_payment_method_update",
+                "escalate_to_merchant",
+                "stop_recovery"
+            ]
+        )
+        db.add(policy)
+        db.commit()
 
     # ==========================================
     # 2. CUSTOMER ENTITY (100+)
