@@ -62,7 +62,8 @@ def get_environment():
         "environment_label": settings.ENVIRONMENT_LABEL,
         "project_name": settings.PROJECT_NAME,
         "access_token_expire_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
-        "high_value_threshold": settings.HIGH_VALUE_THRESHOLD
+        "high_value_threshold": settings.HIGH_VALUE_THRESHOLD,
+        "demo_mode": settings.DEMO_MODE and settings.ENVIRONMENT.lower() != "production"
     }
 
 @router.post("/login", response_model=Token)

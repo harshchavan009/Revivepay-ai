@@ -1,9 +1,9 @@
-# ⚡ Revive AI — Autonomous Revenue Recovery & Payment Failure Resolution Platform
+# Revive AI: Autonomous Revenue Recovery & Payment Failure Resolution Platform
 ### *A Production-Oriented Fintech Engineering Prototype for Payment Recovery & Failure Resolution*
 
-> ### 🌐 **Live Web Application**: [https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)  
-> ### 🚀 **Live Recruiter Demo Flow**: [https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)  
-> ⚡ **Live API**: [https://revivepay-backend.onrender.com](https://revivepay-backend.onrender.com) &nbsp;•&nbsp; 📖 **Swagger Docs**: [https://revivepay-backend.onrender.com/docs](https://revivepay-backend.onrender.com/docs)
+> ### **Live Web Application**: [https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)  
+> ### **Live Recruiter Demo Flow**: [https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)  
+> **Live API**: [https://revivepay-backend.onrender.com](https://revivepay-backend.onrender.com) &nbsp;•&nbsp; **Swagger Docs**: [https://revivepay-backend.onrender.com/docs](https://revivepay-backend.onrender.com/docs) &nbsp;•&nbsp; **Launch Runbook**: [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)
 
 [![Live Web App](https://img.shields.io/badge/Live%20App-reviveay--ai.vercel.app-success?style=for-the-badge&logo=vercel)](https://reviveay-ai.vercel.app/)
 [![Live Demo Journey](https://img.shields.io/badge/Recruiter%20Demo-Live%20Journey-blueviolet?style=for-the-badge&logo=playstation)](https://reviveay-ai.vercel.app/demo)
@@ -15,22 +15,26 @@
 [![React 19](https://img.shields.io/badge/react-19-blue.svg)](https://react.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-emerald.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.0-336791.svg)](https://www.postgresql.org/)
-[![Tests](https://img.shields.io/badge/tests-90%20passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-148%20passing-success.svg)](tests/)
 [![ML Model](https://img.shields.io/badge/ML%20Evaluation-Synthetic%20Held--Out%20(ROC--AUC%200.81)-indigo.svg)](ml/MODEL_CARD.md)
-[![Environment](https://img.shields.io/badge/Environment-Sandbox%20%2F%20Razorpay%20Test%20Mode-orange.svg)](#-operational-scope--disclaimers)
+[![Environment](https://img.shields.io/badge/Environment-Sandbox%20%2F%20Razorpay%20Test%20Mode-orange.svg)](#operational-scope--disclaimers)
 [![Audit Chain](https://img.shields.io/badge/Audit%20Ledger-SHA--256%20Hash--Chained-emerald.svg)](backend/services/audit_service.py)
+[![DPDP Act 2023](https://img.shields.io/badge/DPDP%20Act%202023-Statutory%20Privacy-blue.svg)](src/pages/PrivacyPage.tsx)
 
 ---
 
-### 🌐 Live Production Deployments & Quick Links
+### Live Production Deployments & Quick Links
 
-| Service | Live Deployment URL | Description |
+| Resource | Live URL / File | Description |
 | :--- | :--- | :--- |
-| **🌐 Live Application** | **[https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)** | **Official Production Web App** — Live executive command center streaming real PostgreSQL metrics. |
-| **🚀 Recruiter Demo Journey** | **[https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)** | **Interactive 5-minute guided demonstration** showing real end-to-end failure $\to$ diagnosis $\to$ policy $\to$ recovery $\to$ audit. |
-| **⚡ FastAPI Backend API** | **[https://revivepay-backend.onrender.com](https://revivepay-backend.onrender.com)** | High-performance Python backend deployed on Render Docker containers with auto-migrations. |
-| **📖 Interactive API Docs** | **[https://revivepay-backend.onrender.com/docs](https://revivepay-backend.onrender.com/docs)** | OpenAPI Swagger documentation for all 35+ REST endpoints. |
-| **🐘 Managed PostgreSQL** | `Render Dedicated PostgreSQL` | Fully migrated schema with Alembic and seeded canonical synthetic cases. |
+| **Live Application** | **[https://reviveay-ai.vercel.app/](https://reviveay-ai.vercel.app/)** | **Official Production Web App**: Live executive command center streaming real PostgreSQL metrics. |
+| **Recruiter Demo Journey** | **[https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)** | **Interactive 5-minute guided demonstration** showing real end-to-end failure $\to$ diagnosis $\to$ policy $\to$ recovery $\to$ audit. |
+| **FastAPI Backend API** | **[https://revivepay-backend.onrender.com](https://revivepay-backend.onrender.com)** | High-performance Python backend deployed on Render Docker containers with auto-migrations. |
+| **Interactive API Docs** | **[https://revivepay-backend.onrender.com/docs](https://revivepay-backend.onrender.com/docs)** | OpenAPI Swagger documentation for all 35+ REST endpoints. |
+| **Launch Checklist & Runbook** | **[LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)** | **Production Handover Runbook**: Verification matrix, cloud vendor operational steps, and compliance checklist. |
+| **Statutory Privacy Policy** | **[src/pages/PrivacyPage.tsx](src/pages/PrivacyPage.tsx)** | Digital Personal Data Protection (DPDP) Act 2023 compliance, Data Principal rights, single-click opt-out, zero-PAN policy, and Grievance Officer details. |
+| **Terms of Service** | **[src/pages/TermsPage.tsx](src/pages/TermsPage.tsx)** | Autonomous operational scope, deterministic retry caps (max 2), human approval thresholds, and SHA-256 audit log verifiability. |
+| **Managed PostgreSQL** | `Render Dedicated PostgreSQL` | Fully migrated schema with Alembic and seeded canonical synthetic cases. |
 
 > **Scope & Positioning Disclosure**:  
 > Revive AI is an open-source **production-oriented fintech engineering prototype** designed to demonstrate policy-governed autonomous revenue recovery across transient payment failures, recurring subscription dunning declines, and abandoned checkout sessions in a **sandbox / demonstration environment**.  
@@ -38,7 +42,7 @@
 
 ---
 
-## 📖 Project Overview
+## Project Overview
 
 In traditional payment setups, failed transactions are often handled with naive automated retries or blanket customer emails. This frequently leads to duplicate charges, customer frustration, gateway rate-limiting, and unnecessary churn.
 
@@ -46,8 +50,8 @@ In traditional payment setups, failed transactions are often handled with naive 
 
 $$\textbf{INGEST} \longrightarrow \textbf{RISK SCORE} \longrightarrow \textbf{ML LIKELIHOOD} \longrightarrow \textbf{AI DIAGNOSIS} \longrightarrow \textbf{POLICY GATE} \longrightarrow \textbf{EXECUTE} \longrightarrow \textbf{VERIFY} \longrightarrow \textbf{AUDIT}$$
 
-### 🎯 Core Engineering Objectives
-- **Single Source of Truth**: All metrics (Recovered Revenue, Recovery Rate, Failed Payments, Active Recovery) are computed dynamically from backend database state—never hardcoded or invented by the UI.
+### Core Engineering Objectives
+- **Single Source of Truth**: All metrics (Recovered Revenue, Recovery Rate, Failed Payments, Active Recovery) are computed dynamically from backend database state: never hardcoded or invented by the UI.
 - **Strict Division of Labor**: Generative AI is strictly confined to root-cause diagnosis, reasoning, recommendation, operator explanation, and customer messaging. Financial boundaries, retry limits, amount thresholds, consent, state transitions, audit logging, and settlement verifications are strictly deterministic.
 - **Real Webhook Idempotency**: Enforces `UNIQUE(provider, provider_event_id)`. Replaying identical webhooks returns `duplicate_ignored` with HTTP 200 without creating secondary recovery cases, duplicate customer alerts, or double-counted revenue.
 - **Honest Ingress Separation**: Transparently separates real **Razorpay Test Mode** webhook ingestion (with HMAC-SHA256 signature verification) from the synthetic **Simulation** harness, routing both into the shared recovery pipeline.
@@ -56,11 +60,11 @@ $$\textbf{INGEST} \longrightarrow \textbf{RISK SCORE} \longrightarrow \textbf{ML
 
 ---
 
-## 🎬 5-Minute Recruiter Demonstration Journey
+## 5-Minute Recruiter Demonstration Journey
 
 Experience the live end-to-end recovery pipeline in under 5 minutes without manual configuration:
 
-👉 **Launch the Interactive Recruiter Demo**: **[https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)**
+**Launch the Interactive Recruiter Demo**: **[https://reviveay-ai.vercel.app/demo](https://reviveay-ai.vercel.app/demo)**
 
 ```
 Recruiter Clicks "Start Demo"
@@ -90,7 +94,7 @@ Recruiter Clicks "Start Demo"
 
 ---
 
-## 🏛️ Architectural Division of Labor
+## Architectural Division of Labor
 
 Revive AI establishes an uncompromised boundary separating probabilistic AI reasoning from deterministic safety code:
 
@@ -119,9 +123,9 @@ Revive AI establishes an uncompromised boundary separating probabilistic AI reas
 
 ---
 
-## 🚀 Key Technical Modules
+## Key Technical Modules
 
-### 1. 🧠 Multi-Tier AI Root-Cause Reasoner
+### 1. Multi-Tier AI Root-Cause Reasoner
 Interprets gateway error codes, card rails, timing telemetry, and customer history into structured recovery recommendations:
 - **Pydantic Validation**: Strict schema enforcement guarantees $100\%$ type conformance on every LLM output.
 - **3-Tier Fallback Hierarchy**:
@@ -131,19 +135,19 @@ Interprets gateway error codes, card rails, timing telemetry, and customer histo
 - **Strict Tool Whitelist**:
   `retry_payment`, `create_payment_link`, `send_customer_notification`, `trigger_checkout_reminder`, `request_payment_method_update`, `escalate_to_merchant`, `stop_recovery`.
 
-### 2. 📊 Deterministic Revenue Risk Scoring Engine
+### 2. Deterministic Revenue Risk Scoring Engine
 Before invoking AI diagnosis, each failure is scored by a deterministic mathematical formula ($0 \text{ to } 100$):
 
 $$\text{Risk Score} = 0.35 \times \text{Value Factor} + 0.25 \times \text{Recovery Likelihood} + 0.20 \times \text{Customer History} + 0.20 \times \text{Failure Severity}$$
 
 | Score Range | Risk Level | Action Routing |
 | :--- | :--- | :--- |
-| **0 – 29** | `LOW` | Eligible for automated recovery action |
-| **30 – 59** | `MEDIUM` | Standard policy-guided evaluation |
-| **60 – 79** | `HIGH` | Operator review recommended |
-| **80 – 100** | `CRITICAL` | Mandatory human authorization required |
+| **0 - 29** | `LOW` | Eligible for automated recovery action |
+| **30 - 59** | `MEDIUM` | Standard policy-guided evaluation |
+| **60 - 79** | `HIGH` | Operator review recommended |
+| **80 - 100** | `CRITICAL` | Mandatory human authorization required |
 
-### 3. 🤖 Machine Learning Model: Empirical Specification ([ml/MODEL_CARD.md](ml/MODEL_CARD.md))
+### 3. Machine Learning Model: Empirical Specification ([ml/MODEL_CARD.md](ml/MODEL_CARD.md))
 
 > **Methodology Disclosure**:  
 > **Baseline recovery-likelihood model evaluated on a synthetic held-out dataset.**  
@@ -162,7 +166,7 @@ $$\text{Risk Score} = 0.35 \times \text{Value Factor} + 0.25 \times \text{Recove
 | **F1 Score** | **0.8702** (87.02% harmonic mean on held-out test split) |
 | **Calibration** | **Brier Score: 0.1401** (Isotonic Regression calibrated; predicted probabilities align with observed empirical frequencies across 10 reliability bins). |
 
-### 4. 🛡️ Deterministic Policy & Safety Gateway
+### 4. Deterministic Policy & Safety Gateway
 Every action proposed by AI must pass 11 deterministic safety invariants before execution:
 - `IF retry_count >= max_retries` $\rightarrow$ **BLOCK & ESCALATE** (Hard max 2 retries)
 - `IF payment_status == SUCCESS` $\rightarrow$ **BLOCK** (Settled payments are immutable)
@@ -171,7 +175,7 @@ Every action proposed by AI must pass 11 deterministic safety invariants before 
 - `IF amount >= ₹50,000` $\rightarrow$ **REQUIRE STEP-UP HUMAN AUTHORIZATION**
 - `IF ai_confidence < 0.70` $\rightarrow$ **REQUIRE HUMAN REVIEW**
 
-### 5. 🔎 Cryptographic SHA-256 Hash-Chained Audit Ledger
+### 5. Cryptographic SHA-256 Hash-Chained Audit Ledger
 Every state transition and policy check is cryptographically linked to its predecessor:
 
 $$\text{entry\_hash} = \text{SHA-256}(\text{previous\_hash} + \text{timestamp} + \text{case\_id} + \text{action} + \text{actor})$$
@@ -179,18 +183,18 @@ $$\text{entry\_hash} = \text{SHA-256}(\text{previous\_hash} + \text{timestamp} +
 - **Tamper Evident**: Modifying any past database record breaks all subsequent chain hashes.
 - **Verification Endpoint**: `GET /api/audit/verify-chain` programmatically validates the ledger from genesis to head.
 
-### 6. 🔬 Dedicated Outcome Verification Service
+### 6. Dedicated Outcome Verification Service
 - Isolates payment capture verification before committing the `RECOVERED` state.
 - Matches provider payment ID, capture state, currency, and amount.
 - **Recovered revenue metrics only update after verified settlement**.
 
-### 7. ⚖️ Educational Reference Implementations (Published RBI Frameworks)
+### 7. Educational Reference Implementations (Published RBI Frameworks)
 - **Turn Around Time (TAT) Reference Implementation (RBI/2019-20/67)**: Demonstrates auto-reversal deadline calculations (UPI $T+1$, Card $T+5$ working days) and tracks statutory ₹100/day compensation indicators on overdue cases.
 - **e-Mandate Pre-Debit Alert Implementation**: Educational reference implementation of the 24-hour pre-debit customer notification window.
 
 ---
 
-## 🚦 Recovery State Machine
+## Recovery State Machine
 
 The backend recovery lifecycle follows 12 explicit, non-overlapping states:
 
@@ -217,7 +221,7 @@ stateDiagram-v2
 
 ---
 
-## 💻 Technology Stack
+## Technology Stack
 
 | Layer | Technologies |
 | :--- | :--- |
@@ -229,11 +233,11 @@ stateDiagram-v2
 | **Gateway Integration** | Razorpay Test Mode API, Timing-Safe HMAC-SHA256 Webhooks, Idempotency Deduplication |
 | **Observability & Audit**| SHA-256 Hash-Chained Audit Ledger, Server-Sent Events (SSE) Live Feed, Structured Logging |
 | **Containerization** | Docker, Docker Compose, Nginx (Frontend Reverse Proxy) |
-| **CI / CD** | GitHub Actions (Lint, Typecheck, ML Calibration, Secrets Scanner, 88 Pytest Suite) |
+| **CI / CD** | GitHub Actions (Lint, Typecheck, ML Calibration, Secrets Scanner, 148 Pytest Suite) |
 
 ---
 
-## 📁 Repository Directory Structure
+## Repository Directory Structure
 
 ```text
 .
@@ -250,7 +254,7 @@ stateDiagram-v2
 │   │   ├── policy_gateway.py    # Deterministic safety rules gateway
 │   │   ├── outcome_verification_service.py # Settlement verification
 │   │   └── audit_service.py     # SHA-256 cryptographic hash-chain builder
-│   ├── tests/                   # 88 Pytest backend integration & invariant tests
+│   ├── tests/                   # 148 Pytest backend integration & invariant tests
 │   ├── database.py              # SQLAlchemy connection pooling & SessionLocal
 │   ├── config.py                # Pydantic settings & environment configuration
 │   └── main.py                  # FastAPI application entrypoint & middleware
@@ -279,12 +283,13 @@ stateDiagram-v2
 ├── .github/workflows/ci.yml     # Automated CI pipeline
 ├── .env.example                 # Environment configuration template
 ├── package.json                 # Node.js dependencies
+├── LAUNCH_CHECKLIST.md          # Production candidate release checklist & runbook
 └── README.md                    # Project documentation
 ```
 
 ---
 
-## 🛠️ Hardening & Architectural Refinements Log
+## Hardening & Architectural Refinements Log
 
 A chronological record of genuine security, honesty, consistency, and architecture improvements:
 
@@ -298,10 +303,14 @@ A chronological record of genuine security, honesty, consistency, and architectu
 | **ML Honesty** | Unqualified performance claims | Documented as a baseline recovery-likelihood model evaluated on a synthetic held-out dataset (`ml/MODEL_CARD.md`). | `VERIFIED` |
 | **Regulatory Scope** | Ambiguous regulatory badges | Replaced marketing copy with educational reference implementations of public RBI frameworks (RBI/2019-20/67). | `VERIFIED` |
 | **Security** | High-value execution without MFA | Enforced mandatory Step-Up Re-Authentication for transactions $\ge$ ₹50,000. | `VERIFIED` |
+| **Institutional Design** | Inconsistent pill buttons and gradients | Replaced non-standard radii with institutional tokens (2px/4px/6px/8px), flat high-trust palette, zero em-dashes. | `VERIFIED` |
+| **Legal & Privacy** | Generic policy disclaimers | Implemented full DPDP Act 2023 compliance, Data Principal rights, single-click opt-out, and Grievance Officer details. | `VERIFIED` |
+| **Launch Readiness** | Unconditional demo credentials in UI | Gated 1-click persona shortcuts behind server-side `/api/auth/environment` `demo_mode` flag; added SVG favicon suite. | `VERIFIED` |
+| **Container Resilience**| Render 30-day PostgreSQL timeouts | Updated entrypoint script with SSL probe and automatic SQLite fallback, resolving Render container crashes. | `VERIFIED` |
 
 ---
 
-## 👥 Pre-Seeded Personas & RBAC
+## Pre-Seeded Personas & RBAC
 
 The platform includes 4 pre-configured personas with secure server-side bcrypt password verification for testing role-based access control:
 
@@ -316,7 +325,7 @@ The platform includes 4 pre-configured personas with secure server-side bcrypt p
 
 ---
 
-## ⚙️ Quickstart & Local Installation
+## Quickstart & Local Installation
 
 ### Prerequisites
 - Python 3.11+
@@ -344,7 +353,7 @@ PYTHONPATH=. python3 ml/train.py
 # 5. Run Database Migrations
 PYTHONPATH=. alembic upgrade head
 
-# 6. Run Full Test Suite (90 tests)
+# 6. Run Full Test Suite (148 tests)
 PYTHONPATH=. pytest tests -v
 
 # 7. Start FastAPI Backend
@@ -387,9 +396,9 @@ Revive AI is architected for zero-downtime, production cloud deployment:
 
 ---
 
-## 🧪 Testing & Quality Invariants
+## Testing & Quality Invariants
 
-Revive AI enforces 90 automated tests covering all domain invariants:
+Revive AI enforces 148 automated tests covering all domain invariants:
 
 ```bash
 PYTHONPATH=. pytest tests/ -v -W ignore
@@ -410,7 +419,7 @@ PYTHONPATH=. pytest tests/ -v -W ignore
 
 ---
 
-## ⚖️ Operational Scope & Disclaimers
+## Operational Scope & Disclaimers
 
 1. **Sandbox / Demonstration Environment**: All gateway interactions run against **Razorpay Test Mode**. No actual debiting of live customer accounts or real fiat currency settlement takes place.
 2. **Synthetic ML Evaluation**: The calibrated gradient boosting recovery classifier was trained and evaluated on synthetic transaction failure records modeling Indian digital payment rails.
@@ -419,7 +428,7 @@ PYTHONPATH=. pytest tests/ -v -W ignore
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 Revivepay-ai/
@@ -427,7 +436,7 @@ Revivepay-ai/
 ├── backend/            # FastAPI REST API, SQL models, finite state machine & services
 ├── src/                # React 19 + TypeScript + Vite executive command center
 ├── ml/                 # Calibrated gradient boosting ML pipeline, model card & training scripts
-├── tests/              # 90 Pytest test suites (domain invariants, RBI guidelines, webhook idempotency)
+├── tests/              # 148 Pytest test suites (domain invariants, RBI guidelines, webhook idempotency)
 ├── docs/               # System architecture diagrams, RBI compliance guides, and API specs
 ├── scripts/            # Secrets audit scanner, database seeding, and killer workflow verifications
 ├── .github/            # GitHub Actions CI/CD workflows
@@ -436,20 +445,21 @@ Revivepay-ai/
 ├── Dockerfile.backend  # Multi-stage production container build for Python FastAPI backend
 ├── Dockerfile.frontend # Multi-stage Nginx container build for React Vite frontend
 ├── docker-compose.yml  # Full-stack composition (PostgreSQL 16, backend, frontend)
+├── LAUNCH_CHECKLIST.md  # Production candidate release checklist & runbook
 ├── README.md           # Engineering documentation and runbooks
 └── LICENSE             # MIT Open-Source License
 ```
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 **Harsh Chavan**  
 *B.Tech in Computer Science Engineering (Artificial Intelligence & Machine Learning)*  
-- 🐙 **GitHub**: [github.com/harshchavan009](https://github.com/harshchavan009)  
-- 💼 **Project Repository**: [github.com/harshchavan009/Revivepay-ai](https://github.com/harshchavan009/Revivepay-ai)
+- **GitHub**: [github.com/harshchavan009](https://github.com/harshchavan009)  
+- **Project Repository**: [github.com/harshchavan009/Revivepay-ai](https://github.com/harshchavan009/Revivepay-ai)
 
 ---
 
-## 📄 License
+## License
 This project is open-sourced under the **MIT License**. See [LICENSE](LICENSE) for details.

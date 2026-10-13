@@ -1,0 +1,6 @@
+# RevivePay AI Autonomous Revenue Recovery Platform
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://revivepay.ai/sitemap.xml
