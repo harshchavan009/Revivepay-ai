@@ -1,0 +1,14 @@
+# Backend & Python services (handled on Render)
+backend/
+alembic/
+tests/
+scripts/
+ml/
+Dockerfile*
+docker-compose*
+*.py
+*.db
+*.sqlite*
+render.yaml
+__pycache__/
+.pytest_cache/
