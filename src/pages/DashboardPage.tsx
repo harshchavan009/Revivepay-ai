@@ -35,6 +35,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useMetrics } from "../context/MetricsContext";
 import { ReviveLiveDecisionTerminal } from "../components/ReviveLiveDecisionTerminal";
+import { OnboardingChecklist } from "../components/OnboardingChecklist";
 import { formatINR } from "../data/mockData";
 import { recoveryService, dashboardService } from "../services";
 import { RecoveryCase, RevenueRiskTrendItem, FailureReasonItem } from "../types";
@@ -215,6 +216,9 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Onboarding Checklist for New Organizations */}
+      <OnboardingChecklist />
+
       {/* KPI Header with Single Source of Truth & Database Lineage Disclosure */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[var(--color-text-muted)] font-mono">
         <div className="flex flex-wrap items-center gap-2">
@@ -269,7 +273,10 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* KPI 2: Recovered Revenue */}
-        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-[var(--color-accent)] transition-all shadow-premium-sm">
+        <div
+          className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-[var(--color-accent)] transition-all shadow-premium-sm"
+          title="Formula: Sum of settled_amount for all cases with outcome_verified = True"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Recovered Revenue</span>
             <div className="w-8 h-8 rounded-lg bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] flex items-center justify-center text-[var(--color-accent)]">
@@ -286,7 +293,7 @@ export const DashboardPage: React.FC = () => {
           <div className="mt-3 flex items-center justify-between text-[11px]">
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>Topline Boost</span>
+              <span>Gateway Confirmed</span>
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
               Verified
@@ -295,7 +302,10 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* KPI 3: Recovery Rate */}
-        <div className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-emerald-500/60 transition-all shadow-premium-sm">
+        <div
+          className="p-5 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] relative overflow-hidden group hover:border-emerald-500/60 transition-all shadow-premium-sm"
+          title="Formula: (Recovered Cases ÷ Total Resolved Cases) × 100"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Recovery Rate</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
@@ -310,7 +320,7 @@ export const DashboardPage: React.FC = () => {
             </p>
           )}
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Autonomous Yield</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Attribution Formula</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
               Dynamic %
             </span>

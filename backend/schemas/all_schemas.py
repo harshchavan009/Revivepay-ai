@@ -264,6 +264,8 @@ class ApprovalResponse(BaseModel):
 # ==========================================
 class AuditLogResponse(BaseModel):
     audit_id: str
+    org_id: Optional[str] = None
+    client_ip: Optional[str] = None
     case_id: Optional[str] = None
     source: str = "RAZORPAY_TEST"
     source_description: str = "Event received from Razorpay Test environment"
@@ -318,7 +320,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=2, max_length=100)
     password: str = Field(..., min_length=10, max_length=128)
-    role: Optional[str] = "REVENUE_OPERATOR"
+    role: Optional[str] = "OWNER"
+    org_name: Optional[str] = Field(None, max_length=255)
 
     @field_validator("password")
     @classmethod
@@ -344,10 +347,10 @@ class UserCreate(BaseModel):
     @field_validator("role")
     @classmethod
     def validate_role(cls, v: Optional[str]) -> str:
-        # Prevent self-assigning high-privileged administrative roles
+        # Prevent self-assigning high-privileged administrative roles across tenants
         if v and v.upper() in ["ADMIN", "MERCHANT_OWNER"]:
-            raise ValueError("Administrative roles cannot be self-assigned during public registration.")
-        return v or "REVENUE_OPERATOR"
+            raise ValueError("Administrative roles cannot be self-assigned during registration.")
+        return v or "OWNER"
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -376,11 +379,13 @@ class UserLogin(BaseModel):
     password: str
 
 class Token(BaseModel):
-    access_token: str
+    access_token: Optional[str] = None
     token_type: str = "bearer"
     expires_in: int = 900  # 15 minutes in seconds
     csrf_token: Optional[str] = None
-    user: Dict[str, Any]
+    user: Optional[Dict[str, Any]] = None
+    mfa_required: bool = False
+    mfa_token: Optional[str] = None
 
 class StepUpVerifyRequest(BaseModel):
     case_id: str
@@ -398,11 +403,74 @@ class UserResponse(BaseModel):
     name: str
     role: str
     is_active: bool
+    org_id: Optional[str] = None
+    is_verified: Optional[bool] = False
+    mfa_enabled: Optional[bool] = False
     theme_preference: Optional[str] = "dark"
     created_at: datetime.datetime
 
     class Config:
         from_attributes = True
+
+class MfaSetupResponse(BaseModel):
+    secret: str
+    otpauth_url: str
+
+class MfaVerifyRequest(BaseModel):
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
+
+class MfaValidateRequest(BaseModel):
+    mfa_token: str = Field(..., description="Short-lived token from initial login")
+    totp_code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
+
+class MfaDisableRequest(BaseModel):
+    password: str
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+class OrganizationResponse(BaseModel):
+    org_id: str
+    name: str
+    slug: str
+    is_test_mode: bool
+    currency: Optional[str] = "INR"
+    timezone: Optional[str] = "Asia/Kolkata"
+    auto_recovery_enabled: bool = True
+    created_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
+class RazorpayConnectRequest(BaseModel):
+    key_id: str = Field(..., min_length=10, max_length=100, description="Razorpay Key ID e.g. rzp_test_... or rzp_live_...")
+    key_secret: str = Field(..., min_length=10, max_length=100, description="Razorpay Key Secret")
+    webhook_secret: Optional[str] = Field(None, max_length=200, description="Razorpay Webhook Secret")
+
+class RazorpayConnectionStatusResponse(BaseModel):
+    is_connected: bool
+    key_id_masked: Optional[str] = None
+    has_key_secret: bool = False
+    has_webhook_secret: bool = False
+    webhook_secret_masked: Optional[str] = None
+    webhook_url: str
+    is_test_mode: bool
+    org_id: str
+    org_name: str
+
+class ModeToggleRequest(BaseModel):
+    is_test_mode: bool
+
+class ModeToggleResponse(BaseModel):
+    is_test_mode: bool
+    mode_label: str
+    banner_message: str
 
 class RootCauseAnalysisOutput(BaseModel):
     root_cause: str = Field(..., description="Root cause identifier e.g. temporary_bank_failure")
@@ -593,4 +661,63 @@ class SimulationResponse(BaseModel):
     ai_original_recommendation: Optional[str] = None
     ai_override_reason: Optional[str] = None
     message: str
-    audit_events: List[Dict[str, Any]]
+
+
+# ==========================================
+# 18. DPDP ACT 2023 COMPLIANCE SCHEMAS
+# ==========================================
+class ConsentRecordCreate(BaseModel):
+    data_principal_id: str = Field(..., min_length=3, max_length=255, description="Customer identifier or email/phone")
+    purpose: str = Field(..., min_length=3, max_length=255, description="Processing purpose under DPDP Act")
+    lawful_basis: str = Field("CONSENT", max_length=100, description="CONSENT or CERTAIN_LEGITIMATE_USES")
+    retention_period_days: int = Field(180, ge=1, le=3650, description="Retention horizon in days")
+    metadata: Optional[Dict[str, Any]] = None
+
+class ConsentRecordResponse(BaseModel):
+    id: str
+    org_id: str
+    data_principal_id: str
+    purpose: str
+    lawful_basis: str
+    status: str
+    retention_period_days: int
+    consent_given_at: datetime.datetime
+    expires_at: Optional[datetime.datetime] = None
+    ip_address: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class DataDeletionRequestCreate(BaseModel):
+    data_principal_id: str = Field(..., min_length=3, max_length=255, description="Customer identifier, email, or phone to erase")
+    reason: Optional[str] = Field(None, max_length=500, description="Optional statutory reason or notes")
+
+class DataDeletionRequestResponse(BaseModel):
+    id: str
+    org_id: str
+    requested_by_id: str
+    data_principal_id: str
+    status: str
+    reason: Optional[str] = None
+    requested_at: datetime.datetime
+    completed_at: Optional[datetime.datetime] = None
+    erasure_summary: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+class DataExportResponse(BaseModel):
+    org_id: str
+    exported_at: datetime.datetime
+    requested_by: str
+    data_principal_id: Optional[str] = None
+    notice: str = "India DPDP Act 2023 Section 11 Data Portability Export. RevivePay never stores primary account numbers (PAN) or card CVV numbers."
+    customers_count: int
+    recovery_cases_count: int
+    payments_count: int
+    consent_records_count: int
+    customers: List[Dict[str, Any]]
+    recovery_cases: List[Dict[str, Any]]
+    payments: List[Dict[str, Any]]
+    consent_records: List[Dict[str, Any]]
+    audit_events_summary: List[Dict[str, Any]]

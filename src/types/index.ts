@@ -294,6 +294,8 @@ export interface AuditLogEntry {
   actor: string;
   action: string;
   timestamp: string;
+  entry_hash?: string;
+  previous_hash?: string;
   input_data?: Record<string, any>;
   decision?: Record<string, any>;
   policy_result?: string;

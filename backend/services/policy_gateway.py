@@ -83,22 +83,24 @@ class PolicyGateway:
                 reasons.append(f"Permanent failure category ({payment.failure_category}) prohibits automatic retrying.")
 
         # Rule 5: Auto Amount Limit Check
-        within_auto_amount = payment.amount <= policy.max_auto_amount
+        max_auto = policy.max_auto_amount if policy.max_auto_amount is not None else 10000.0
+        within_auto_amount = payment.amount <= max_auto
         checklist.append({
             "rule": "auto_action_amount_limit",
-            "description": f"Transaction amount (₹{payment.amount:,.2f}) must be within auto-action limit (₹{policy.max_auto_amount:,.2f})",
+            "description": f"Transaction amount (₹{payment.amount:,.2f}) must be within auto-action limit (₹{max_auto:,.2f})",
             "passed": within_auto_amount,
-            "details": "Within automated execution threshold" if within_auto_amount else f"Amount ₹{payment.amount:,.2f} exceeds auto limit ₹{policy.max_auto_amount:,.2f}: requires human approval"
+            "details": "Within automated execution threshold" if within_auto_amount else f"Amount ₹{payment.amount:,.2f} exceeds auto limit ₹{max_auto:,.2f}: requires human approval"
         })
         if not within_auto_amount and status != "BLOCKED":
             status = "REVIEW_REQUIRED"
             reasons.append("High transaction value requires human operator sign-off.")
 
         # Rule 6: High-Value Approval Threshold
-        if payment.amount >= policy.high_value_approval_threshold:
+        high_thresh = policy.high_value_approval_threshold if policy.high_value_approval_threshold is not None else 50000.0
+        if payment.amount >= high_thresh:
             checklist.append({
                 "rule": "high_value_threshold",
-                "description": f"Transactions above ₹{policy.high_value_approval_threshold:,.2f} require mandatory senior approval",
+                "description": f"Transactions above ₹{high_thresh:,.2f} require mandatory senior approval",
                 "passed": False,
                 "details": f"Transaction amount (₹{payment.amount:,.2f}) flagged as high-value tier"
             })
@@ -108,18 +110,19 @@ class PolicyGateway:
         else:
             checklist.append({
                 "rule": "high_value_threshold",
-                "description": f"Transactions below ₹{policy.high_value_approval_threshold:,.2f} standard risk tier",
+                "description": f"Transactions below ₹{high_thresh:,.2f} standard risk tier",
                 "passed": True,
-                "details": "Standard value tier"
+                "details": f"Transaction amount (₹{payment.amount:,.2f}) is below high-value threshold"
             })
 
         # Rule 7: AI Confidence Threshold
-        confidence_passed = ai_confidence >= policy.min_ai_confidence
+        min_conf = policy.min_ai_confidence if policy.min_ai_confidence is not None else 0.70
+        confidence_passed = ai_confidence >= min_conf
         checklist.append({
             "rule": "ai_confidence_threshold",
-            "description": f"AI model confidence ({int(ai_confidence * 100)}%) must meet merchant threshold ({int(policy.min_ai_confidence * 100)}%)",
+            "description": f"AI model confidence ({int(ai_confidence * 100)}%) must meet merchant threshold ({int(min_conf * 100)}%)",
             "passed": confidence_passed,
-            "details": "Model confidence is acceptable" if confidence_passed else f"Confidence ({int(ai_confidence * 100)}%) below threshold ({int(policy.min_ai_confidence * 100)}%)"
+            "details": "Model confidence is acceptable" if confidence_passed else f"Confidence ({int(ai_confidence * 100)}%) below threshold ({int(min_conf * 100)}%)"
         })
         if not confidence_passed and status != "BLOCKED":
             status = "REVIEW_REQUIRED"

@@ -4,20 +4,41 @@ import hmac
 import os
 import bcrypt
 import secrets
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend.config import settings
 from backend.database import get_db
-from backend.models.all_models import User
+from backend.models.all_models import User, EmailVerificationToken, PasswordResetToken, RevokedToken
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 
 # Pre-computed dummy bcrypt hash to guarantee constant-time evaluation during user enumeration defense
 DUMMY_BCRYPT_HASH = "$2b$12$e80yqVb0Gj6jQyv1Cq4f/uF2QO7pYyR9QG7XfV9O9H5kM6mF1QW2q"
+
+# Role definitions & legacy backward compatibility normalization
+CANONICAL_ROLES = ["OWNER", "ADMIN", "OPERATOR", "VIEWER"]
+ADMIN_ROLES = ["OWNER", "ADMIN", "MERCHANT_OWNER"]
+OPERATOR_ROLES = ["OWNER", "ADMIN", "OPERATOR", "MERCHANT_OWNER", "REVENUE_OPERATOR"]
+ALL_ROLES = ["OWNER", "ADMIN", "OPERATOR", "VIEWER", "MERCHANT_OWNER", "REVENUE_OPERATOR", "SUPPORT_OPERATOR"]
+ROLE_MAP = {
+    "MERCHANT_OWNER": "OWNER",
+    "REVENUE_OPERATOR": "OPERATOR",
+    "SUPPORT_OPERATOR": "VIEWER",
+    "OWNER": "OWNER",
+    "ADMIN": "ADMIN",
+    "OPERATOR": "OPERATOR",
+    "VIEWER": "VIEWER"
+}
+
+def normalize_role(role: Optional[str]) -> str:
+    """Normalizes legacy or current role name to canonical B2B SaaS role."""
+    if not role:
+        return "OPERATOR"
+    return ROLE_MAP.get(role, role)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Timing-safe password verification supporting bcrypt and salted SHA-256."""
@@ -45,7 +66,6 @@ def hash_token(token: str) -> str:
 
 def revoke_token(db: Session, token: str, token_type: str = "refresh", expires_at: Optional[datetime.datetime] = None) -> None:
     """Records a token hash into the server-side revocation ledger."""
-    from backend.models.all_models import RevokedToken
     t_hash = hash_token(token)
     existing = db.query(RevokedToken).filter(RevokedToken.token_hash == t_hash).first()
     if not existing:
@@ -58,7 +78,6 @@ def revoke_token(db: Session, token: str, token_type: str = "refresh", expires_a
 
 def is_token_revoked(db: Session, token: str) -> bool:
     """Checks whether a token has been explicitly revoked server-side."""
-    from backend.models.all_models import RevokedToken
     t_hash = hash_token(token)
     return db.query(RevokedToken).filter(RevokedToken.token_hash == t_hash).first() is not None
 
@@ -89,6 +108,32 @@ def create_refresh_token(data: dict) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
+def create_mfa_pending_token(user: User) -> str:
+    """Creates a short-lived 5-minute token allowing the user to complete MFA verification."""
+    expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+    to_encode = {
+        "sub": user.email,
+        "user_id": user.id,
+        "type": "mfa_pending",
+        "exp": expire,
+        "jti": secrets.token_hex(16)
+    }
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+
+def verify_mfa_pending_token(token: str, db: Session) -> User:
+    """Validates mfa_pending token and returns the target user."""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        if payload.get("type") != "mfa_pending":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type for MFA validation")
+        email = payload.get("sub")
+        user = db.query(User).filter(User.email == email).first()
+        if not user or not user.is_active:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+        return user
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired MFA session")
+
 def verify_refresh_token(token: str, db: Optional[Session] = None) -> Dict[str, Any]:
     """Validates refresh token and ensures it has not been revoked server-side."""
     try:
@@ -118,8 +163,7 @@ def verify_step_up_credential(user: User, credential: str) -> bool:
     """
     Validates step-up re-authentication using user password or authorized sandbox OTP.
     In sandbox mode: allows '782910' (reference OTP) or valid user account password.
-    In production mode: strictly requires user account password.
-    Arbitrary 6-digit numbers are strictly prohibited.
+    In production mode: strictly requires user account password or TOTP.
     """
     if not credential:
         return False
@@ -130,8 +174,17 @@ def verify_step_up_credential(user: User, credential: str) -> bool:
         if cred_clean in ["782910"]:
             return True
 
-    # User account password
-    return verify_password(cred_clean, user.hashed_password)
+    # Check user password
+    if verify_password(cred_clean, user.hashed_password):
+        return True
+
+    # If MFA is enabled on user, check TOTP code
+    if getattr(user, "mfa_enabled", False) and getattr(user, "mfa_secret", None):
+        from backend.services.totp_service import verify_totp_code
+        if verify_totp_code(user.mfa_secret, cred_clean):
+            return True
+
+    return False
 
 def create_step_up_token(user: User, case_id: str) -> str:
     """Creates a 5-minute signed token proving step-up verification for a specific case."""
@@ -160,7 +213,6 @@ def verify_step_up_token(token: str, user: User, case_id: str) -> bool:
 
 def create_password_reset_token(db: Session, user: User) -> str:
     """Generates a single-use, 15-minute expiring, SHA-256 hashed password reset token."""
-    from backend.models.all_models import PasswordResetToken
     raw_token = secrets.token_urlsafe(32)
     t_hash = hash_token(raw_token)
     expires = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
@@ -176,7 +228,6 @@ def create_password_reset_token(db: Session, user: User) -> str:
 
 def verify_and_consume_reset_token(db: Session, raw_token: str) -> Optional[User]:
     """Verifies that a password reset token is valid, unexpired, and unused, then marks it consumed."""
-    from backend.models.all_models import PasswordResetToken
     t_hash = hash_token(raw_token)
     now = datetime.datetime.utcnow()
     record = db.query(PasswordResetToken).filter(
@@ -191,6 +242,39 @@ def verify_and_consume_reset_token(db: Session, raw_token: str) -> Optional[User
     db.commit()
     return user
 
+def create_email_verification_token(db: Session, user: User) -> str:
+    """Generates a single-use, 24-hour expiring, SHA-256 hashed email verification token."""
+    raw_token = secrets.token_urlsafe(32)
+    t_hash = hash_token(raw_token)
+    expires = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    record = EmailVerificationToken(
+        user_id=user.id,
+        token_hash=t_hash,
+        expires_at=expires,
+        used=False
+    )
+    db.add(record)
+    db.commit()
+    return raw_token
+
+def verify_and_consume_email_token(db: Session, raw_token: str) -> Optional[User]:
+    """Verifies email verification token, consumes it, and marks user as verified."""
+    t_hash = hash_token(raw_token)
+    now = datetime.datetime.utcnow()
+    record = db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.token_hash == t_hash,
+        EmailVerificationToken.used == False,
+        EmailVerificationToken.expires_at > now
+    ).first()
+    if not record:
+        return None
+    record.used = True
+    user = db.query(User).filter(User.id == record.user_id).first()
+    if user:
+        user.is_verified = True
+    db.commit()
+    return user
+
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -200,7 +284,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         email: str = payload.get("sub")
-        if email is None or payload.get("type") == "refresh":
+        if email is None or payload.get("type") in ["refresh", "mfa_pending"]:
             raise credentials_exception
         if is_token_revoked(db, token):
             raise credentials_exception
@@ -226,7 +310,7 @@ def get_current_user_optional(
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         email: str = payload.get("sub")
-        if email is None or payload.get("type") == "refresh":
+        if email is None or payload.get("type") in ["refresh", "mfa_pending"]:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
@@ -254,9 +338,24 @@ def get_current_user_optional(
         )
     return user
 
-def require_role(allowed_roles: list):
+def require_role(allowed_roles: List[str]):
+    """
+    Enforces server-side role check with canonical role mapping.
+    Roles: OWNER, ADMIN, OPERATOR, VIEWER.
+    """
+    norm_allowed = {normalize_role(r) for r in allowed_roles}
+    # Keep raw names for direct match
+    for r in allowed_roles:
+        norm_allowed.add(r)
+
     def role_checker(current_user: User = Depends(get_current_user)):
-        if current_user.role not in allowed_roles:
+        user_norm = normalize_role(current_user.role)
+        if user_norm not in norm_allowed and current_user.role not in norm_allowed:
+            if user_norm == "VIEWER":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not enough permissions: Viewer role is read-only"
+                )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions for this operation"
@@ -264,43 +363,39 @@ def require_role(allowed_roles: list):
         return current_user
     return role_checker
 
+def get_current_tenant_org_id(current_user: Optional[User]) -> Optional[str]:
+    """Returns effective tenant org_id for the current user."""
+    if not current_user:
+        return None
+    return current_user.org_id or current_user.merchant_id
+
 def verify_tenant_access(
     current_user: Optional[User],
-    resource_merchant_id: Optional[str]
+    resource_tenant_id: Optional[str]
 ) -> bool:
     """
     Evaluates whether the current user has authorization to access a resource
-    belonging to resource_merchant_id.
-    - Global ADMINs have cross-tenant access.
-    - When unauthenticated in non-production / demo mode, allows access to support legacy test suites.
-    - In production, unauthenticated requests are denied.
-    - Merchant operators (MERCHANT_OWNER, REVENUE_OPERATOR, SUPPORT_OPERATOR) can only
-      access resources where user.merchant_id == resource_merchant_id.
+    belonging to resource_tenant_id (org_id or merchant_id).
     """
     if current_user is None:
         if settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
             return False
         return True
-    
-    # Global Administrator has omni-tenant governance
+
+    # Global omni-tenant superadmin
     if current_user.role == "ADMIN":
         return True
-    
-    # If the user has no assigned merchant_id (e.g. unassigned admin or test fixture user)
-    if not current_user.merchant_id:
-        if settings.ENVIRONMENT.lower() == "production" and not settings.DEMO_MODE:
-            return False
+
+    # If resource has no tenant specified
+    if not resource_tenant_id:
         return True
-    
-    # If resource has no merchant_id specified
-    if not resource_merchant_id:
-        return True
-    
-    return current_user.merchant_id == resource_merchant_id
+
+    user_org = current_user.org_id or current_user.merchant_id
+    return user_org == resource_tenant_id
 
 def enforce_tenant_ownership(
     current_user: Optional[User],
-    resource_merchant_id: Optional[str],
+    resource_tenant_id: Optional[str],
     is_mutation: bool = False
 ) -> None:
     """
@@ -308,7 +403,7 @@ def enforce_tenant_ownership(
     - Read operations return 404 Not Found upon tenant mismatch (preventing cross-tenant existence enumeration).
     - Mutating operations return 403 Forbidden upon tenant mismatch.
     """
-    if not verify_tenant_access(current_user, resource_merchant_id):
+    if not verify_tenant_access(current_user, resource_tenant_id):
         if is_mutation:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -319,4 +414,3 @@ def enforce_tenant_ownership(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Resource not found"
             )
-

@@ -31,11 +31,16 @@ export const SecurityPage: React.FC = () => {
           <div className="flex items-center gap-3 font-mono text-xs text-[var(--color-text-secondary)]">
             <span className="hidden sm:inline">Engineering Whitepaper</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-              SOC-2 Aligned Access Controls
+              Role-Based Access & Cryptographic Ledger
             </span>
           </div>
         </div>
       </header>
+
+      {/* Regulatory Draft Banner */}
+      <div className="bg-amber-500/10 border-b border-amber-500/30 px-6 py-2.5 text-center text-xs font-semibold text-amber-700 dark:text-amber-400">
+        <span>This page is a draft for regulatory and legal review prior to commercial launch.</span>
+      </div>
 
       {/* Main Content Area */}
       <main className="max-w-4xl mx-auto px-6 py-12 space-y-10 flex-1">

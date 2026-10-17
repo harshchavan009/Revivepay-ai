@@ -33,13 +33,22 @@ class SimulationService:
         scenario: str,
         custom_amount: float = None,
         customer_type: str = "returning",
-        payment_method: str = "card"
+        payment_method: str = "card",
+        merchant_id: str = None
     ) -> Dict[str, Any]:
-        # Ensure default merchant exists
-        merchant = db.query(Merchant).first()
+        # Lookup targeted tenant or fallback default
+        if merchant_id:
+            merchant = db.query(Merchant).filter(
+                (Merchant.org_id == merchant_id) | (Merchant.merchant_id == merchant_id)
+            ).first()
+        else:
+            merchant = db.query(Merchant).first()
+
         if not merchant:
+            mid = merchant_id or "m_apex_tech_2026"
             merchant = Merchant(
-                merchant_id="m_apex_tech_2026",
+                merchant_id=mid,
+                org_id=mid,
                 name="Apex Cloud Technologies",
                 industry="Enterprise Fintech & SaaS"
             )
@@ -524,15 +533,13 @@ class SimulationService:
             )
             
             # Record explicit policy override audit event
-            now_dt = datetime.datetime.utcnow()
             override_msg = "AI recommended auto-retry (94% confidence): blocked by policy: exceeds ₹10,000 automated-action limit. Routed to Human-in-the-Loop regardless of model confidence."
-            db.add(AuditLog(
-                audit_id=f"aud_pol_ovr_{case.case_id}_{int(now_dt.timestamp())}",
+            AuditService.log_event(
+                db=db,
                 case_id=case.case_id,
-                event_type=RecoveryEventType.POLICY_OVERRODE_AI.value,
+                actor="Deterministic Policy Gateway",
+                action=RecoveryEventType.POLICY_OVERRODE_AI.value,
                 actor_type="GATEWAY",
-                actor_id="Deterministic Policy Gateway",
-                timestamp=now_dt,
                 policy_result="REVIEW_REQUIRED",
                 execution_result="PENDING_HUMAN_APPROVAL",
                 decision={
@@ -544,10 +551,8 @@ class SimulationService:
                     "transaction_amount_inr": amount
                 },
                 notes=override_msg,
-                actor="Deterministic Policy Gateway",
-                action=RecoveryEventType.POLICY_OVERRODE_AI.value
-            ))
-            db.commit()
+                org_id=merchant.org_id if hasattr(merchant, "org_id") else None
+            )
             db.refresh(case)
 
             return {
@@ -669,15 +674,12 @@ class SimulationService:
             audit_id = f"aud_chaos_rej_{int(now_dt.timestamp())}_{random_suffix}"
             notes_str = "Webhook rejected: HMAC-SHA256 signature verification failed (forged signature detected): payload discarded, no case created."
             
-            db.add(AuditLog(
-                audit_id=audit_id,
+            AuditService.log_event(
+                db=db,
                 case_id=None,
-                event_type=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
-                actor_type="GATEWAY",
-                actor_id="Razorpay HMAC-SHA256 Gateway",
+                canonical_event=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
                 actor="Razorpay HMAC-SHA256 Gateway",
-                action=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
-                timestamp=now_dt,
+                actor_type="GATEWAY",
                 policy_result="BLOCKED",
                 execution_result="REJECTED_401",
                 decision={
@@ -687,9 +689,11 @@ class SimulationService:
                     "http_status": 401,
                     "action_taken": "PAYLOAD_DISCARDED_NO_CASE_CREATED"
                 },
-                notes=notes_str
-            ))
-            db.commit()
+                notes=notes_str,
+                source="SIMULATION",
+                source_description="Security Chaos Ingress Test",
+                org_id=merchant.org_id if hasattr(merchant, "org_id") else None
+            )
 
             return {
                 "scenario": scenario,

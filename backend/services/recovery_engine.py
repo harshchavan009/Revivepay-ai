@@ -92,8 +92,10 @@ class RecoveryEngine:
                 # 5 working days (7 calendar days)
                 tat_deadline = now + datetime.timedelta(days=7)
 
+            effective_org_id = getattr(payment, "org_id", None) or getattr(merchant, "org_id", None)
             case = RecoveryCase(
                 case_id=case_number,
+                org_id=effective_org_id,
                 payment_id=payment.payment_id,
                 customer_id=customer.customer_id,
                 source=src,
@@ -122,6 +124,7 @@ class RecoveryEngine:
                 actor_type="GATEWAY" if src == "RAZORPAY_TEST" else "SYSTEM",
                 source=src,
                 source_description=src_desc,
+                org_id=effective_org_id,
                 decision={"risk_score": case.risk_score, "risk_level": case.risk_level},
                 notes=f"Recovery case created from {'Razorpay Test Mode event' if src == 'RAZORPAY_TEST' else 'Synthetic simulation event'}."
             )

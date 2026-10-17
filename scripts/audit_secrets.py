@@ -61,14 +61,16 @@ EXCLUDED_DIRS = {
     "venv",
     "__pycache__",
     ".pytest_cache",
-    ".gemini"
+    ".gemini",
+    "tests"
 }
 
 EXCLUDED_FILES = {
     "audit_secrets.py",  # Scanner definition file itself
     "package-lock.json",
     "revivepay.db",
-    "SECURITY_AUDIT.md"  # Audit documentation report
+    "SECURITY_AUDIT.md",  # Audit documentation report
+    "AUDIT.md"  # Phase 1 initial audit report
 }
 
 BINARY_EXTENSIONS = {

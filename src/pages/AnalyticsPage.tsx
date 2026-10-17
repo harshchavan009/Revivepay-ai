@@ -195,7 +195,7 @@ export const AnalyticsPage: React.FC = () => {
           </h3>
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Calculated from PostgreSQL Invariant</span>
+            <span>Computed from database payment records</span>
           </div>
         </div>
       </div>

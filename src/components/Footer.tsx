@@ -180,9 +180,14 @@ export const Footer: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link to="/notifications" className="hover:text-[var(--color-accent)] transition-colors">
-                Incident Feed
+              <Link to="/contact" className="hover:text-[var(--color-accent)] transition-colors">
+                Contact & Support
               </Link>
+            </li>
+            <li>
+              <a href="mailto:support@revivepay.ai" className="hover:text-[var(--color-accent)] transition-colors">
+                support@revivepay.ai
+              </a>
             </li>
           </ul>
         </div>
@@ -200,12 +205,12 @@ export const Footer: React.FC = () => {
             </li>
             <li>
               <Link to="/security" className="hover:text-[var(--color-accent)] transition-colors">
-                RBI e-Mandate Framework
+                Security Architecture
               </Link>
             </li>
             <li>
               <Link to="/privacy" className="hover:text-[var(--color-accent)] transition-colors">
-                Privacy Policy
+                Privacy Policy & DPDP
               </Link>
             </li>
             <li>
@@ -222,28 +227,32 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Minimal Privacy & Terms Legal Disclosure */}
-      <div className="max-w-7xl mx-auto px-6 py-4 border-t border-[var(--color-border-subtle)] text-[10px] text-[var(--color-text-muted)] space-y-1">
+      {/* Mandatory Statutory & Regulatory Legal Disclosures */}
+      <div className="max-w-7xl mx-auto px-6 py-4 border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-muted)] space-y-2 leading-relaxed">
         <p>
-          <strong className="text-[var(--color-text-secondary)]">Privacy Note:</strong> This is an engineering portfolio demo. No real payment credentials, card numbers, or sensitive personal data should ever be entered. All mock data is reset periodically.
+          <strong className="text-[var(--color-text-secondary)]">Gateway Integration Disclaimer:</strong> RevivePay is an independent software application designed to integrate with payment gateways including Razorpay. RevivePay is not affiliated with, sponsored by, or endorsed by Razorpay Software Private Limited.
         </p>
         <p>
-          <strong className="text-[var(--color-text-secondary)]">Terms of Demonstration:</strong> Provided solely for research and portfolio demonstration purposes exploring autonomous multi-agent payment recovery pipelines, deterministic safety invariants, and cryptographic audit ledgers in Razorpay test mode.
+          <strong className="text-[var(--color-text-secondary)]">Zero Card Data Handling:</strong> Card data is handled entirely by Razorpay. RevivePay never sees, processes, or stores card numbers, CVVs, or cardholder banking credentials.
         </p>
       </div>
 
       {/* Bottom Sub-footer */}
       <div className="max-w-7xl mx-auto px-6 py-5 border-t border-[var(--color-border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[var(--color-text-secondary)]">
         <div>
-          RevivePay AI, an open-source engineering project by <strong className="text-[var(--color-text-primary)]">Harsh Chavan</strong>. Built for Razorpay test mode exploration.
+          &copy; {new Date().getFullYear()} RevivePay AI. Autonomous payment failure recovery for modern merchants.
         </div>
         <div className="flex items-center gap-4 font-mono text-[10px]">
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-sm bg-[var(--color-accent)]"></span>
-            <span>v2.5 Architecture</span>
+            <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500"></span>
+            <span>AES-256-GCM Encrypted</span>
           </span>
           <span>•</span>
-          <span>SHA-256 HMAC Verified</span>
+          <span>SHA-256 Chained Ledger</span>
+          <span>•</span>
+          <Link to="/contact" className="hover:text-[var(--color-accent)] transition-colors">
+            Support
+          </Link>
         </div>
       </div>
     </footer>

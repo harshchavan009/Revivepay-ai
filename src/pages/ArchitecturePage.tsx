@@ -197,7 +197,7 @@ X-Razorpay-Signature: d29...8f4
 }`,
     guarantees: [
       "Mathematically linked SHA-256 hash chain prevents retroactive log tampering.",
-      "Built with SOC-2-aligned access controls and PCI-DSS-informed data handling audit trail.",
+      "Zero Cardholder Data Environment: card data is handled entirely by Razorpay; RevivePay never sees or stores card numbers.",
       "Live verification endpoint flags any broken hash pointers instantly."
     ]
   }
@@ -579,7 +579,7 @@ export const ArchitecturePage: React.FC = () => {
             <div className="p-4 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1.5">
               <span className="font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-purple-500" />
-                <span>SOC-2 & PCI-DSS-Informed Architecture</span>
+                <span>Zero-CDE Tokenized Architecture</span>
               </span>
               <p className="text-[var(--color-text-secondary)] leading-relaxed">
                 Zero cardholder PAN or CVV retention. Tokenized gateway identifiers with role-based operator governance.
@@ -588,14 +588,14 @@ export const ArchitecturePage: React.FC = () => {
           </div>
         </section>
 
-        {/* SECTION 4: RECRUITER & STAFF ENGINEER QUICK LINKS */}
+        {/* SECTION 4: ENTERPRISE SANDBOX & ARCHITECTURE VERIFICATION */}
         <section className="p-8 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border)] flex flex-col md:flex-row items-center justify-between gap-6 shadow-premium-sm">
           <div className="space-y-2">
             <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
               Explore the Codebase & Interactive Sandbox
             </h3>
             <p className="text-xs text-[var(--color-text-secondary)] max-w-xl">
-              Inspect the live 22 pytest test suite, real-time FastAPI SSE stream, and simulation lab in action.
+              Inspect the live 181-test pytest automated verification suite, real-time FastAPI event streams, and deterministic recovery sandbox.
             </p>
           </div>
 

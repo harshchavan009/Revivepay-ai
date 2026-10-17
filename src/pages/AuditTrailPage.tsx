@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { History, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertTriangle, Lock } from "lucide-react";
+import { History, Search, RefreshCw, ShieldCheck, CheckCircle2, AlertTriangle, Lock, Download } from "lucide-react";
 import { auditService } from "../services";
 import { AuditLogEntry } from "../types";
 import { formatDateSafe } from "../utils/dateUtils";
@@ -18,6 +18,30 @@ export const AuditTrailPage: React.FC = () => {
     status: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const exportAuditCSV = () => {
+    const headers = ["Audit ID", "Timestamp", "Actor", "Action / Event", "Policy Result", "Execution Result", "Case ID", "Entry Hash", "Notes"];
+    const rows = logs.map((l) => [
+      l.audit_id || l.id,
+      l.timestamp || new Date().toISOString(),
+      l.actor || l.actor_id || "SYSTEM",
+      l.action || l.event_type || "UNKNOWN",
+      l.policy_result || "N/A",
+      l.execution_result || "N/A",
+      l.case_id || "N/A",
+      l.entry_hash || "N/A",
+      l.notes || ""
+    ]);
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `revivepay_audit_ledger_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const loadLogs = async () => {
     setIsLoading(true);
@@ -79,6 +103,15 @@ export const AuditTrailPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={exportAuditCSV}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold transition-colors cursor-pointer shadow-premium-sm"
+            title="Export audit ledger to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            <span>Export CSV</span>
+          </button>
+
           <button
             onClick={handleVerifyChain}
             disabled={verifyingChain}

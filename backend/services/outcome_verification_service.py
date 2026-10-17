@@ -41,21 +41,19 @@ class OutcomeVerificationService:
             db.commit()
 
             # Record audit event
-            db.add(AuditLog(
-                audit_id=f"aud_ver_fail_{case.case_id}_{int(now.timestamp())}",
+            from backend.services.audit_service import AuditService
+            AuditService.log_event(
+                db=db,
                 case_id=case.case_id,
-                event_type=RecoveryEventType.ACTION_FAILED.value,
+                canonical_event=RecoveryEventType.ACTION_FAILED.value,
+                actor=actor,
                 actor_type="SYSTEM",
-                actor_id=actor,
-                timestamp=now,
                 policy_result=case.policy_status,
                 execution_result="FAILED",
                 decision={"reason": "Provider payment capture unsuccessful", "details": provider_result},
                 notes=f"Outcome verification failed: provider status '{provider_status}'",
-                actor=actor,
-                action=RecoveryEventType.ACTION_FAILED.value
-            ))
-            db.commit()
+                org_id=case.org_id
+            )
 
             return {
                 "verified": False,
@@ -84,13 +82,13 @@ class OutcomeVerificationService:
         db.commit()
 
         # Emit canonical verification audit event
-        db.add(AuditLog(
-            audit_id=f"aud_ver_succ_{case.case_id}_{int(now.timestamp())}",
+        from backend.services.audit_service import AuditService
+        AuditService.log_event(
+            db=db,
             case_id=case.case_id,
-            event_type=RecoveryEventType.VERIFIED.value,
+            canonical_event=RecoveryEventType.VERIFIED.value,
+            actor=actor,
             actor_type="GATEWAY",
-            actor_id=actor,
-            timestamp=now,
             policy_result=case.policy_status,
             execution_result="SUCCESS",
             decision={
@@ -99,10 +97,8 @@ class OutcomeVerificationService:
                 "status": "RECOVERED"
             },
             notes=f"Outcome verified: ₹{settled_amount:,.2f} settlement confirmed under reference {provider_ref}",
-            actor=actor,
-            action=RecoveryEventType.VERIFIED.value
-        ))
-        db.commit()
+            org_id=case.org_id
+        )
 
         return {
             "verified": True,

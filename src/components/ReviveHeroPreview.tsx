@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ShieldCheck,
@@ -8,158 +8,206 @@ import {
   X,
   Clock,
   Zap,
-  Sparkles
+  Sparkles,
+  Sliders,
+  AlertTriangle,
+  PlayCircle,
+  FileCheck2,
+  ChevronRight,
+  UserCheck
 } from "lucide-react";
 import { formatINR } from "../data/mockData";
 import { useMetrics } from "../context/MetricsContext";
 
+interface SimulationScenario {
+  id: string;
+  name: string;
+  badge: string;
+  amount: number;
+  failureReason: string;
+  failureCode: string;
+  aiDiagnosis: string;
+  policyDecision: string;
+  policyNote: string;
+  actionTaken: string;
+  finalStatus: "RECOVERED" | "AWAITING_APPROVAL" | "NUDGE_SENT";
+  hashChainVerified: boolean;
+}
+
+const DEMO_SCENARIOS: SimulationScenario[] = [
+  {
+    id: "bank_glitch",
+    name: "Bank Switch Outage",
+    badge: "Automated Gateway Retry",
+    amount: 8499,
+    failureReason: "National switch timeout (504 Gateway Timeout)",
+    failureCode: "BANK_SWITCH_OUTAGE",
+    aiDiagnosis: "Temporary bank switch degradation. 92% recovery probability on retry.",
+    policyDecision: "PASSED: Amount ₹8,499 under ₹10,000 auto-retry threshold",
+    policyNote: "Deterministic Policy: Automated single retry with exponential backoff approved.",
+    actionTaken: "Scheduled smart retry during peak bank clearing window (+14 mins)",
+    finalStatus: "RECOVERED",
+    hashChainVerified: true
+  },
+  {
+    id: "high_value_override",
+    name: "High-Value Enterprise Order",
+    badge: "Human-in-the-Loop Override",
+    amount: 85000,
+    failureReason: "High-ticket card authorization timeout",
+    failureCode: "ISSUER_HIGH_VALUE_TIMEOUT",
+    aiDiagnosis: "AI proposed immediate auto-retry (94% confidence)",
+    policyDecision: "OVERRULED: Amount ₹85,000 exceeds ₹10,000 automated limit",
+    policyNote: "Deterministic Policy: AI recommendation overrode. Routed to human operator.",
+    actionTaken: "Escalated to Operator Approval Queue (zero risk of automated over-charge)",
+    finalStatus: "AWAITING_APPROVAL",
+    hashChainVerified: true
+  },
+  {
+    id: "expired_card",
+    name: "Expired Card / Mandate",
+    badge: "WhatsApp 1-Click Pay",
+    amount: 3499,
+    failureReason: "Card validity token expired",
+    failureCode: "CARD_EXPIRED",
+    aiDiagnosis: "Permanent card decline. Retries blocked to prevent issuer fee penalty.",
+    policyDecision: "BLOCKED: Retries prohibited on permanent decline codes",
+    policyNote: "Deterministic Policy: Dispatched tokenized 1-click UPI update link via WhatsApp.",
+    actionTaken: "Customer completed instant UPI deep-link payment on smartphone",
+    finalStatus: "NUDGE_SENT",
+    hashChainVerified: true
+  }
+];
+
 export const ReviveHeroPreview: React.FC = () => {
   const { recoveredRevenue, recoveryRate, environmentLabel } = useMetrics();
+  const [selectedScenarioIndex, setSelectedScenarioIndex] = useState(0);
+  const activeScenario = DEMO_SCENARIOS[selectedScenarioIndex];
 
   return (
-    <div className="relative rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] p-5 sm:p-6 shadow-premium-md backdrop-blur-xl transition-all duration-300 hover:border-[var(--color-border-hover)] font-sans">
-      {/* Ambient background glow */}
-      <div className="absolute -top-16 -right-16 w-56 h-56 bg-[var(--color-accent)]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Terminal Top Bar */}
-      <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3.5 mb-4">
+    <div className="relative rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] p-5 sm:p-6 shadow-premium-md backdrop-blur-xl transition-all duration-300 font-sans">
+      {/* Sample Data Disclaimer Banner */}
+      <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3 mb-4">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-danger)] inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-warning)] inline-block"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-success)] inline-block"></span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-xs font-mono font-bold text-[var(--color-text-primary)]">
+            RevivePay Pipeline Simulator
+          </span>
+        </div>
+        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono text-amber-700 dark:text-amber-400 font-bold">
+          Interactive Demonstration (Sample Data)
+        </span>
+      </div>
+
+      {/* Scenario Selector Tabs */}
+      <div className="mb-4">
+        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-secondary)] mb-2 flex items-center justify-between">
+          <span>Explore Recovery Scenarios:</span>
+          <span className="text-[var(--color-accent)] font-semibold">Click to inspect</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5 p-1 rounded-lg bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
+          {DEMO_SCENARIOS.map((sc, idx) => (
+            <button
+              key={sc.id}
+              onClick={() => setSelectedScenarioIndex(idx)}
+              className={`px-2.5 py-2 rounded-md text-[11px] font-bold transition-all text-left flex flex-col justify-between cursor-pointer ${
+                selectedScenarioIndex === idx
+                  ? "bg-[var(--color-bg-surface-raised)] text-[var(--color-accent)] shadow-sm border border-[var(--color-border)]"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              }`}
+            >
+              <span className="truncate">{sc.name}</span>
+              <span className="text-[9px] font-mono text-[var(--color-text-muted)] mt-0.5">₹{sc.amount.toLocaleString()}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Real-time Execution Flow Box */}
+      <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border)] space-y-3.5 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)]">
+              {activeScenario.badge}
+            </span>
+            <span className="font-mono text-xs font-bold text-[var(--color-text-primary)]">
+              ₹{activeScenario.amount.toLocaleString()}
+            </span>
           </div>
-          <span className="ml-2 text-xs font-medium text-[var(--color-text-secondary)] flex items-center gap-1.5">
-            <span className="font-semibold text-[var(--color-text-primary)]">Revive</span>
-            <span>&middot;</span>
-            <span>Payment Recovery Preview</span>
+          <span className="text-[10px] font-mono text-[var(--color-text-muted)]">
+            {activeScenario.failureCode}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Engine Active</span>
+        {/* Step 1: Ingestion & Root Cause */}
+        <div className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-bold text-[var(--color-text-secondary)] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+              <span>AI Root-Cause Diagnosis</span>
+            </span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-semibold">Processed</span>
+          </div>
+          <p className="text-xs text-[var(--color-text-primary)] leading-relaxed">
+            {activeScenario.aiDiagnosis}
+          </p>
+        </div>
+
+        {/* Step 2: Policy Engine Evaluation */}
+        <div className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-bold text-[var(--color-text-secondary)] flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+              <span>Deterministic Policy Gateway</span>
+            </span>
+            <span className="text-[var(--color-accent)] font-mono text-[10px] font-semibold">Guardrail Enforced</span>
+          </div>
+          <p className="text-xs text-[var(--color-text-primary)] leading-relaxed">
+            {activeScenario.policyDecision}
+          </p>
+          <p className="text-[11px] text-[var(--color-text-muted)] italic">
+            {activeScenario.policyNote}
+          </p>
+        </div>
+
+        {/* Step 3: Action & Outcome */}
+        <div className="p-2.5 rounded-lg bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-bold text-[var(--color-text-secondary)] flex items-center gap-1.5">
+              {activeScenario.finalStatus === "RECOVERED" && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+              {activeScenario.finalStatus === "AWAITING_APPROVAL" && <UserCheck className="w-3.5 h-3.5 text-amber-500" />}
+              {activeScenario.finalStatus === "NUDGE_SENT" && <Zap className="w-3.5 h-3.5 text-blue-500" />}
+              <span>Orchestrated Recovery Action</span>
+            </span>
+            <span
+              className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                activeScenario.finalStatus === "RECOVERED"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  : activeScenario.finalStatus === "AWAITING_APPROVAL"
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                  : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+              }`}
+            >
+              {activeScenario.finalStatus}
+            </span>
+          </div>
+          <p className="text-xs text-[var(--color-text-primary)] leading-relaxed">
+            {activeScenario.actionTaken}
+          </p>
         </div>
       </div>
 
-      {/* 3 Metric Cards Grid (INR figures) */}
-      <div className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-4">
-        {/* Metric 1 */}
-        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
-          <p className="text-[11px] font-medium text-[var(--color-text-secondary)] leading-tight">
-            Recovered Revenue
-          </p>
-          <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
-            {formatINR(recoveredRevenue)}
-          </p>
-          <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
-            <TrendingUp className="w-3 h-3" />
-            <span>quarter-to-date</span>
-          </p>
-        </div>
-
-        {/* Metric 2 */}
-        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
-          <p className="text-[11px] font-medium text-[var(--color-text-secondary)] leading-tight">
-            Added to Topline
-          </p>
-          <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
-            +4.8%
-          </p>
-          <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
-            <TrendingUp className="w-3 h-3" />
-            <span>vs. fixed dunning</span>
-          </p>
-        </div>
-
-        {/* Metric 3 */}
-        <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)]">
-          <p className="text-[11px] font-medium text-[var(--color-text-secondary)] leading-tight">
-            Recovery Rate
-          </p>
-          <p className="text-lg sm:text-xl font-extrabold text-[var(--color-text-primary)] mt-1 tracking-tight font-mono">
-            {recoveryRate.toFixed(1)}%
-          </p>
-          <p className="text-[10px] text-[var(--color-accent)] mt-1 flex items-center gap-0.5 font-medium">
-            <TrendingUp className="w-3 h-3" />
-            <span>retried invoices</span>
-          </p>
-        </div>
-      </div>
-
-      {/* Static Marketing Showcase Rows */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-semibold tracking-wider text-[var(--color-text-secondary)] uppercase font-mono">
-            RETRY DECISION EXAMPLES
-          </span>
-          <span className="text-[10px] text-[var(--color-text-muted)] font-mono">200+ ML Signals</span>
-        </div>
-
-        {/* Row 1: Insufficient funds payday scheduling */}
-        <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs space-y-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-mono text-[var(--color-text-primary)]">TXN_8841 &middot; INV-20471</span>
-            <span className="text-rose-500 flex items-center gap-1 font-medium">
-              <X className="w-3 h-3" />
-              <span>Declined: Insufficient Funds</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[var(--color-text-secondary)] text-[11px]">
-            <Clock className="w-3 h-3 text-[var(--color-accent)] shrink-0" />
-            <span>Retry scheduled: Friday 09:00 AM (Payroll deposit cycle)</span>
-          </div>
-        </div>
-
-        {/* Row 2: Expired card dunning */}
-        <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs space-y-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-mono text-[var(--color-text-primary)]">TXN_8847 &middot; INV-20486</span>
-            <span className="text-amber-500 flex items-center gap-1 font-medium">
-              <X className="w-3 h-3" />
-              <span>Declined: Expired Card</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[var(--color-text-secondary)] text-[11px]">
-            <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
-            <span>Retries paused &middot; 1-Click WhatsApp card update link dispatched</span>
-          </div>
-        </div>
-
-        {/* Row 3: Instant network recovery */}
-        <div className="p-3 rounded-xl bg-[var(--color-bg-canvas)] border border-emerald-500/30 text-xs space-y-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-mono text-[var(--color-text-primary)]">TXN_8852 &middot; INV-20491</span>
-            <span className="text-rose-500 flex items-center gap-1 font-medium">
-              <X className="w-3 h-3" />
-              <span>Declined: Bank Switch Glitch</span>
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-              <Zap className="w-3 h-3 text-emerald-500 shrink-0" />
-              <span>Instant retry routed via HDFC backup direct pipe</span>
-            </div>
-            <span className="px-2 py-0.5 rounded bg-emerald-500 text-white font-bold text-[9px] flex items-center gap-0.5">
-              <Check className="w-2.5 h-2.5 stroke-[3]" />
-              <span>RECOVERED ₹32,400</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer link to interactive studio */}
-      <div className="mt-4 pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-[11px]">
-        <div className="flex items-center gap-1.5 text-[var(--color-text-muted)]">
-          <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-          <span>{environmentLabel}</span>
+      {/* Footer Link & Integrity Stamp */}
+      <div className="pt-3 border-t border-[var(--color-border-subtle)] flex items-center justify-between text-[11px]">
+        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-mono text-[10px]">
+          <FileCheck2 className="w-3.5 h-3.5" />
+          <span>SHA-256 Chained Block Created</span>
         </div>
         <Link
-          to="/dashboard"
+          to="/simulation"
           className="text-[var(--color-accent)] hover:underline font-semibold flex items-center gap-1"
         >
-          <span>Open Interactive Command Center</span>
+          <span>Open Full Simulation Lab</span>
           <ArrowUpRight className="w-3 h-3" />
         </Link>
       </div>
