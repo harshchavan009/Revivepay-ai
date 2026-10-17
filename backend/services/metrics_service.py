@@ -94,12 +94,16 @@ class MetricsService:
         }
 
     @classmethod
-    def get_revenue_risk_trend(cls, db: Session) -> List[Dict[str, Any]]:
-        days_data = db.query(
+    def get_revenue_risk_trend(cls, db: Session, merchant_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        query = db.query(
             func.date(RecoveryCase.created_at).label("day"),
             func.sum(RecoveryCase.amount_at_risk).label("risk"),
             func.sum(RecoveryCase.recovered_amount).label("recovered")
-        ).group_by(func.date(RecoveryCase.created_at)).order_by(func.date(RecoveryCase.created_at).desc()).limit(7).all()
+        )
+        if merchant_id:
+            query = query.filter((RecoveryCase.org_id == merchant_id) | (RecoveryCase.payment.has(Payment.merchant_id == merchant_id)))
+
+        days_data = query.group_by(func.date(RecoveryCase.created_at)).order_by(func.date(RecoveryCase.created_at).desc()).limit(7).all()
 
         days_data_ordered = list(reversed(days_data))
         trend = []
@@ -124,12 +128,16 @@ class MetricsService:
         return trend
 
     @classmethod
-    def get_failure_reasons(cls, db: Session) -> List[Dict[str, Any]]:
-        reasons = db.query(
+    def get_failure_reasons(cls, db: Session, merchant_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        query = db.query(
             Payment.failure_category,
             func.count(Payment.payment_id).label("count"),
             func.sum(Payment.amount).label("total_amount")
-        ).group_by(Payment.failure_category).all()
+        )
+        if merchant_id:
+            query = query.filter((Payment.org_id == merchant_id) | (Payment.merchant_id == merchant_id))
+
+        reasons = query.group_by(Payment.failure_category).all()
 
         total_failures = sum(count for _, count, _ in reasons) or 1
         results = []
@@ -156,12 +164,18 @@ class MetricsService:
         return results
 
     @classmethod
-    def get_recovery_funnel(cls, db: Session) -> List[Dict[str, Any]]:
-        total_failures = db.query(Payment).count()
-        analyzed = db.query(RecoveryCase).count()
-        policies_passed = db.query(RecoveryCase).filter(RecoveryCase.policy_status == "PASSED").count()
-        actions_executed = db.query(RecoveryCase).filter(RecoveryCase.execution_status.in_(["EXECUTING", "COMPLETED"])).count()
-        recovered = db.query(RecoveryCase).filter(RecoveryCase.recovery_status == "RECOVERED").count()
+    def get_recovery_funnel(cls, db: Session, merchant_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        p_query = db.query(Payment)
+        c_query = db.query(RecoveryCase)
+        if merchant_id:
+            p_query = p_query.filter((Payment.org_id == merchant_id) | (Payment.merchant_id == merchant_id))
+            c_query = c_query.filter((RecoveryCase.org_id == merchant_id) | (RecoveryCase.payment.has(Payment.merchant_id == merchant_id)))
+
+        total_failures = p_query.count()
+        analyzed = c_query.count()
+        policies_passed = c_query.filter(RecoveryCase.policy_status == "PASSED").count()
+        actions_executed = c_query.filter(RecoveryCase.execution_status.in_(["EXECUTING", "COMPLETED"])).count()
+        recovered = c_query.filter(RecoveryCase.recovery_status == "RECOVERED").count()
 
         dropoff_1 = "0%"
         dropoff_2 = f"{round(((total_failures - analyzed) / max(1, total_failures)) * 100.0, 1)}%" if total_failures > 0 else "0%"

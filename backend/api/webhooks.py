@@ -3,15 +3,17 @@ import logging
 import datetime
 import hashlib
 import uuid
+from typing import Optional
 from fastapi import APIRouter, Request, Header, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from backend.database import get_db
-from backend.models.all_models import PaymentEvent, Payment, Customer, Merchant, RecoveryCase
+from backend.models.all_models import PaymentEvent, Payment, Customer, Merchant, RecoveryCase, Organization
 from backend.events.taxonomy import PaymentEventType, RecoveryEventType, WebhookEventType
 from backend.services.razorpay_service import RazorpayService
 from backend.services.recovery_engine import RecoveryEngine
 from backend.services.audit_service import AuditService
+from backend.services.crypto_service import CryptoService
 from backend.services.sanitizer import sanitize_text
 from backend.config import settings
 
@@ -23,8 +25,11 @@ MAX_REPLAY_WINDOW_SECONDS = 300        # 5 minutes timestamp drift tolerance
 
 @router.post("/razorpay")
 @router.post("/v1/razorpay")
+@router.post("/razorpay/{org_id}")
+@router.post("/v1/razorpay/{org_id}")
 async def handle_razorpay_webhook(
     request: Request,
+    org_id: Optional[str] = None,
     x_razorpay_signature: str = Header(None, alias="X-Razorpay-Signature"),
     db: Session = Depends(get_db)
 ):
@@ -105,8 +110,28 @@ async def handle_razorpay_webhook(
             detail="Invalid Razorpay webhook signature (test bypass prohibited in production)"
         )
 
+    # Resolve target organization tenant (from URL path or default)
+    target_org = None
+    if org_id:
+        target_org = db.query(Organization).filter(Organization.org_id == org_id).first()
+        if not target_org:
+            raise HTTPException(status_code=404, detail="Webhook organization tenant not found")
+    else:
+        target_org = db.query(Organization).first()
+
+    webhook_secret = None
+    if target_org and target_org.webhook_secret:
+        try:
+            webhook_secret = CryptoService.decrypt(target_org.webhook_secret)
+        except Exception:
+            webhook_secret = None
+
     if x_razorpay_signature != "test_signature" or not allow_sandbox_test_sig:
-        is_valid = RazorpayService.verify_webhook_signature(raw_body, x_razorpay_signature)
+        # Verify against global secret first, then tenant-specific secret
+        is_valid = RazorpayService.verify_webhook_signature(raw_body, x_razorpay_signature, secret=settings.RAZORPAY_WEBHOOK_SECRET)
+        if not is_valid and webhook_secret and webhook_secret != settings.RAZORPAY_WEBHOOK_SECRET:
+            is_valid = RazorpayService.verify_webhook_signature(raw_body, x_razorpay_signature, secret=webhook_secret)
+
         if not is_valid:
             logger.warning("Rejected Razorpay webhook with invalid/tampered HMAC-SHA256 signature.")
             try:
@@ -115,7 +140,7 @@ async def handle_razorpay_webhook(
                     case_id=None,
                     actor="Razorpay HMAC-SHA256 Gateway",
                     actor_type="GATEWAY",
-                    action=WebhookEventType.WEBHOOK_SIGNATURE_INVALID.value,
+                    action=WebhookEventType.WEBHOOK_VERIFICATION_REJECTED.value,
                     policy_result="BLOCKED",
                     execution_result="REJECTED_401",
                     decision={"reason": "INVALID_SIGNATURE", "security_defense": True, "signature_received": f"{x_razorpay_signature[:10]}..."},
@@ -209,11 +234,21 @@ async def handle_razorpay_webhook(
             "processed_at": existing_event.processed_at
         }
 
-    # 3. Extract Merchant & Payment Entity
+    # 3. Extract Merchant, Organization & Payment Entity
+    org_id_val = target_org.org_id if target_org else None
+    is_test_mode = target_org.is_test_mode if target_org else True
+    src_val = "RAZORPAY_TEST" if is_test_mode else "RAZORPAY_LIVE"
+    src_desc_val = (
+        "Event received from Razorpay Test environment via HTTPS Webhook"
+        if is_test_mode
+        else "Real-time production payment event received from Razorpay Live via HTTPS Webhook"
+    )
+
     merchant = db.query(Merchant).first()
     if not merchant:
         merchant = Merchant(
             merchant_id="m_apex_tech_2026",
+            org_id=org_id_val,
             name="Apex Cloud Technologies",
             industry="Enterprise Fintech & SaaS"
         )
@@ -223,17 +258,23 @@ async def handle_razorpay_webhook(
 
     payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
     provider_payment_id = payment_entity.get("id", f"pay_rzp_{uuid.uuid4().hex[:8]}")
-    amount_in_inr = float(payment_entity.get("amount", 499900)) / 100.0 if payment_entity.get("amount") else 4999.0
+    amount_in_inr = round(float(payment_entity.get("amount", 499900)) / 100.0, 2) if payment_entity.get("amount") is not None else 4999.0
     email = payment_entity.get("email", "customer@enterprise.in")
     contact = payment_entity.get("contact", "+919820199201")
     error_code = payment_entity.get("error_code") or "BANK_DECLINE"
     error_desc = payment_entity.get("error_description") or "Issuer bank switch timed out"
+
+    # Non-Negotiable Rule 5: Never store PAN, CVV, or full card data.
+    card_info = payment_entity.get("card") or {}
+    card_network = card_info.get("network") or "CARD"
+    card_last4 = card_info.get("last4")
 
     # Find or Create Customer
     customer = db.query(Customer).filter(Customer.email == email).first()
     if not customer:
         customer = Customer(
             customer_id=f"cust_{uuid.uuid4().hex[:8]}",
+            org_id=org_id_val,
             merchant_id=merchant.merchant_id,
             external_customer_id=f"cust_ext_{uuid.uuid4().hex[:8]}",
             name=payment_entity.get("notes", {}).get("customer_name", "Ingested Customer"),
@@ -257,6 +298,7 @@ async def handle_razorpay_webhook(
     if not payment:
         payment = Payment(
             payment_id=provider_payment_id,
+            org_id=org_id_val,
             merchant_id=merchant.merchant_id,
             customer_id=customer.customer_id,
             provider="razorpay",
@@ -271,8 +313,8 @@ async def handle_razorpay_webhook(
             failure_category="temporary_bank_failure",
             retry_count=0,
             max_retry_count=2,
-            source="RAZORPAY_TEST",
-            source_description="Event received from Razorpay Test environment via HTTPS Webhook",
+            source=src_val,
+            source_description=src_desc_val,
             created_at=received_at,
             updated_at=received_at
         )
@@ -280,15 +322,16 @@ async def handle_razorpay_webhook(
         db.commit()
         db.refresh(payment)
 
-    # 4. Ingest PaymentEvent Entity into Database (Razorpay Test Mode Provenance)
+    # 4. Ingest PaymentEvent Entity into Database (Razorpay Provenance)
     payment_event = PaymentEvent(
         event_id=f"evt_{uuid.uuid4().hex[:12]}",
+        org_id=org_id_val,
         provider="razorpay",
         provider_event_id=provider_event_id,
         event_type=event_type,
         payment_id=payment.payment_id,
-        source="RAZORPAY_TEST",
-        source_description="Event received from Razorpay Test environment via HTTPS Webhook",
+        source=src_val,
+        source_description=src_desc_val,
         raw_webhook_body=body_str,
         signature=x_razorpay_signature,
         payload_hash=hashlib.sha256(raw_body).hexdigest() if raw_body else None,

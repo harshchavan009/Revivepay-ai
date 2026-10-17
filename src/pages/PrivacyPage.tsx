@@ -60,6 +60,11 @@ export const PrivacyPage: React.FC = () => {
         </div>
       </header>
 
+      {/* Regulatory Draft Banner */}
+      <div className="bg-amber-500/10 border-b border-amber-500/30 px-6 py-2.5 text-center text-xs font-semibold text-amber-700 dark:text-amber-400">
+        <span>This page is a draft for regulatory and legal review prior to commercial launch.</span>
+      </div>
+
       {/* Hero Banner */}
       <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] py-10 px-6 transition-colors">
         <div className="max-w-4xl mx-auto space-y-3">
@@ -71,7 +76,7 @@ export const PrivacyPage: React.FC = () => {
             RevivePay Privacy Governance & Data Protection Policy
           </h1>
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-            Effective Date: January 1, 2026 | Last Revised: October 13, 2026 | Governance Reference: DPDP Act 2023, RBI Master Direction on Digital Payment Security Controls, PCI-DSS v4.0.
+            Effective Date: January 1, 2026 | Last Revised: October 18, 2026 | Governance Reference: DPDP Act 2023, RBI Master Direction on Digital Payment Security Controls. Card data is handled entirely by Razorpay; RevivePay never sees or stores card numbers.
           </p>
         </div>
       </div>

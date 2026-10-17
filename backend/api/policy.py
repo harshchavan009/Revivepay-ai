@@ -2,37 +2,39 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models.all_models import PolicyConfig, Merchant, User
+from backend.models.all_models import PolicyConfig, Merchant, Organization, User
 from backend.schemas.all_schemas import PolicyConfigResponse, PolicyConfigUpdate
-from backend.services.auth_service import require_role, get_current_user_optional
+from backend.services.auth_service import require_role, get_current_user_optional, enforce_tenant_ownership
 
 router = APIRouter(prefix="/policy", tags=["Policy Engine"])
 
-POLICY_ADMIN_ROLES = ["ADMIN", "MERCHANT_OWNER"]
+POLICY_ADMIN_ROLES = ["OWNER", "ADMIN", "MERCHANT_OWNER"]
 
 @router.get("/config", response_model=PolicyConfigResponse)
 def get_policy_config(
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    target_merchant_id = None
-    if current_user and current_user.merchant_id:
-        target_merchant_id = current_user.merchant_id
+    tenant_id = (current_user.org_id or current_user.merchant_id) if current_user else None
 
-    if target_merchant_id:
-        merchant = db.query(Merchant).filter(Merchant.merchant_id == target_merchant_id).first()
+    if tenant_id:
+        policy = db.query(PolicyConfig).filter(
+            (PolicyConfig.org_id == tenant_id) | (PolicyConfig.merchant_id == tenant_id)
+        ).first()
     else:
-        merchant = db.query(Merchant).first()
+        policy = db.query(PolicyConfig).first()
 
-    if not merchant:
-        merchant = Merchant(name="Apex Cloud Services", industry="Fintech & SaaS")
-        db.add(merchant)
-        db.commit()
-        db.refresh(merchant)
-        
-    policy = db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.merchant_id).first()
     if not policy:
-        policy = PolicyConfig(merchant_id=merchant.merchant_id)
+        if tenant_id:
+            policy = PolicyConfig(org_id=tenant_id, merchant_id=tenant_id)
+        else:
+            merchant = db.query(Merchant).first()
+            if not merchant:
+                merchant = Merchant(name="Apex Cloud Services", industry="Fintech & SaaS")
+                db.add(merchant)
+                db.commit()
+                db.refresh(merchant)
+            policy = PolicyConfig(org_id=merchant.merchant_id, merchant_id=merchant.merchant_id)
         db.add(policy)
         db.commit()
         db.refresh(policy)
@@ -44,20 +46,16 @@ def update_policy_config(
     current_user: User = Depends(require_role(POLICY_ADMIN_ROLES)),
     db: Session = Depends(get_db)
 ):
-    target_merchant_id = current_user.merchant_id
-    if current_user.role == "ADMIN" and not target_merchant_id:
-        merchant = db.query(Merchant).first()
-    elif target_merchant_id:
-        merchant = db.query(Merchant).filter(Merchant.merchant_id == target_merchant_id).first()
+    tenant_id = current_user.org_id or current_user.merchant_id
+    if current_user.role == "ADMIN" and not tenant_id:
+        policy = db.query(PolicyConfig).first()
     else:
-        merchant = db.query(Merchant).first()
+        policy = db.query(PolicyConfig).filter(
+            (PolicyConfig.org_id == tenant_id) | (PolicyConfig.merchant_id == tenant_id)
+        ).first()
 
-    if not merchant:
-        raise HTTPException(status_code=404, detail="Merchant not found")
-
-    policy = db.query(PolicyConfig).filter(PolicyConfig.merchant_id == merchant.merchant_id).first()
     if not policy:
-        policy = PolicyConfig(merchant_id=merchant.merchant_id)
+        policy = PolicyConfig(org_id=tenant_id, merchant_id=tenant_id)
         db.add(policy)
         db.commit()
         db.refresh(policy)
@@ -74,6 +72,10 @@ def update_policy_config(
         policy.allow_customer_contact = config_in.allow_customer_contact
     if config_in.recovery_time_window_hours is not None:
         policy.recovery_time_window_hours = config_in.recovery_time_window_hours
+    if config_in.mandate_afa_threshold is not None:
+        policy.mandate_afa_threshold = config_in.mandate_afa_threshold
+    if config_in.tat_auto_escalate is not None:
+        policy.tat_auto_escalate = config_in.tat_auto_escalate
     if config_in.allowed_actions is not None:
         policy.allowed_actions = config_in.allowed_actions
 

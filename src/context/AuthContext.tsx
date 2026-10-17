@@ -54,10 +54,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         return JSON.parse(saved);
       } catch {
-        return DEMO_PERSONAS.REVENUE_OPERATOR;
+        return null;
       }
     }
-    return DEMO_PERSONAS.REVENUE_OPERATOR; // Default demo persona
+    return null; // Production SaaS: default unauthenticated
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
 

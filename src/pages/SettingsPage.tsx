@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Settings,
   Cpu,
@@ -16,7 +16,7 @@ import {
   Check
 } from "lucide-react";
 import { useMetrics } from "../context/MetricsContext";
-import { agentService } from "../services";
+import { agentService, organizationService, RazorpayConnectionStatus } from "../services";
 
 export const SettingsPage: React.FC = () => {
   const { environmentLabel } = useMetrics();
@@ -29,9 +29,30 @@ export const SettingsPage: React.FC = () => {
     is_exhausted?: boolean;
   } | null>(null);
 
+  const [orgStatus, setOrgStatus] = useState<RazorpayConnectionStatus | null>(null);
+  const [keyIdInput, setKeyIdInput] = useState("");
+  const [keySecretInput, setKeySecretInput] = useState("");
+  const [webhookSecretInput, setWebhookSecretInput] = useState("");
+  const [connectLoading, setConnectLoading] = useState(false);
+  const [connectMsg, setConnectMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isTogglingMode, setIsTogglingMode] = useState(false);
+
+  const fetchOrgStatus = useCallback(async () => {
+    try {
+      const data = await organizationService.getCurrent();
+      setOrgStatus(data);
+      if (data.webhook_url) {
+        setTunnelUrl(data.webhook_url);
+      }
+    } catch {
+      // Offline fallback
+    }
+  }, []);
+
   useEffect(() => {
     agentService.getBudget().then(setBudget).catch(() => null);
-  }, []);
+    fetchOrgStatus();
+  }, [fetchOrgStatus]);
 
   const [tunnelUrl, setTunnelUrl] = useState(() => {
     if (typeof window !== "undefined" && window.location.origin && !window.location.origin.includes("localhost")) {
@@ -82,8 +103,75 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleConnectRazorpay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keyIdInput.trim() || !keySecretInput.trim()) {
+      setConnectMsg({ type: "error", text: "Key ID and Key Secret are required." });
+      return;
+    }
+    setConnectLoading(true);
+    setConnectMsg(null);
+    try {
+      const res = await organizationService.connectRazorpay({
+        key_id: keyIdInput.trim(),
+        key_secret: keySecretInput.trim(),
+        webhook_secret: webhookSecretInput.trim() || undefined
+      });
+      setOrgStatus(res);
+      setKeySecretInput("");
+      setWebhookSecretInput("");
+      setConnectMsg({
+        type: "success",
+        text: "Razorpay credentials securely encrypted with AES-256-GCM and connected successfully."
+      });
+    } catch (err: any) {
+      setConnectMsg({
+        type: "error",
+        text: err?.response?.data?.detail || "Failed to connect Razorpay account. Check credentials and try again."
+      });
+    } finally {
+      setConnectLoading(false);
+    }
+  };
+
+  const handleDisconnectRazorpay = async () => {
+    if (!window.confirm("Are you sure you want to disconnect Razorpay? Real-time event recovery will pause until reconnected.")) {
+      return;
+    }
+    setConnectLoading(true);
+    setConnectMsg(null);
+    try {
+      const res = await organizationService.disconnectRazorpay();
+      setOrgStatus(res);
+      setConnectMsg({ type: "success", text: "Razorpay account disconnected successfully." });
+    } catch (err: any) {
+      setConnectMsg({ type: "error", text: err?.response?.data?.detail || "Failed to disconnect Razorpay." });
+    } finally {
+      setConnectLoading(false);
+    }
+  };
+
+  const handleToggleMode = async () => {
+    if (!orgStatus) return;
+    const targetMode = !orgStatus.is_test_mode;
+    setIsTogglingMode(true);
+    setConnectMsg(null);
+    try {
+      const res = await organizationService.toggleMode(targetMode);
+      setOrgStatus(prev => prev ? { ...prev, is_test_mode: res.is_test_mode } : null);
+      setConnectMsg({ type: "success", text: res.banner_message });
+    } catch (err: any) {
+      setConnectMsg({
+        type: "error",
+        text: err?.response?.data?.detail || "Failed to toggle mode. Ensure credentials match requested mode."
+      });
+    } finally {
+      setIsTogglingMode(false);
+    }
+  };
+
   return (
-    <div className="space-y-6 pb-16 max-w-4xl font-sans">
+    <div className="space-y-6 pb-16 max-w-4xl font-sans" id="razorpay">
       <div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono font-bold text-[var(--color-accent)] uppercase tracking-widest">
@@ -278,6 +366,164 @@ export const SettingsPage: React.FC = () => {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* RAZORPAY GATEWAY CONNECTION & OPERATING MODE */}
+      <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] space-y-6 shadow-premium-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[var(--color-border-subtle)] gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[var(--color-accent-subtle)] border border-[var(--color-accent-border)] text-[var(--color-accent)]">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-[var(--color-text-primary)] text-sm flex items-center gap-2">
+                <span>Razorpay Gateway Integration</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-accent-border)] font-bold">
+                  AES-256-GCM
+                </span>
+              </h2>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                Connect your organization's Razorpay account to ingest failure webhooks and orchestrate automated recovery.
+              </p>
+            </div>
+          </div>
+
+          {/* Mode Toggle Switch */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-full border ${
+              orgStatus?.is_test_mode
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
+                : "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+            }`}>
+              {orgStatus?.is_test_mode ? "● TEST MODE" : "● LIVE MODE"}
+            </span>
+            <button
+              onClick={handleToggleMode}
+              disabled={isTogglingMode}
+              className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--color-bg-canvas)] hover:bg-[var(--color-bg-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {isTogglingMode ? "Switching..." : orgStatus?.is_test_mode ? "Switch to Live Mode" : "Switch to Test Mode"}
+            </button>
+          </div>
+        </div>
+
+        {/* Current Connection Details */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+            <span className="text-[10px] font-mono uppercase text-[var(--color-text-muted)] font-semibold">Active Key ID</span>
+            <p className="text-xs font-mono font-bold text-[var(--color-text-primary)] truncate">
+              {orgStatus?.key_id_masked || "Not connected"}
+            </p>
+            <span className="text-[10px] text-[var(--color-text-secondary)]">
+              {orgStatus?.is_connected ? "Verified gateway identity" : "Provide Razorpay key below"}
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+            <span className="text-[10px] font-mono uppercase text-[var(--color-text-muted)] font-semibold">API Key Secret</span>
+            <p className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+              {orgStatus?.has_key_secret ? "Encrypted at rest" : "Not configured"}
+            </p>
+            <span className="text-[10px] text-[var(--color-text-secondary)]">
+              AES-256-GCM cipher envelope
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
+            <span className="text-[10px] font-mono uppercase text-[var(--color-text-muted)] font-semibold">Webhook Secret</span>
+            <p className="text-xs font-mono font-bold text-[var(--color-text-primary)] truncate">
+              {orgStatus?.webhook_secret_masked || (orgStatus?.has_webhook_secret ? "Configured" : "System Default")}
+            </p>
+            <span className="text-[10px] text-[var(--color-text-secondary)]">
+              HMAC-SHA256 signature verification
+            </span>
+          </div>
+        </div>
+
+        {/* Credentials Form */}
+        <form onSubmit={handleConnectRazorpay} className="space-y-4 pt-2 border-t border-[var(--color-border-subtle)]">
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold text-[var(--color-text-primary)] uppercase tracking-wider">
+              {orgStatus?.is_connected ? "Rotate or Update Razorpay Credentials" : "Enter Razorpay API Credentials"}
+            </h4>
+            <p className="text-[11px] text-[var(--color-text-secondary)]">
+              Generate API keys from <strong>Razorpay Dashboard &rarr; Settings &rarr; API Keys</strong>.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-[var(--color-text-secondary)]">Razorpay Key ID</label>
+              <input
+                type="text"
+                placeholder="rzp_test_... or rzp_live_..."
+                value={keyIdInput}
+                onChange={(e) => setKeyIdInput(e.target.value)}
+                required
+                className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-mono text-xs p-2.5 rounded-xl outline-none focus:border-[var(--color-accent)]"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-[var(--color-text-secondary)]">Razorpay Key Secret</label>
+              <input
+                type="password"
+                placeholder="••••••••••••••••"
+                value={keySecretInput}
+                onChange={(e) => setKeySecretInput(e.target.value)}
+                required
+                className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-mono text-xs p-2.5 rounded-xl outline-none focus:border-[var(--color-accent)]"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[var(--color-text-secondary)]">
+              Webhook Secret <span className="text-[var(--color-text-muted)] font-normal">(Optional — defaults to server environment secret)</span>
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••••••••••"
+              value={webhookSecretInput}
+              onChange={(e) => setWebhookSecretInput(e.target.value)}
+              className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] font-mono text-xs p-2.5 rounded-xl outline-none focus:border-[var(--color-accent)]"
+            />
+          </div>
+
+          {connectMsg && (
+            <div className={`p-3 rounded-xl text-xs font-medium ${
+              connectMsg.type === "success"
+                ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+                : "bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300"
+            }`}>
+              {connectMsg.text}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="text-[11px] text-[var(--color-text-muted)] leading-tight max-w-md">
+              Card data is handled entirely by Razorpay. RevivePay never sees or stores card numbers. Keys are encrypted at rest with AES-256-GCM.
+            </div>
+            <div className="flex items-center gap-2">
+              {orgStatus?.is_connected && (
+                <button
+                  type="button"
+                  onClick={handleDisconnectRazorpay}
+                  disabled={connectLoading}
+                  className="px-3.5 py-2 rounded-xl border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Disconnect
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={connectLoading}
+                className="px-4 py-2 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all cursor-pointer disabled:opacity-60"
+              >
+                {connectLoading ? "Encrypting & Saving..." : orgStatus?.is_connected ? "Update Credentials" : "Connect Razorpay"}
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
 
       {/* RAZORPAY PUBLIC HTTPS WEBHOOK CONFIGURATION */}

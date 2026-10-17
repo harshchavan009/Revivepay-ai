@@ -2,9 +2,9 @@ name: RevivePay AI CI Suite
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, launch-polish ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, launch-polish ]
 
 jobs:
   test-and-build:
@@ -26,6 +26,10 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest httpx
 
+      - name: Audit Backend Dependencies
+        run: |
+          pip check
+
       - name: Train & Validate ML Recovery Model
         run: |
           PYTHONPATH=. python3 ml/train.py
@@ -39,9 +43,15 @@ jobs:
         run: |
           PYTHONPATH=. pytest tests/ -v -W ignore
 
-      - name: Run Secrets Hygiene Scanner
+      - name: Run Custom Secrets Hygiene Scanner
         run: |
           python3 scripts/audit_secrets.py
+
+      - name: Run Gitleaks Action
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4

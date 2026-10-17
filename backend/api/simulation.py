@@ -1,9 +1,11 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.database import get_db
+from backend.models.all_models import User
 from backend.schemas.all_schemas import SimulationTriggerRequest, SimulationResponse
 from backend.services.simulation_service import SimulationService
+from backend.services.auth_service import get_current_user_optional, normalize_role
 from backend.config import settings
 
 router = APIRouter(prefix="/simulation", tags=["Simulation Center"])
@@ -86,13 +88,25 @@ def get_simulation_presets():
     ]
 
 @router.post("/trigger", response_model=SimulationResponse)
-def trigger_simulation(req: SimulationTriggerRequest, db: Session = Depends(get_db)):
+def trigger_simulation(
+    req: SimulationTriggerRequest,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    from backend.services.auth_service import normalize_role
+    if current_user and normalize_role(current_user.role) == "VIEWER":
+        raise HTTPException(
+            status_code=403,
+            detail="Insufficient permissions: Viewer role is read-only"
+        )
+    tenant_id = (current_user.org_id or current_user.merchant_id) if current_user else None
     return SimulationService.trigger_scenario(
         db=db,
         scenario=req.scenario,
         custom_amount=req.amount,
         customer_type=req.customer_type or "returning",
-        payment_method=req.payment_method or "card"
+        payment_method=req.payment_method or "card",
+        merchant_id=tenant_id
     )
 
 @router.post("/reset-demo")

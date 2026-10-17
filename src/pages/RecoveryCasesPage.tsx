@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ShieldAlert, Search, RefreshCw, ChevronLeft, ChevronRight, Zap, FlaskConical, ArrowRight } from "lucide-react";
+import { ShieldAlert, Search, RefreshCw, ChevronLeft, ChevronRight, Zap, FlaskConical, ArrowRight, Download, Filter } from "lucide-react";
 import { recoveryService, dashboardService } from "../services";
 import { RecoveryCase } from "../types";
 import { RiskBadge } from "../components/RiskBadge";
@@ -12,6 +12,7 @@ import { formatINR } from "../data/mockData";
 export const RecoveryCasesPage: React.FC = () => {
   const [cases, setCases] = useState<RecoveryCase[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [riskFilter, setRiskFilter] = useState<string>("ALL");
   const [sourceFilter, setSourceFilter] = useState<string>("ALL"); // ALL, RAZORPAY_TEST, SIMULATION
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +21,30 @@ export const RecoveryCasesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(15);
   const [error, setError] = useState<string | null>(null);
+
+  const exportCasesCSV = () => {
+    const headers = ["Case ID", "Customer", "Amount (INR)", "Status", "Risk Level", "Source", "Action", "Outcome Verified", "Created At"];
+    const rows = filteredCases.map((c) => [
+      c.case_id || c.id,
+      c.customer_name || "Customer",
+      (c.amount || c.amount_at_risk || 0).toString(),
+      c.recovery_status || "UNKNOWN",
+      c.risk_level || "MEDIUM",
+      c.source || "RAZORPAY_TEST",
+      c.recommended_action || "retry_payment",
+      c.outcome_verified ? "YES" : "NO",
+      c.created_at || new Date().toISOString()
+    ]);
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `revivepay_recovery_cases_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const loadCases = async () => {
     setIsLoading(true);
@@ -48,9 +73,9 @@ export const RecoveryCasesPage: React.FC = () => {
   };
 
   const filteredCases = cases.filter((c) => {
-    if (sourceFilter === "ALL") return true;
-    if (sourceFilter === "RAZORPAY_TEST") return c.source === "RAZORPAY_TEST" || !c.source;
-    if (sourceFilter === "SIMULATION") return c.source === "SIMULATION";
+    if (sourceFilter === "RAZORPAY_TEST" && !(c.source === "RAZORPAY_TEST" || !c.source)) return false;
+    if (sourceFilter === "SIMULATION" && c.source !== "SIMULATION") return false;
+    if (riskFilter !== "ALL" && c.risk_level !== riskFilter) return false;
     return true;
   });
 
@@ -85,13 +110,24 @@ export const RecoveryCasesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={loadCases}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
-          <span>Refresh Queue</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={exportCasesCSV}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold transition-colors cursor-pointer shadow-premium-sm"
+            title="Export filtered cases to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={loadCases}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold transition-colors cursor-pointer shadow-premium-sm"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter & Provenance Segment Bar */}
@@ -137,7 +173,7 @@ export const RecoveryCasesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Search & Status Filters */}
+        {/* Search, Status & Risk Filters */}
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-3" />
@@ -149,6 +185,18 @@ export const RecoveryCasesPage: React.FC = () => {
               className="w-full bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-md pl-10 pr-3.5 py-2.5 outline-none focus:border-[var(--color-accent)] font-sans"
             />
           </div>
+
+          <select
+            value={riskFilter}
+            onChange={(e) => { setRiskFilter(e.target.value); setCurrentPage(1); }}
+            className="bg-[var(--color-bg-canvas)] border border-[var(--color-border)] text-[var(--color-text-primary)] text-xs rounded-md px-3 py-2.5 outline-none font-sans cursor-pointer"
+          >
+            <option value="ALL">All Risk Levels</option>
+            <option value="LOW">Low Risk</option>
+            <option value="MEDIUM">Medium Risk</option>
+            <option value="HIGH">High Risk</option>
+            <option value="CRITICAL">Critical Risk</option>
+          </select>
 
           <select
             value={statusFilter}

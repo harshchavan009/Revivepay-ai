@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { CreditCard, Search, RefreshCw, X, ChevronLeft, ChevronRight, ArrowRight, Eye } from "lucide-react";
+import { CreditCard, Search, RefreshCw, X, ChevronLeft, ChevronRight, ArrowRight, Eye, Download } from "lucide-react";
 import { paymentService } from "../services";
 import { Payment } from "../types";
 import { StatusBadge } from "../components/StatusBadge";
@@ -19,6 +19,29 @@ export const PaymentsPage: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(15);
 
   const [error, setError] = useState<string | null>(null);
+
+  const exportPaymentsCSV = () => {
+    const headers = ["Payment ID", "Customer ID", "Amount (INR)", "Currency", "Status", "Payment Method", "Failure Code", "Created At"];
+    const rows = payments.map((p) => [
+      p.payment_id || p.id,
+      p.customer_id || "Customer",
+      (p.amount || 0).toString(),
+      p.currency || "INR",
+      p.status || "UNKNOWN",
+      p.payment_method || "card",
+      p.failure_code || "N/A",
+      p.created_at || new Date().toISOString()
+    ]);
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `revivepay_payments_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const loadPayments = async () => {
     setIsLoading(true);
@@ -76,13 +99,24 @@ export const PaymentsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={loadPayments}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold self-start sm:self-auto transition-colors cursor-pointer shadow-premium-sm"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
-          <span>Refresh Ledger</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={exportPaymentsCSV}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold transition-colors cursor-pointer shadow-premium-sm"
+            title="Export payments ledger to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={loadPayments}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-[var(--color-bg-surface)] border border-[var(--color-border)] hover:bg-[var(--color-bg-surface-hover)] text-[var(--color-text-primary)] text-xs font-semibold transition-colors cursor-pointer shadow-premium-sm"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[var(--color-accent)]" : ""}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}

@@ -21,19 +21,20 @@ def get_audit_logs(
 ):
     query = db.query(AuditLog)
     
-    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
-        query = query.join(
-            RecoveryCase, AuditLog.case_id == RecoveryCase.case_id, isouter=True
-        ).join(
-            Payment, RecoveryCase.payment_id == Payment.payment_id, isouter=True
-        ).filter(Payment.merchant_id == current_user.merchant_id)
+    if current_user and current_user.role != "ADMIN":
+        user_tenant = current_user.org_id or current_user.merchant_id
+        if user_tenant:
+            query = query.filter(
+                (AuditLog.org_id == user_tenant) |
+                (AuditLog.recovery_case.has(RecoveryCase.org_id == user_tenant)) |
+                (AuditLog.recovery_case.has(RecoveryCase.payment.has(Payment.merchant_id == user_tenant)))
+            )
 
     if case_id:
         c = db.query(RecoveryCase).filter(RecoveryCase.case_id == case_id).first()
         if c:
-            if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
-                case_merchant = c.payment.merchant_id if c.payment else None
-                enforce_tenant_ownership(current_user, case_merchant, is_mutation=False)
+            case_tenant = c.org_id or (c.payment.merchant_id if c.payment else None)
+            enforce_tenant_ownership(current_user, case_tenant, is_mutation=False)
             query = query.filter(AuditLog.case_id == c.case_id)
         else:
             query = query.filter(AuditLog.case_id == case_id)
@@ -58,13 +59,11 @@ def get_case_audit_logs(
     db: Session = Depends(get_db)
 ):
     c = db.query(RecoveryCase).filter(RecoveryCase.case_id == case_id).first()
-    if c:
-        case_merchant = c.payment.merchant_id if c.payment else None
-        enforce_tenant_ownership(current_user, case_merchant, is_mutation=False)
-        target_id = c.case_id
-    else:
-        if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
-            raise HTTPException(status_code=404, detail="Recovery case not found")
-        target_id = case_id
+    if not c:
+        raise HTTPException(status_code=404, detail="Recovery case not found")
         
-    return db.query(AuditLog).filter(AuditLog.case_id == target_id).order_by(AuditLog.timestamp.asc()).all()
+    case_tenant = c.org_id or (c.payment.merchant_id if c.payment else None)
+    enforce_tenant_ownership(current_user, case_tenant, is_mutation=False)
+    
+    from backend.services.audit_service import AuditService
+    return AuditService.get_logs_for_case(db, c.case_id)

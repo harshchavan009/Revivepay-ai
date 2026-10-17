@@ -10,12 +10,50 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 # ==========================================
-# 1. MERCHANT ENTITY
+# 0. ORGANIZATION ENTITY (Multi-Tenant Core)
+# ==========================================
+class Organization(Base):
+    __tablename__ = "organizations"
+
+    org_id = Column(String(100), primary_key=True, default=generate_uuid)
+    name = Column(String(255), nullable=False)
+    slug = Column(String(100), unique=True, index=True, nullable=False)
+    is_test_mode = Column(Boolean, default=True)
+    currency = Column(String(10), default="INR")
+    timezone = Column(String(50), default="Asia/Kolkata")
+    auto_recovery_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    # Razorpay Credentials (AES-256-GCM encrypted ciphertext at rest)
+    razorpay_key_id = Column(String(100), nullable=True)
+    razorpay_key_secret = Column(Text, nullable=True)
+    webhook_secret = Column(Text, nullable=True)
+
+    # Relationships
+    users = relationship("User", back_populates="organization")
+    customers = relationship("Customer", back_populates="organization")
+    payments = relationship("Payment", back_populates="organization")
+    recovery_cases = relationship("RecoveryCase", back_populates="organization")
+    policies = relationship("PolicyConfig", back_populates="organization", uselist=False)
+
+    @property
+    def id(self):
+        return self.org_id
+
+    @property
+    def merchant_id(self):
+        return self.org_id
+
+
+# ==========================================
+# 1. MERCHANT ENTITY (Compatibility Entity)
 # ==========================================
 class Merchant(Base):
     __tablename__ = "merchants"
 
     merchant_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     name = Column(String(255), nullable=False)
     industry = Column(String(100), default="Enterprise Fintech & SaaS")
     currency = Column(String(10), default="INR")
@@ -41,6 +79,7 @@ class Customer(Base):
     __tablename__ = "customers"
 
     customer_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), nullable=False)
     external_customer_id = Column(String(100), unique=True, index=True, nullable=False) # e.g. cust_8102
     name = Column(String(255), nullable=False)
@@ -53,6 +92,7 @@ class Customer(Base):
     consent_status = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+    organization = relationship("Organization", back_populates="customers")
     merchant = relationship("Merchant", back_populates="customers")
     payments = relationship("Payment", back_populates="customer")
     recovery_cases = relationship("RecoveryCase", back_populates="customer")
@@ -66,6 +106,7 @@ class Payment(Base):
     __tablename__ = "payments"
 
     payment_id = Column(String(100), primary_key=True, default=generate_uuid) # e.g. pay_89231
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), nullable=False)
     customer_id = Column(String(100), ForeignKey("customers.customer_id"), nullable=False)
     provider = Column(String(50), default="razorpay")
@@ -85,6 +126,7 @@ class Payment(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    organization = relationship("Organization", back_populates="payments")
     merchant = relationship("Merchant", back_populates="payments")
     customer = relationship("Customer", back_populates="payments")
     payment_events = relationship("PaymentEvent", back_populates="payment", cascade="all, delete-orphan")
@@ -101,6 +143,7 @@ class PaymentEvent(Base):
     )
 
     event_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     provider = Column(String(50), default="razorpay", nullable=False)
     provider_event_id = Column(String(100), index=True, nullable=True) # Razorpay event ID e.g. event_H0u2fX3Y8K91aZ
     event_type = Column(String(100), nullable=False) # payment.failed, payment.authorized, payment.captured
@@ -125,6 +168,7 @@ class RecoveryCase(Base):
     __tablename__ = "recovery_cases"
 
     case_id = Column(String(100), primary_key=True, default=generate_uuid) # e.g. RV-10291
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     payment_id = Column(String(100), ForeignKey("payments.payment_id"), unique=True, nullable=False)
     customer_id = Column(String(100), ForeignKey("customers.customer_id"), nullable=False)
     source = Column(String(50), default="RAZORPAY_TEST") # RAZORPAY_TEST vs SIMULATION
@@ -166,6 +210,7 @@ class RecoveryCase(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     resolved_at = Column(DateTime, nullable=True)
 
+    organization = relationship("Organization", back_populates="recovery_cases")
     payment = relationship("Payment", back_populates="recovery_case")
     customer = relationship("Customer", back_populates="recovery_cases")
     agent_decisions = relationship("AgentDecision", back_populates="recovery_case", cascade="all, delete-orphan")
@@ -183,6 +228,7 @@ class AgentDecision(Base):
     __tablename__ = "agent_decisions"
 
     decision_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     case_id = Column(String(100), ForeignKey("recovery_cases.case_id"), nullable=False)
     model_provider = Column(String(50), default="gemini")
     model_name = Column(String(100), default="gemini-1.5-pro")
@@ -207,6 +253,7 @@ class RecoveryAction(Base):
     __tablename__ = "recovery_actions"
 
     action_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     case_id = Column(String(100), ForeignKey("recovery_cases.case_id"), nullable=False)
     action_type = Column(String(100), nullable=False) # retry_payment, create_payment_link, send_customer_notification, request_payment_method_update, stop_recovery
     requested_by = Column(String(100), default="RevivePay AI Agent")
@@ -230,6 +277,7 @@ class PolicyEvaluation(Base):
     __tablename__ = "policy_evaluations"
 
     policy_evaluation_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     case_id = Column(String(100), ForeignKey("recovery_cases.case_id"), nullable=False)
     action = Column(String(100), nullable=False)
     rules_evaluated = Column(JSON, default=list)
@@ -248,6 +296,7 @@ class Approval(Base):
     __tablename__ = "approvals"
 
     approval_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     case_id = Column(String(100), ForeignKey("recovery_cases.case_id"), nullable=False)
     requested_action = Column(String(100), nullable=False)
     risk_level = Column(String(50), default="HIGH")
@@ -268,6 +317,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     audit_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     case_id = Column(String(100), ForeignKey("recovery_cases.case_id"), nullable=True)
     source = Column(String(50), default="RAZORPAY_TEST") # RAZORPAY_TEST vs SIMULATION
     source_description = Column(String(255), default="Event received from Razorpay Test environment")
@@ -281,6 +331,7 @@ class AuditLog(Base):
     # Cryptographic Hash-Chaining for Immutable Audit Integrity
     entry_hash = Column(String(64), nullable=True, index=True)
     previous_hash = Column(String(64), nullable=True)
+    client_ip = Column(String(50), nullable=True)
 
     # Backward compatibility aliases for API/Services
     action = Column(String(100), nullable=True)
@@ -296,7 +347,7 @@ class AuditLog(Base):
 
 # ==========================================
 # AUDIT LOG IMMUTABILITY EVENT LISTENERS
-# Enforces write-once, append-only regulatory compliance (RBI / ISO 27001)
+# Enforces write-once, append-only regulatory compliance
 # ==========================================
 @event.listens_for(AuditLog, "before_update")
 def prevent_audit_log_update(mapper, connection, target):
@@ -310,7 +361,6 @@ def prevent_audit_log_delete(mapper, connection, target):
     raise PermissionError("IMMUTABLE_AUDIT_LOG: AuditLog entries are append-only and cannot be deleted.")
 
 
-
 # ==========================================
 # 11. NOTIFICATION ENTITY
 # ==========================================
@@ -318,6 +368,7 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     notification_id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     case_id = Column(String(100), ForeignKey("recovery_cases.case_id"), nullable=True)
     customer_id = Column(String(100), ForeignKey("customers.customer_id"), nullable=False)
     channel = Column(String(50), default="email") # email, sms, whatsapp, in_app
@@ -338,17 +389,22 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
+    merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(String(50), default="REVENUE_OPERATOR")
-    merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), nullable=True)
+    role = Column(String(50), default="OPERATOR") # OWNER, ADMIN, OPERATOR, VIEWER
+    is_verified = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
+    mfa_enabled = Column(Boolean, default=False)
+    mfa_secret = Column(String(255), nullable=True)
     failed_login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime, nullable=True)
     theme_preference = Column(String(20), default="dark") # "dark" | "light" | "system"
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+    organization = relationship("Organization", back_populates="users")
     merchant = relationship("Merchant", back_populates="users")
 
 
@@ -356,7 +412,8 @@ class PolicyConfig(Base):
     __tablename__ = "policy_configs"
 
     id = Column(String(100), primary_key=True, default=generate_uuid)
-    merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), unique=True, nullable=False)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
+    merchant_id = Column(String(100), ForeignKey("merchants.merchant_id"), unique=True, nullable=True)
     
     max_auto_retries = Column(Integer, default=2)
     max_auto_amount = Column(Float, default=10000.0)
@@ -381,6 +438,7 @@ class PolicyConfig(Base):
     
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    organization = relationship("Organization", back_populates="policies")
     merchant = relationship("Merchant", back_populates="policies")
 
 
@@ -388,6 +446,7 @@ class Subscription(Base):
     __tablename__ = "subscriptions"
 
     id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     subscription_id = Column(String(100), unique=True, index=True, nullable=False)
     customer_id = Column(String(100), nullable=False)
     customer_name = Column(String(255), nullable=True)
@@ -416,6 +475,7 @@ class AbandonedCheckout(Base):
     __tablename__ = "abandoned_checkouts"
 
     id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     checkout_id = Column(String(100), unique=True, index=True, nullable=False)
     customer_name = Column(String(255), nullable=False)
     customer_email = Column(String(255), nullable=False)
@@ -432,6 +492,7 @@ class WebhookEvent(Base):
     __tablename__ = "webhook_events"
 
     id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     event_id = Column(String(255), unique=True, index=True, nullable=False)
     event_type = Column(String(100), nullable=False)
     payload = Column(JSON, nullable=False)
@@ -447,6 +508,7 @@ class ChatThread(Base):
     __tablename__ = "chat_threads"
 
     id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=True, index=True)
     session_id = Column(String(100), index=True, nullable=False)
     user_id = Column(String(100), ForeignKey("users.id"), nullable=True)
     title = Column(String(255), default="Telemetry Inquiry")
@@ -495,3 +557,74 @@ class PasswordResetToken(Base):
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
 
+
+class EmailVerificationToken(Base):
+    """Stores single-use, time-bound, SHA-256 hashed email verification tokens."""
+    __tablename__ = "email_verification_tokens"
+
+    id = Column(String(100), primary_key=True, default=generate_uuid)
+    user_id = Column(String(100), ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+
+
+# ==========================================
+# 17. DPDP ACT 2023 COMPLIANCE ENTITIES
+# ==========================================
+class ConsentRecord(Base):
+    """Stores consent records and data retention periods in compliance with India's DPDP Act 2023."""
+    __tablename__ = "dpdp_consent_records"
+
+    id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=False, index=True)
+    data_principal_id = Column(String(255), nullable=False, index=True) # customer email, phone, or customer_id
+    purpose = Column(String(255), nullable=False) # e.g. "payment_recovery_telemetry", "dunning_sms"
+    lawful_basis = Column(String(100), default="CONSENT") # CONSENT, CERTAIN_LEGITIMATE_USES
+    status = Column(String(50), default="ACTIVE") # ACTIVE, REVOKED, EXPIRED
+    retention_period_days = Column(Integer, default=180)
+    consent_given_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    metadata_json = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+class DataDeletionRequest(Base):
+    """Tracks personal data erasure requests in compliance with DPDP Act 2023 Section 12."""
+    __tablename__ = "dpdp_deletion_requests"
+
+    id = Column(String(100), primary_key=True, default=generate_uuid)
+    org_id = Column(String(100), ForeignKey("organizations.org_id"), nullable=False, index=True)
+    requested_by_id = Column(String(255), nullable=False)
+    data_principal_id = Column(String(255), nullable=False, index=True) # email or phone of customer to erase
+    status = Column(String(50), default="REQUESTED") # REQUESTED, PROCESSING, COMPLETED, REJECTED
+    reason = Column(String(500), nullable=True)
+    requested_at = Column(DateTime, default=datetime.datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    erasure_summary = Column(JSON, nullable=True) # e.g. {"customers_anonymized": 1, "payments_scrubbed": 3}
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+# ==========================================
+# AUTOMATIC ORG_ID CASCADE LISTENERS
+# Automatically propagates org_id if set on related entity or fallback
+# ==========================================
+@event.listens_for(Payment, "before_insert")
+def populate_payment_org_id(mapper, connection, target):
+    if not target.org_id and target.merchant_id:
+        target.org_id = target.merchant_id
+
+@event.listens_for(Customer, "before_insert")
+def populate_customer_org_id(mapper, connection, target):
+    if not target.org_id and target.merchant_id:
+        target.org_id = target.merchant_id
+
+@event.listens_for(User, "before_insert")
+def populate_user_org_id(mapper, connection, target):
+    if not target.org_id and target.merchant_id:
+        target.org_id = target.merchant_id
+    if not target.merchant_id and target.org_id:
+        target.merchant_id = target.org_id

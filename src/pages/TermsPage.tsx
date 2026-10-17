@@ -59,6 +59,11 @@ export const TermsPage: React.FC = () => {
         </div>
       </header>
 
+      {/* Regulatory Draft Banner */}
+      <div className="bg-amber-500/10 border-b border-amber-500/30 px-6 py-2.5 text-center text-xs font-semibold text-amber-700 dark:text-amber-400">
+        <span>This page is a draft for regulatory and legal review prior to commercial launch.</span>
+      </div>
+
       {/* Hero Banner */}
       <div className="border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] py-10 px-6 transition-colors">
         <div className="max-w-4xl mx-auto space-y-3">

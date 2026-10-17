@@ -35,12 +35,15 @@ import { EngineeringNotesPage } from "./pages/EngineeringNotesPage";
 import { SystemEvaluationPage } from "./pages/SystemEvaluationPage";
 import { HardeningLogPage } from "./pages/HardeningLogPage";
 import { DemoJourneyPage } from "./pages/DemoJourneyPage";
+import { ContactPage } from "./pages/ContactPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { AskMeAnythingDrawer } from "./components/AskMeAnythingDrawer";
 
+import { TestModeBanner } from "./components/TestModeBanner";
+
 const FULL_SCREEN_PATHS = new Set([
   "/", "/login", "/register", "/about", "/pricing", "/status",
-  "/terms", "/privacy", "/security", "/architecture", "/engineering", "/demo"
+  "/terms", "/privacy", "/security", "/architecture", "/engineering", "/demo", "/contact"
 ]);
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -59,8 +62,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden font-sans">
       <Sidebar mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--bg-app)]">
+        <TestModeBanner />
         <Header onOpenMobileMenu={() => setMobileSidebarOpen(true)} />
         <LiveActivityTicker />
+
         <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 bg-[var(--bg-app)]">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
@@ -86,6 +91,7 @@ export const App: React.FC = () => {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/pricing" element={<PricingPage />} />
                   <Route path="/status" element={<StatusPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/security" element={<SecurityPage />} />

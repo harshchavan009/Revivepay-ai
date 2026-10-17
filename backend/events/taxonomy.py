@@ -77,6 +77,25 @@ class WebhookEventType(str, Enum):
 
 
 # ==========================================
+# 7. ORGANIZATION & TENANT EVENT TAXONOMY
+# ==========================================
+class OrganizationEventType(str, Enum):
+    ORGANIZATION_CREATED = "organization.created"
+    RAZORPAY_CONNECTED = "organization.razorpay_connected"
+    RAZORPAY_DISCONNECTED = "organization.razorpay_disconnected"
+    MODE_TOGGLED = "organization.mode_toggled"
+
+
+# ==========================================
+# 8. DPDP ACT 2023 COMPLIANCE EVENT TAXONOMY
+# ==========================================
+class ComplianceEventType(str, Enum):
+    CONSENT_RECORDED = "dpdp.consent_recorded"
+    DATA_EXPORTED = "dpdp.data_exported"
+    DATA_ERASED = "dpdp.data_erased"
+
+
+# ==========================================
 # COMPLETE CANONICAL EVENT REGISTRY
 # ==========================================
 ALL_CANONICAL_EVENTS: Set[str] = {
@@ -130,6 +149,17 @@ ALL_CANONICAL_EVENTS: Set[str] = {
     WebhookEventType.WEBHOOK_DUPLICATE_BLOCKED.value,
     WebhookEventType.WEBHOOK_REPLAY_BLOCKED.value,
     WebhookEventType.WEBHOOK_PAYLOAD_OVERSIZED.value,
+
+    # Organization & Tenant events
+    OrganizationEventType.ORGANIZATION_CREATED.value,
+    OrganizationEventType.RAZORPAY_CONNECTED.value,
+    OrganizationEventType.RAZORPAY_DISCONNECTED.value,
+    OrganizationEventType.MODE_TOGGLED.value,
+
+    # DPDP Act 2023 Compliance events
+    ComplianceEventType.CONSENT_RECORDED.value,
+    ComplianceEventType.DATA_EXPORTED.value,
+    ComplianceEventType.DATA_ERASED.value,
 }
 
 

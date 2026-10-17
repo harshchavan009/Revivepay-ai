@@ -17,7 +17,8 @@ import { useMetrics } from "../context/MetricsContext";
 export const PricingPage: React.FC = () => {
   const { recoveryRate } = useMetrics();
   const [monthlyFailedRevenue, setMonthlyFailedRevenue] = useState<number>(500000);
-  const rateMultiplier = (recoveryRate || 52.7) / 100;
+  const effectiveRate = recoveryRate && recoveryRate > 0 ? recoveryRate : 50.0;
+  const rateMultiplier = effectiveRate / 100;
   const estimatedRecovery = Math.round(monthlyFailedRevenue * rateMultiplier);
   const reviveFee = Math.round(estimatedRecovery * 0.015);
   const netMerchantGain = estimatedRecovery - reviveFee;
@@ -56,6 +57,11 @@ export const PricingPage: React.FC = () => {
           </Link>
         </div>
       </header>
+
+      {/* Regulatory Draft Banner */}
+      <div className="bg-amber-500/10 border-b border-amber-500/30 px-6 py-2.5 text-center text-xs font-semibold text-amber-700 dark:text-amber-400">
+        <span>This page is a draft for regulatory and legal review prior to commercial launch.</span>
+      </div>
 
       {/* Main Pricing Content */}
       <main className="flex-1 max-w-6xl mx-auto px-6 py-16 space-y-16">
@@ -233,7 +239,7 @@ export const PricingPage: React.FC = () => {
 
             <div className="p-5 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-3">
               <div className="flex justify-between text-xs">
-                <span className="text-[var(--color-text-secondary)]">Projected Revenue Recovered ({recoveryRate.toFixed(1)}%):</span>
+                <span className="text-[var(--color-text-secondary)]">Projected Revenue Recovered ({effectiveRate.toFixed(1)}%):</span>
                 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{formatINR(estimatedRecovery)}</span>
               </div>
               <div className="flex justify-between text-xs">

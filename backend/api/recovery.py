@@ -15,7 +15,7 @@ from backend.services.sanitizer import escape_sql_like
 
 router = APIRouter(prefix="/recovery", tags=["Recovery Cases"])
 
-OPERATOR_ROLES = ["ADMIN", "REVENUE_OPERATOR", "MERCHANT_OWNER"]
+OPERATOR_ROLES = ["OWNER", "ADMIN", "OPERATOR", "MERCHANT_OWNER", "REVENUE_OPERATOR"]
 
 def map_case_response(case: RecoveryCase, db: Session) -> dict:
     cust = db.query(Customer).filter(Customer.customer_id == case.customer_id).first()
@@ -84,8 +84,9 @@ def get_recovery_cases_count(
 ):
     """Returns the single canonical total count of all recovery cases in the registry."""
     query = db.query(RecoveryCase)
-    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
-        query = query.join(Payment).filter(Payment.merchant_id == current_user.merchant_id)
+    user_tenant = (current_user.org_id or current_user.merchant_id) if current_user and current_user.role != "ADMIN" else None
+    if user_tenant:
+        query = query.filter((RecoveryCase.org_id == user_tenant) | (RecoveryCase.payment.has(Payment.merchant_id == user_tenant)))
     return {"total_cases": query.count()}
 
 @router.get("/cases", response_model=List[RecoveryCaseResponse])
@@ -100,8 +101,9 @@ def get_recovery_cases(
     db: Session = Depends(get_db)
 ):
     query = db.query(RecoveryCase)
-    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
-        query = query.join(Payment).filter(Payment.merchant_id == current_user.merchant_id)
+    user_tenant = (current_user.org_id or current_user.merchant_id) if current_user and current_user.role != "ADMIN" else None
+    if user_tenant:
+        query = query.filter((RecoveryCase.org_id == user_tenant) | (RecoveryCase.payment.has(Payment.merchant_id == user_tenant)))
     
     if status and status != "ALL":
         query = query.filter(RecoveryCase.recovery_status == status)
@@ -132,8 +134,8 @@ def get_recovery_case_detail(
     if not case:
         raise HTTPException(status_code=404, detail=f"Recovery case '{case_id}' not found")
     
-    case_merchant_id = case.payment.merchant_id if case.payment else None
-    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=False)
+    case_tenant = case.org_id or (case.payment.merchant_id if case.payment else None)
+    enforce_tenant_ownership(current_user, case_tenant, is_mutation=False)
     return map_case_response(case, db)
 
 @router.post("/{case_id}/analyze", response_model=RecoveryCaseResponse)
@@ -148,8 +150,8 @@ def reanalyze_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    case_merchant_id = case.payment.merchant_id if case.payment else None
-    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
+    case_tenant_id = case.org_id or (case.payment.merchant_id if case.payment else None)
+    enforce_tenant_ownership(current_user, case_tenant_id, is_mutation=True)
     
     payment = case.payment
     customer = case.customer
@@ -176,8 +178,8 @@ def approve_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    case_merchant_id = case.payment.merchant_id if case.payment else None
-    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
+    case_tenant_id = case.org_id or (case.payment.merchant_id if case.payment else None)
+    enforce_tenant_ownership(current_user, case_tenant_id, is_mutation=True)
     
     # Enforce Step-Up Re-Authentication for High-Value Cases (>= ₹50,000)
     if case.amount_at_risk >= settings.HIGH_VALUE_THRESHOLD:
@@ -208,8 +210,8 @@ def reject_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    case_merchant_id = case.payment.merchant_id if case.payment else None
-    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
+    case_tenant_id = case.org_id or (case.payment.merchant_id if case.payment else None)
+    enforce_tenant_ownership(current_user, case_tenant_id, is_mutation=True)
     
     reason = req.rejection_reason or "Declined by operator"
     updated_case = RecoveryEngine.reject_case(
@@ -233,8 +235,8 @@ def execute_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    case_merchant_id = case.payment.merchant_id if case.payment else None
-    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
+    case_tenant_id = case.org_id or (case.payment.merchant_id if case.payment else None)
+    enforce_tenant_ownership(current_user, case_tenant_id, is_mutation=True)
     
     result = RecoveryEngine.execute_recovery_action(
         db=db,
@@ -262,8 +264,8 @@ def stop_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    case_merchant_id = case.payment.merchant_id if case.payment else None
-    enforce_tenant_ownership(current_user, case_merchant_id, is_mutation=True)
+    case_tenant_id = case.org_id or (case.payment.merchant_id if case.payment else None)
+    enforce_tenant_ownership(current_user, case_tenant_id, is_mutation=True)
     
     case.recommended_action = "stop_recovery"
     RecoveryEngine.execute_recovery_action(db=db, case=case, actor=f"{current_user.name} ({current_user.role})")

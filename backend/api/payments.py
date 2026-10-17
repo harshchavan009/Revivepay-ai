@@ -20,8 +20,10 @@ def get_payments(
     db: Session = Depends(get_db)
 ):
     query = db.query(Payment)
-    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
-        query = query.filter(Payment.merchant_id == current_user.merchant_id)
+    if current_user and current_user.role != "ADMIN":
+        user_tenant = current_user.org_id or current_user.merchant_id
+        if user_tenant:
+            query = query.filter((Payment.org_id == user_tenant) | (Payment.merchant_id == user_tenant))
         
     if status and status != "ALL":
         query = query.filter(Payment.status == status)
@@ -75,7 +77,7 @@ def get_payment_by_id(
     if not p:
         raise HTTPException(status_code=404, detail="Payment not found")
         
-    enforce_tenant_ownership(current_user, p.merchant_id, is_mutation=False)
+    enforce_tenant_ownership(current_user, p.org_id or p.merchant_id, is_mutation=False)
     
     cust = db.query(Customer).filter(Customer.customer_id == p.customer_id).first()
     return {

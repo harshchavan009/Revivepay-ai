@@ -18,10 +18,17 @@ def get_subscriptions(
     db: Session = Depends(get_db)
 ):
     query = db.query(Subscription)
-    if current_user and current_user.role != "ADMIN" and current_user.merchant_id:
-        query = query.join(Customer, Customer.customer_id == Subscription.customer_id).filter(
-            Customer.merchant_id == current_user.merchant_id
-        )
+    if current_user and current_user.role != "ADMIN":
+        user_tenant = current_user.org_id or current_user.merchant_id
+        if user_tenant:
+            query = query.filter(
+                (Subscription.org_id == user_tenant) |
+                (Subscription.customer_id.in_(
+                    db.query(Customer.customer_id).filter(
+                        (Customer.org_id == user_tenant) | (Customer.merchant_id == user_tenant)
+                    )
+                ))
+            )
     subs = query.order_by(Subscription.created_at.desc()).all()
     results = []
     for s in subs:
@@ -67,7 +74,8 @@ def send_pre_debit_notification(
         raise HTTPException(status_code=404, detail="Subscription not found")
     
     cust = db.query(Customer).filter(Customer.customer_id == sub.customer_id).first()
-    enforce_tenant_ownership(current_user, cust.merchant_id if cust else None, is_mutation=True)
+    sub_tenant = sub.org_id or (cust.org_id if cust else (cust.merchant_id if cust else None))
+    enforce_tenant_ownership(current_user, sub_tenant, is_mutation=True)
     
     # Set to 25 hours ago to satisfy 24h window for demo
     sent_time = datetime.datetime.utcnow() - datetime.timedelta(hours=25)
