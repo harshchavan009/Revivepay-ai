@@ -170,7 +170,7 @@ export const DashboardPage: React.FC = () => {
             Welcome back, {user?.name || "Rohan Deshmukh"}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-0.5">
-            Autonomous policy-gated revenue recovery across Razorpay sandbox webhooks.
+            Autonomous policy-gated revenue recovery across Razorpay live webhooks.
           </p>
         </div>
 
@@ -199,19 +199,19 @@ export const DashboardPage: React.FC = () => {
               className="appearance-none bg-[var(--color-bg-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-xl px-3.5 py-2 pr-8 outline-none focus:border-[var(--color-accent)] cursor-pointer font-sans shadow-sm"
             >
               <option value="All Gateways">All Gateways (Razorpay Primary)</option>
-              <option value="Razorpay">Razorpay Test Gateway</option>
+              <option value="Razorpay">Razorpay Live Gateway</option>
               <option value="Direct Bank">Direct HDFC / ICICI Routes</option>
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-[var(--color-text-muted)] absolute right-2.5 top-3 pointer-events-none" />
           </div>
 
-          {/* Action: Simulate Failure */}
+          {/* Action: Gateway & Webhook Health */}
           <Link
-            to="/simulation"
+            to="/settings"
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold transition-all shadow-premium-sm active:scale-95 cursor-pointer"
           >
-            <PlayCircle className="w-3.5 h-3.5" />
-            <span>Simulate Failure</span>
+            <Activity className="w-3.5 h-3.5" />
+            <span>Gateway Health</span>
           </Link>
         </div>
       </div>

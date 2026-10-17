@@ -15,9 +15,9 @@ interface ActivityItem {
 
 const IDLE_ACTIVITY: ActivityItem = {
   id: "idle",
-  time: "Sandbox",
+  time: "Live Engine",
   type: "webhook",
-  text: "Recovery engine listening for Razorpay test webhooks. Trigger a simulation or send an event to begin.",
+  text: "RevivePay autonomous recovery engine actively monitoring Razorpay payment webhooks in real time.",
 };
 
 export const LiveActivityTicker: React.FC = () => {

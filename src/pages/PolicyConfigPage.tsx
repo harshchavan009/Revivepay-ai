@@ -6,7 +6,7 @@ import { formatINR } from "../data/mockData";
 
 const DEFAULT_CONFIG: PolicyConfig = {
   id: "default-policy",
-  merchant_id: "merchant_sandbox_01",
+  merchant_id: "merchant_live_01",
   max_auto_retries: 3,
   max_auto_amount: 10000,
   high_value_approval_threshold: 50000,

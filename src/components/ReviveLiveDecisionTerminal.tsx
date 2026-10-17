@@ -316,7 +316,7 @@ export const ReviveLiveDecisionTerminal: React.FC<ReviveLiveDecisionTerminalProp
             className="text-xs text-[var(--color-accent)] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
           >
             <RotateCw className="w-3 h-3" />
-            <span>Simulate Failure Ingress</span>
+            <span>Sync Live Ingress</span>
           </button>
         </div>
 

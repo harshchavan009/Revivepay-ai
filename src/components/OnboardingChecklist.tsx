@@ -20,7 +20,7 @@ import { organizationService, OnboardingStatus } from "../services/organizationS
 
 export const OnboardingChecklist: React.FC = () => {
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [dismissed, setDismissed] = useState(() => {
     return localStorage.getItem("revivepay_onboarding_dismissed") === "true";
   });
@@ -53,7 +53,7 @@ export const OnboardingChecklist: React.FC = () => {
       case "invite_team":
         return "/settings";
       case "first_event":
-        return "/simulation";
+        return "/cases";
       default:
         return "/settings";
     }
@@ -73,7 +73,9 @@ export const OnboardingChecklist: React.FC = () => {
                 Organization Setup Checklist
               </h3>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)] font-bold">
-                {status.completed_steps} of {status.total_steps} Completed ({status.progress_percentage}%)
+                {status.completed_steps > 0
+                  ? `${status.completed_steps} of ${status.total_steps} Completed (${status.progress_percentage}%)`
+                  : "Quick Integration (5 Steps)"}
               </span>
             </div>
             <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">

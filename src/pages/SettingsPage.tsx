@@ -355,14 +355,14 @@ export const SettingsPage: React.FC = () => {
             <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30">
               <Globe className="w-4 h-4" />
             </div>
-            <span className="font-bold text-xs text-[var(--color-text-primary)] uppercase tracking-wider">Mode 2: Razorpay Test Ingress</span>
+            <span className="font-bold text-xs text-[var(--color-text-primary)] uppercase tracking-wider">Mode 2: Razorpay Live Webhook Ingress</span>
           </div>
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-            Public HTTPS webhook receives live webhook events from the Razorpay Sandbox, validates HMAC-SHA256, and executes the recovery pipeline.
+            Public HTTPS webhook receives live webhook events from Razorpay, validates HMAC-SHA256, and executes the autonomous recovery pipeline.
           </p>
           <div className="pt-1">
             <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] inline-block">
-              Razorpay Test Cloud → HTTPS Ingress → Webhook Listener
+              Razorpay Cloud → HTTPS Ingress → Live Webhook Listener
             </span>
           </div>
         </div>
@@ -567,7 +567,7 @@ export const SettingsPage: React.FC = () => {
           <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-2">
             <div className="flex items-center gap-2 text-[var(--color-text-primary)] font-semibold">
               <Terminal className="w-4 h-4 text-[var(--color-accent)]" />
-              <span>Razorpay Sandbox Webhook Setup:</span>
+              <span>Razorpay Live Webhook Configuration:</span>
             </div>
             <p className="text-[var(--color-text-secondary)] leading-relaxed">
               1. In <strong>Razorpay Dashboard &rarr; Settings &rarr; Webhooks</strong>, add the webhook URL above.<br />

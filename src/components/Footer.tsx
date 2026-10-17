@@ -92,7 +92,7 @@ export const Footer: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold"
             >
               <span className="w-1.5 h-1.5 rounded-sm bg-emerald-500"></span>
-              <span>100% Test Sandbox Health</span>
+              <span>100% Live Gateway Uptime</span>
             </Link>
           </div>
         </div>

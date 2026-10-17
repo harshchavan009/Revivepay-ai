@@ -263,14 +263,14 @@ export const StatusPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Privacy-Friendly Sandbox Usage Telemetry */}
+        {/* Privacy-Friendly Platform Usage Telemetry */}
         <div className="p-6 rounded-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border)] shadow-premium-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <Users className="w-5 h-5 text-[var(--color-accent)]" />
               <div>
                 <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
-                  Live Sandbox Exploration Telemetry
+                  Live Platform Usage Telemetry
                 </h3>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
                   Privacy-preserving aggregate metrics (Zero cookies, zero PII)
@@ -290,7 +290,7 @@ export const StatusPage: React.FC = () => {
               </p>
             </div>
             <div className="p-4 rounded-xl bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] space-y-1">
-              <span className="text-xs text-[var(--color-text-secondary)]">Sandbox Views</span>
+              <span className="text-xs text-[var(--color-text-secondary)]">Platform Views</span>
               <p className="text-xl font-bold font-mono text-[var(--color-accent)]">
                 {analyticsData?.monthly_page_views?.toLocaleString() || "15,420"}
               </p>

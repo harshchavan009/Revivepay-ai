@@ -10,7 +10,8 @@ import {
   Menu,
   Sparkles,
   ShieldAlert,
-  Cpu
+  Cpu,
+  Activity
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -94,31 +95,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
 
         {/* Right Side: Quick Action Triggers & Status */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* B.3: AI Reasoner Budget & Deterministic Fallback Mode Indicator */}
-          {budget?.deterministic_fallback_active ? (
-            <div
-              onClick={() => navigate("/ai-activity")}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-mono font-bold cursor-pointer"
-              title="Daily AI budget reached. Safe deterministic rules floor active. Click to view."
-            >
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-              <span>Rules Floor Active ({budget.used}/{budget.total})</span>
-            </div>
-          ) : (
-            <div
-              onClick={() => navigate("/ai-activity")}
-              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono cursor-pointer hover:border-[var(--color-accent)] transition-colors"
-              title="Daily LLM Call Budget. Click to view ML signals."
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-              <span className="text-[var(--color-text-secondary)]">AI Calls Today:</span>
-              <span className="text-[var(--color-text-primary)] font-bold">{budget ? `${budget.used} / ${budget.total}` : "0 / 100"}</span>
-            </div>
-          )}
+          {/* AI Autonomous Engine Status Indicator */}
+          <div
+            onClick={() => navigate("/ai-activity")}
+            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono cursor-pointer hover:border-[var(--color-accent)] transition-colors"
+            title="Multi-Signal Autonomous Recovery Engine Active. Click to view ML signals."
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-[var(--color-text-secondary)]">AI Engine:</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">Active (Multi-Signal)</span>
+          </div>
 
           {/* Autonomous Engine Live Status */}
           <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md bg-[var(--color-bg-canvas)] border border-[var(--color-border-subtle)] text-xs font-mono">
-            <span className="w-2 h-2 rounded-sm bg-emerald-500"></span>
+            <span className="w-2 h-2 rounded-sm bg-emerald-500 animate-pulse"></span>
             <span className="text-[var(--color-text-secondary)]">Autonomous Retries:</span>
             <span className="text-[var(--color-accent)] font-bold">
               {isLoading ? "--.-%" : `${recoveryRate.toFixed(1)}%`} Rate
@@ -135,15 +125,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
             <span>System Evaluation</span>
           </button>
 
-          {/* Quick Simulation Trigger Button */}
+          {/* Official Gateway & Webhook Health Action */}
           <button
-            onClick={() => navigate("/simulation")}
-            aria-label="Simulate payment failure scenario"
+            onClick={() => navigate("/settings")}
+            aria-label="View Gateway & Webhook Health"
             className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-md bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-xs shadow-premium-sm transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] outline-none shrink-0"
           >
-            <PlayCircle className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Simulate Failure</span>
-            <span className="sm:hidden">Simulate</span>
+            <Activity className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Gateway Health</span>
+            <span className="sm:hidden">Gateway</span>
           </button>
 
           {/* Theme Toggle Button */}

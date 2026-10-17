@@ -198,9 +198,9 @@ export const LoginPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-[var(--color-text-primary)] uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <UserCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-                    <span>Sandbox Demo Personas</span>
+                    <span>Authorized Enterprise Personas</span>
                   </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">1-Click Test Access</span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">Instant RBAC Evaluation</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">

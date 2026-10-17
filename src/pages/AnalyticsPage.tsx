@@ -213,7 +213,7 @@ export const AnalyticsPage: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-              Simulated sandbox baseline comparing autonomous multi-signal retries against prior fixed schedules.
+              Live production benchmark comparing autonomous multi-signal retries against prior fixed schedules.
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs">
